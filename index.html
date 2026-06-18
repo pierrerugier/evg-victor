@@ -75,16 +75,14 @@ html, body {
 }
 .inv-btn img { width: 100%; height: 100%; object-fit: contain; }
 
-/* DIALOGUE ZONE + CTA wrapper */
-#scene-bottom {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
+/* SCENE */
+#screen-scene { position: relative; }
+
+/* DIALOGUE */
 #dlg-zone {
+  position: absolute;
+  bottom: 58px; left: 0; right: 0;
+  z-index: 30;
   padding: 10px 14px 6px;
   display: flex; flex-direction: column; gap: 8px;
 }
@@ -104,6 +102,9 @@ html, body {
 
 /* CHOIX */
 #choix-zone {
+  position: absolute;
+  bottom: 58px; left: 0; right: 0;
+  z-index: 30;
   padding: 0 14px 6px;
   display: none; flex-direction: column; gap: 5px;
 }
@@ -119,9 +120,15 @@ html, body {
 
 /* CTA */
 #cta-zone {
-  padding: 6px 14px 16px;
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 30;
+  padding: 6px 14px 14px;
   display: none; flex-direction: column; gap: 6px;
 }
+
+/* scene-bottom unused but kept for compat */
+#scene-bottom { display: contents; }
 .btn-cta {
   background: var(--rose);
   border: none; padding: 15px;
@@ -361,6 +368,7 @@ html, body {
   <div class="bg" id="scene-bg"></div>
   <button id="btn-retour-hall" onclick="goHall()">← Hall</button>
   <button class="inv-btn" onclick="openInv()"><img class="inv-icon-img" src="" alt=""></button>
+  <div class="scene-spacer"></div>
   <div id="scene-bottom">
     <div id="dlg-zone"></div>
     <div id="choix-zone"></div>
@@ -741,6 +749,15 @@ function entrerLieu(id) {
 // ══════════════════════════════════════════════════════════
 // DIALOGUE ENGINE
 // ══════════════════════════════════════════════════════════
+function adjustDlgBottom() {
+  const cta = document.getElementById('cta-zone');
+  const dlg = document.getElementById('dlg-zone');
+  const choix = document.getElementById('choix-zone');
+  const ctaH = cta.offsetHeight || 58;
+  dlg.style.bottom = ctaH + 'px';
+  choix.style.bottom = ctaH + 'px';
+}
+
 function renderDlg() {
   const dlg = dlgList[dlgIndex];
   if (!dlg) { goHall(); return; }
@@ -788,8 +805,7 @@ function renderDlg() {
     dlgZone.appendChild(bloc);
 
     ctaZone.style.display = 'flex';
-
-    const isLast = phraseIndex >= phrases.length - 1;
+    requestAnimationFrame(adjustDlgBottom);
 
     // Si dernier dialogue de type pnj ET lieu a un objet à donner
     if (isLast && currentLieu.objet_a_donner && dlgIndex === dlgList.findIndex(d => d.type === 'pnj')) {
