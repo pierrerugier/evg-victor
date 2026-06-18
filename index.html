@@ -916,11 +916,14 @@ function renderDlg() {
   }
 
   else if (type === 'tunnel_pacman') {
-    startPacman(dlg.meta.split('|'));
+    // Les phrases sont dans dlg.texte séparées par |
+    const phrases = dlg.texte.split('|').map(p => p.trim()).filter(Boolean);
+    startPacman(phrases.length > 0 ? phrases : ['...']);
   }
 
   else if (type === 'tunnel_tractions') {
-    startTractions(dlg.meta.split('|'));
+    const phrases = dlg.texte.split('|').map(p => p.trim()).filter(Boolean);
+    startTractions(phrases.length > 0 ? phrases : ['...']);
   }
 }
 
