@@ -1,1627 +1,1620 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2822
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
-{\colortbl;\red255\green255\blue255;}
-{\*\expandedcolortbl;;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EVG Victor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── VARIABLES ─────────────────────────────────────────────── */
+  :root {
+    --font-main: 'Josefin Sans', sans-serif;
+    --rose: #FF6EC7;
+    --noir: #000000;
+    --blanc: #ffffff;
+    --gris-clair: #E8E8E8;
+    --gris-moyen: #D0D0D0;
+    --gris-texte: #111111;
+    --github: 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
+  }
 
-\f0\fs24 \cf0 <!DOCTYPE html>\
-<html lang="fr">\
-<head>\
-<meta charset="UTF-8">\
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\
-<title>EVG Victor</title>\
-<link rel="preconnect" href="https://fonts.googleapis.com">\
-<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">\
-<style>\
-  /* \uc0\u9472 \u9472  VARIABLES \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  :root \{\
-    --font-main: 'Josefin Sans', sans-serif;\
-    --rose: #FF6EC7;\
-    --noir: #000000;\
-    --blanc: #ffffff;\
-    --gris-clair: #E8E8E8;\
-    --gris-moyen: #D0D0D0;\
-    --gris-texte: #111111;\
-    --github: 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';\
-  \}\
-\
-  /* \uc0\u9472 \u9472  RESET \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  *, *::before, *::after \{ box-sizing: border-box; margin: 0; padding: 0; \}\
-  html, body \{\
-    width: 100%; height: 100%;\
-    overflow: hidden;\
-    font-family: var(--font-main);\
-    background: #000;\
-    touch-action: manipulation;\
-  \}\
-\
-  /* \uc0\u9472 \u9472  \'c9CRANS \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  .screen \{\
-    position: absolute; inset: 0;\
-    display: none;\
-    flex-direction: column;\
-    width: 100%; height: 100%;\
-  \}\
-  .screen.active \{ display: flex; \}\
-\
-  /* \uc0\u9472 \u9472  FOND IMAGE \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  .bg \{\
-    position: absolute; inset: 0;\
-    background-size: cover;\
-    background-position: center top;\
-    background-repeat: no-repeat;\
-  \}\
-\
-  /* \uc0\u9472 \u9472  \'c9CRAN CHARGEMENT \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  #screen-loading \{\
-    align-items: center;\
-    justify-content: flex-start;\
-  \}\
-  #loading-bg \{\
-    position: absolute; inset: 0;\
-    background-size: cover;\
-    background-position: center top;\
-  \}\
-  #loading-bar-wrap \{\
-    position: absolute;\
-    top: 30%;\
-    left: 8%;\
-    width: 84%;\
-    height: 18px;\
-    z-index: 10;\
-  \}\
-  #loading-bar-bg \{\
-    position: absolute; inset: 0;\
-    background-size: contain;\
-    background-repeat: no-repeat;\
-    background-position: left center;\
-  \}\
-  #loading-plane \{\
-    position: absolute;\
-    top: 50%; left: 0;\
-    transform: translateY(-50%);\
-    height: 28px;\
-    width: 0%;\
-    background-size: contain;\
-    background-repeat: no-repeat;\
-    background-position: right center;\
-    transition: width 0.1s linear;\
-  \}\
-  #loading-intro \{\
-    position: absolute;\
-    bottom: 8%;\
-    left: 0; right: 0;\
-    padding: 0 24px;\
-    text-align: center;\
-    color: var(--blanc);\
-    font-size: 14px;\
-    line-height: 1.6;\
-    text-shadow: 0 1px 4px rgba(0,0,0,0.8);\
-    z-index: 10;\
-  \}\
-\
-  /* \uc0\u9472 \u9472  HALL \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  #screen-hall \{ position: relative; \}\
-  .hall-btn \{\
-    position: absolute;\
-    width: 44px; height: 44px;\
-    border-radius: 50%;\
-    background: var(--rose);\
-    border: 3px solid var(--noir);\
-    cursor: pointer;\
-    display: flex; align-items: center; justify-content: center;\
-    font-family: var(--font-main);\
-    font-size: 10px;\
-    font-weight: 700;\
-    color: var(--noir);\
-    text-align: center;\
-    line-height: 1.1;\
-    transform: translate(-50%, -50%);\
-    z-index: 20;\
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5);\
-  \}\
-  .hall-btn.locked \{\
-    background: #888;\
-    border-color: #555;\
-  \}\
-  #inventaire-btn \{\
-    position: absolute;\
-    top: 16px; right: 16px;\
-    width: 52px; height: 52px;\
-    z-index: 30;\
-    cursor: pointer;\
-    background: none;\
-    border: none;\
-    padding: 0;\
-  \}\
-  #inventaire-btn img \{ width: 100%; height: 100%; object-fit: contain; \}\
-\
-  /* \uc0\u9472 \u9472  SC\'c8NE PNJ \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  #screen-scene \{\
-    position: relative;\
-    justify-content: flex-end;\
-  \}\
-  #scene-bg \{ background-position: center top; \}\
-\
-  #dialogue-zone \{\
-    position: relative;\
-    z-index: 20;\
-    width: 100%;\
-    padding: 12px 16px 20px;\
-    background: rgba(0,0,0,0.15);\
-    display: flex;\
-    flex-direction: column;\
-    gap: 10px;\
-  \}\
-\
-  .dialogue-bloc \{\
-    background: var(--gris-clair);\
-    padding: 12px 14px;\
-    border-radius: 0;\
-  \}\
-  .dialogue-bloc.victor \{\
-    background: var(--gris-moyen);\
-    margin-left: 32px;\
-  \}\
-  .dialogue-nom \{\
-    font-size: 10px;\
-    font-weight: 700;\
-    letter-spacing: 0.12em;\
-    text-transform: uppercase;\
-    color: var(--gris-texte);\
-    margin-bottom: 5px;\
-  \}\
-  .dialogue-texte \{\
-    font-size: 14px;\
-    line-height: 1.5;\
-    color: var(--gris-texte);\
-  \}\
-\
-  /* \uc0\u9472 \u9472  BOUTONS QCM / CHOIX \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  .choix-zone \{\
-    display: flex;\
-    flex-direction: column;\
-    gap: 8px;\
-    padding: 0 16px 16px;\
-    position: relative;\
-    z-index: 20;\
-  \}\
-  .btn-choix \{\
-    background: var(--gris-clair);\
-    border: none;\
-    padding: 12px 14px;\
-    font-family: var(--font-main);\
-    font-size: 14px;\
-    font-weight: 600;\
-    color: var(--gris-texte);\
-    text-align: left;\
-    cursor: pointer;\
-    border-radius: 0;\
-    border-left: 4px solid transparent;\
-  \}\
-  .btn-choix:active \{ border-left-color: var(--rose); \}\
-\
-  /* \uc0\u9472 \u9472  BOUTON CONTINUER / CTA \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  .btn-cta \{\
-    background: var(--rose);\
-    border: none;\
-    padding: 14px 24px;\
-    font-family: var(--font-main);\
-    font-size: 15px;\
-    font-weight: 700;\
-    color: var(--noir);\
-    text-transform: uppercase;\
-    letter-spacing: 0.08em;\
-    cursor: pointer;\
-    border-radius: 0;\
-    width: 100%;\
-  \}\
-  .btn-cta-zone \{\
-    padding: 0 16px 20px;\
-    position: relative;\
-    z-index: 20;\
-  \}\
-  .btn-back \{\
-    background: var(--gris-moyen);\
-    border: none;\
-    padding: 12px 24px;\
-    font-family: var(--font-main);\
-    font-size: 13px;\
-    font-weight: 600;\
-    color: var(--gris-texte);\
-    cursor: pointer;\
-    border-radius: 0;\
-    width: 100%;\
-    margin-top: 8px;\
-  \}\
-\
-  /* \uc0\u9472 \u9472  NOTIFICATION OBJET RE\'c7U \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  #objet-notif \{\
-    position: fixed;\
-    bottom: 100px;\
-    left: 50%;\
-    transform: translateX(-50%) translateY(40px);\
-    background: var(--noir);\
-    color: var(--blanc);\
-    font-family: var(--font-main);\
-    font-size: 13px;\
-    font-weight: 600;\
-    padding: 12px 20px;\
-    display: flex;\
-    align-items: center;\
-    gap: 10px;\
-    opacity: 0;\
-    transition: opacity 0.3s, transform 0.3s;\
-    z-index: 100;\
-    white-space: nowrap;\
-  \}\
-  #objet-notif.show \{\
-    opacity: 1;\
-    transform: translateX(-50%) translateY(0);\
-  \}\
-  #objet-notif img \{ width: 28px; height: 28px; object-fit: contain; \}\
-\
-  /* \uc0\u9472 \u9472  INVENTAIRE OVERLAY \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  #inventaire-overlay \{\
-    position: fixed; inset: 0;\
-    z-index: 50;\
-    display: none;\
-    flex-direction: column;\
-    align-items: center;\
-    justify-content: flex-end;\
-    background: rgba(0,0,0,0.6);\
-  \}\
-  #inventaire-overlay.active \{ display: flex; \}\
-  #inventaire-inner \{\
-    width: 100%;\
-    max-height: 70vh;\
-    overflow-y: auto;\
-    position: relative;\
-  \}\
-  #inventaire-bg-img \{\
-    width: 100%;\
-    display: block;\
-  \}\
-  #inventaire-grid \{\
-    position: absolute;\
-    top: 18%;\
-    left: 8%;\
-    width: 84%;\
-    display: grid;\
-    grid-template-columns: repeat(4, 1fr);\
-    gap: 10px;\
-    padding: 8px;\
-  \}\
-  .inv-slot \{\
-    aspect-ratio: 1;\
-    display: flex;\
-    align-items: center;\
-    justify-content: center;\
-    flex-direction: column;\
-  \}\
-  .inv-slot img \{\
-    width: 56px; height: 56px;\
-    object-fit: contain;\
-    opacity: 0.3;\
-  \}\
-  .inv-slot.collected img \{ opacity: 1; \}\
-  .inv-slot span \{\
-    font-size: 9px;\
-    font-weight: 600;\
-    color: var(--gris-texte);\
-    text-align: center;\
-    margin-top: 4px;\
-  \}\
-  #inventaire-close \{\
-    margin-bottom: 16px;\
-    margin-top: 12px;\
-  \}\
-\
-  /* \uc0\u9472 \u9472  MINI-JEU : VALISES (BAPTISTE) \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  #screen-valises \{\
-    position: relative;\
-    justify-content: flex-end;\
-    align-items: center;\
-  \}\
-  #valises-container \{\
-    position: relative;\
-    z-index: 20;\
-    width: 100%;\
-    padding: 16px;\
-    display: grid;\
-    grid-template-columns: repeat(2, 1fr);\
-    gap: 12px;\
-  \}\
-  .valise-item \{\
-    background: var(--gris-clair);\
-    padding: 16px;\
-    display: flex;\
-    align-items: center;\
-    justify-content: center;\
-    cursor: pointer;\
-    border: 3px solid transparent;\
-  \}\
-  .valise-item img \{ width: 64px; height: 64px; object-fit: contain; \}\
-  #tunnel-baptiste \{\
-    position: relative;\
-    z-index: 20;\
-    background: var(--gris-clair);\
-    margin: 0 16px;\
-    padding: 14px;\
-    font-size: 13px;\
-    line-height: 1.5;\
-    color: var(--gris-texte);\
-    min-height: 60px;\
-    display: none;\
-  \}\
-  #tunnel-baptiste-nom \{\
-    font-size: 10px;\
-    font-weight: 700;\
-    letter-spacing: 0.12em;\
-    text-transform: uppercase;\
-    margin-bottom: 5px;\
-  \}\
-\
-  /* \uc0\u9472 \u9472  MINI-JEU : CABINES (OSCAR) \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  #screen-cabines \{\
-    position: relative;\
-    justify-content: flex-end;\
-  \}\
-  #cabines-container \{\
-    position: relative;\
-    z-index: 20;\
-    display: flex;\
-    gap: 12px;\
-    padding: 16px;\
-    justify-content: center;\
-  \}\
-  .cabine-btn \{\
-    width: 80px; height: 100px;\
-    background: var(--gris-clair);\
-    border: 3px solid var(--gris-moyen);\
-    cursor: pointer;\
-    display: flex;\
-    align-items: center;\
-    justify-content: center;\
-    font-size: 32px;\
-  \}\
-  .cabine-btn.opened \{\
-    border-color: var(--rose);\
-    background: #fff;\
-  \}\
-\
-  /* \uc0\u9472 \u9472  MINI-JEU : PACMAN (PIERRE) \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  #screen-pacman \{\
-    position: relative;\
-    background: #000;\
-    align-items: center;\
-    justify-content: flex-start;\
-  \}\
-  #pacman-phrase \{\
-    position: relative;\
-    z-index: 20;\
-    width: 100%;\
-    padding: 16px;\
-    background: var(--gris-clair);\
-    font-size: 14px;\
-    font-weight: 600;\
-    color: var(--gris-texte);\
-    min-height: 60px;\
-    text-align: center;\
-  \}\
-  #pacman-phrase-nom \{\
-    font-size: 10px;\
-    font-weight: 700;\
-    letter-spacing: 0.12em;\
-    text-transform: uppercase;\
-    margin-bottom: 5px;\
-    color: var(--gris-texte);\
-  \}\
-  #pacman-canvas \{\
-    display: block;\
-    width: 100%;\
-    flex: 1;\
-  \}\
-  #pacman-gameover \{\
-    display: none;\
-    position: absolute;\
-    inset: 0;\
-    background: rgba(0,0,0,0.8);\
-    z-index: 30;\
-    flex-direction: column;\
-    align-items: center;\
-    justify-content: center;\
-    gap: 16px;\
-    padding: 32px;\
-  \}\
-  #pacman-gameover.active \{ display: flex; \}\
-  #pacman-gameover-texte \{\
-    background: var(--gris-clair);\
-    padding: 16px;\
-    width: 100%;\
-  \}\
-  #pacman-gameover-texte .dialogue-nom \{ margin-bottom: 6px; \}\
-\
-  /* \uc0\u9472 \u9472  MINI-JEU : TRACTIONS (KUPI) \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  #screen-tractions \{\
-    position: relative;\
-    align-items: center;\
-    justify-content: flex-start;\
-  \}\
-  #tractions-phrase \{\
-    position: relative;\
-    z-index: 20;\
-    width: 100%;\
-    padding: 16px;\
-    background: var(--gris-clair);\
-    font-size: 14px;\
-    font-weight: 600;\
-    color: var(--gris-texte);\
-    text-align: center;\
-    min-height: 60px;\
-  \}\
-  #tractions-phrase-nom \{\
-    font-size: 10px;\
-    font-weight: 700;\
-    letter-spacing: 0.12em;\
-    text-transform: uppercase;\
-    margin-bottom: 5px;\
-  \}\
-  #tractions-area \{\
-    flex: 1;\
-    width: 100%;\
-    position: relative;\
-    cursor: pointer;\
-    user-select: none;\
-    -webkit-user-select: none;\
-    overflow: hidden;\
-  \}\
-  #tractions-bg-img \{\
-    position: absolute;\
-    bottom: 0; left: 50%;\
-    transform: translateX(-50%);\
-    width: 80%;\
-    object-fit: contain;\
-    transition: bottom 0.15s ease-out;\
-  \}\
-  #tractions-body-img \{\
-    position: absolute;\
-    bottom: 0; left: 50%;\
-    transform: translateX(-50%);\
-    width: 60%;\
-    object-fit: contain;\
-  \}\
-  #tractions-progress-wrap \{\
-    position: absolute;\
-    right: 16px; top: 50%;\
-    transform: translateY(-50%);\
-    width: 12px;\
-    height: 160px;\
-    background: var(--gris-moyen);\
-  \}\
-  #tractions-progress-fill \{\
-    position: absolute;\
-    bottom: 0; left: 0; right: 0;\
-    background: var(--rose);\
-    height: 0%;\
-    transition: height 0.1s;\
-  \}\
-  #tractions-count \{\
-    position: absolute;\
-    top: 12px; left: 50%;\
-    transform: translateX(-50%);\
-    font-size: 48px;\
-    font-weight: 700;\
-    color: rgba(255,255,255,0.15);\
-    font-family: var(--font-main);\
-  \}\
-\
-  /* \uc0\u9472 \u9472  FIN DE JEU \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  #screen-fin \{\
-    align-items: center;\
-    justify-content: center;\
-    background: #000;\
-  \}\
-  #fin-logo \{\
-    width: 80%;\
-    max-width: 320px;\
-    opacity: 0;\
-    transform: scale(0.8);\
-    transition: opacity 1s, transform 1s;\
-  \}\
-  #fin-logo.show \{\
-    opacity: 1;\
-    transform: scale(1);\
-  \}\
-\
-  /* \uc0\u9472 \u9472  OVERLAY DONNEZ OBJET \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472  */\
-  #donner-overlay \{\
-    position: fixed; inset: 0;\
-    z-index: 60;\
-    display: none;\
-    flex-direction: column;\
-    align-items: center;\
-    justify-content: flex-end;\
-    background: rgba(0,0,0,0.7);\
-  \}\
-  #donner-overlay.active \{ display: flex; \}\
-  #donner-inner \{\
-    width: 100%;\
-    background: var(--blanc);\
-    padding: 20px 16px 32px;\
-  \}\
-  #donner-titre \{\
-    font-size: 13px;\
-    font-weight: 700;\
-    text-transform: uppercase;\
-    letter-spacing: 0.1em;\
-    margin-bottom: 14px;\
-    color: var(--gris-texte);\
-  \}\
-  #donner-grid \{\
-    display: grid;\
-    grid-template-columns: repeat(4, 1fr);\
-    gap: 10px;\
-    margin-bottom: 16px;\
-  \}\
-  .donner-item \{\
-    display: flex;\
-    flex-direction: column;\
-    align-items: center;\
-    cursor: pointer;\
-    padding: 8px;\
-    background: var(--gris-clair);\
-  \}\
-  .donner-item img \{ width: 48px; height: 48px; object-fit: contain; \}\
-  .donner-item span \{\
-    font-size: 9px;\
-    font-weight: 600;\
-    text-align: center;\
-    margin-top: 4px;\
-    color: var(--gris-texte);\
-  \}\
-</style>\
-</head>\
-<body>\
-\
-<!-- \uc0\u9552 \u9552  \'c9CRAN CHARGEMENT \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552  -->\
-<div id="screen-loading" class="screen active">\
-  <div id="loading-bg"></div>\
-  <div id="loading-bar-wrap">\
-    <div id="loading-bar-bg"></div>\
-    <div id="loading-plane"></div>\
-  </div>\
-  <div id="loading-intro"></div>\
-</div>\
-\
-<!-- \uc0\u9552 \u9552  HALL \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552  -->\
-<div id="screen-hall" class="screen">\
-  <div class="bg" id="hall-bg"></div>\
-  <button id="inventaire-btn" onclick="openInventaire()">\
-    <img id="inv-icon-img" src="" alt="Inventaire">\
-  </button>\
-  <div id="hall-btns"></div>\
-</div>\
-\
-<!-- \uc0\u9552 \u9552  SC\'c8NE PNJ \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552  -->\
-<div id="screen-scene" class="screen">\
-  <div class="bg" id="scene-bg"></div>\
-  <button id="inventaire-btn-scene" style="position:absolute;top:16px;right:16px;width:52px;height:52px;z-index:30;cursor:pointer;background:none;border:none;padding:0;" onclick="openInventaire()">\
-    <img id="inv-icon-img2" src="" alt="Inventaire">\
-  </button>\
-  <div id="dialogue-zone"></div>\
-  <div id="choix-zone" class="choix-zone" style="display:none;"></div>\
-  <div id="cta-zone" class="btn-cta-zone" style="display:none;">\
-    <button class="btn-cta" id="btn-continuer" onclick="nextDialogue()">Continuer</button>\
-    <button class="btn-back" id="btn-retour-scene" onclick="goHall()" style="display:none;">Retour au hall</button>\
-  </div>\
-</div>\
-\
-<!-- \uc0\u9552 \u9552  MINI-JEU VALISES \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552  -->\
-<div id="screen-valises" class="screen">\
-  <div class="bg" id="valises-bg"></div>\
-  <div id="tunnel-baptiste">\
-    <div id="tunnel-baptiste-nom">Baptiste</div>\
-    <div id="tunnel-baptiste-texte"></div>\
-  </div>\
-  <div id="valises-container"></div>\
-  <div class="btn-cta-zone" style="display:none;" id="valise-succes-zone">\
-    <button class="btn-cta" onclick="recevoirObjetEtHall('valise')">Continuer</button>\
-  </div>\
-</div>\
-\
-<!-- \uc0\u9552 \u9552  MINI-JEU CABINES \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552  -->\
-<div id="screen-cabines" class="screen">\
-  <div class="bg" id="cabines-bg"></div>\
-  <div id="cabines-result" class="btn-cta-zone" style="display:none;">\
-    <div class="dialogue-bloc" style="margin-bottom:10px;">\
-      <div class="dialogue-nom" id="cabine-result-nom"></div>\
-      <div class="dialogue-texte" id="cabine-result-texte"></div>\
-    </div>\
-    <button class="btn-cta" id="cabine-result-btn" onclick="goHall()">Continuer</button>\
-  </div>\
-  <div id="cabines-container"></div>\
-</div>\
-\
-<!-- \uc0\u9552 \u9552  MINI-JEU PACMAN \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552  -->\
-<div id="screen-pacman" class="screen">\
-  <div id="pacman-phrase">\
-    <div id="pacman-phrase-nom">Pierre</div>\
-    <div id="pacman-phrase-texte"></div>\
-  </div>\
-  <canvas id="pacman-canvas"></canvas>\
-  <div id="pacman-gameover">\
-    <div id="pacman-gameover-texte">\
-      <div class="dialogue-nom">Pierre</div>\
-      <div class="dialogue-texte">H\'e9 mec, t'endors pas, on est en pleine conversation !</div>\
-    </div>\
-    <button class="btn-cta" onclick="restartPacman()">R\'e9essayer</button>\
-    <button class="btn-back" onclick="goHall()">Quitter</button>\
-  </div>\
-</div>\
-\
-<!-- \uc0\u9552 \u9552  MINI-JEU TRACTIONS \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552  -->\
-<div id="screen-tractions" class="screen">\
-  <div id="tractions-phrase">\
-    <div id="tractions-phrase-nom">Kupi</div>\
-    <div id="tractions-phrase-texte">Tapote l'\'e9cran pour faire des tractions !</div>\
-  </div>\
-  <div id="tractions-area">\
-    <div id="tractions-count">0</div>\
-    <img id="tractions-bg-img" src="" alt="">\
-    <img id="tractions-body-img" src="" alt="">\
-    <div id="tractions-progress-wrap">\
-      <div id="tractions-progress-fill"></div>\
-    </div>\
-  </div>\
-</div>\
-\
-<!-- \uc0\u9552 \u9552  FIN \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552  -->\
-<div id="screen-fin" class="screen">\
-  <img id="fin-logo" src="" alt="Victor's">\
-</div>\
-\
-<!-- \uc0\u9552 \u9552  INVENTAIRE OVERLAY \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552  -->\
-<div id="inventaire-overlay">\
-  <div id="inventaire-inner">\
-    <img id="inventaire-bg-img" src="" alt="">\
-    <div id="inventaire-grid"></div>\
-  </div>\
-  <button class="btn-cta" style="width:calc(100% - 32px);margin-bottom:20px;" onclick="closeInventaire()">Fermer</button>\
-</div>\
-\
-<!-- \uc0\u9552 \u9552  DONNER OBJET OVERLAY \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552  -->\
-<div id="donner-overlay">\
-  <div id="donner-inner">\
-    <div id="donner-titre">Qu'est-ce que tu lui donnes ?</div>\
-    <div id="donner-grid"></div>\
-    <button class="btn-back" onclick="closeDonner()">Annuler</button>\
-  </div>\
-</div>\
-\
-<!-- \uc0\u9552 \u9552  NOTIFICATION OBJET \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552  -->\
-<div id="objet-notif">\
-  <img id="objet-notif-img" src="" alt="">\
-  <span id="objet-notif-texte"></span>\
-</div>\
-\
-<script>\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// CONFIG & STATE\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzze8-guvyUP7j04Mg_RW1vXiKOIZ_KpLaWKlARLEi3usTmdHenEuuZCgYQJTKTQtXt2A/exec';\
-\
-let G = \{\
-  config: \{\},\
-  objets: [],\
-  lieux: [],\
-  dialogues: [],\
-  inventaire: [], // ids des objets collect\'e9s\
-  currentLieu: null,\
-  dialogueIndex: 0,\
-  dialoguesLieu: [],\
-  qcmStep: 0,\
-  oscarVisites: 0,\
-\};\
-\
-let BASE_URL = '';\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// INIT\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-async function init() \{\
-  // Chargement donn\'e9es\
-  const res = await fetch(APPS_SCRIPT_URL);\
-  const data = await res.json();\
-  G.config = data.config;\
-  G.objets = data.objets;\
-  G.lieux = data.lieux;\
-  G.dialogues = data.dialogues;\
-\
-  BASE_URL = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';\
-\
-  // Appliquer couleurs depuis config\
-  document.documentElement.style.setProperty('--rose', G.config.couleur_rose || '#FF6EC7');\
-  document.documentElement.style.setProperty('--gris-clair', G.config.couleur_bloc_pnj || '#E8E8E8');\
-  document.documentElement.style.setProperty('--gris-moyen', G.config.couleur_bloc_victor || '#D0D0D0');\
-  document.documentElement.style.setProperty('--gris-texte', G.config.couleur_texte || '#111111');\
-  if (G.config.font_family) \{\
-    document.documentElement.style.setProperty('--font-main', `'$\{G.config.font_family\}', sans-serif`);\
-  \}\
-\
-  const duree = parseInt(G.config.duree_chargement) || 4000;\
-\
-  // Setup \'e9cran chargement\
-  const loadingBg = document.getElementById('loading-bg');\
-  const loadingBarBg = document.getElementById('loading-bar-bg');\
-  const loadingPlane = document.getElementById('loading-plane');\
-  const loadingIntro = document.getElementById('loading-intro');\
-\
-  loadingBg.style.backgroundImage = `url($\{BASE_URL\}ecrans/Victors.jpg)`;\
-  loadingBarBg.style.backgroundImage = `url($\{BASE_URL\}icons/chargement.png)`;\
-  loadingPlane.style.backgroundImage = `url($\{BASE_URL\}icons/avion.png)`;\
-\
-  loadingIntro.textContent = 'Victor, bienvenue aux portes de ton EVG. Avant de pouvoir embarquer, une mission t\\'attend : retrouver toutes les affaires indispensables \'e0 ton voyage. Explore l\\'a\'e9roport, rencontre ses occupants et rel\'e8ve les d\'e9fis. Une fois tous les objets r\'e9unis, rends-toi au contr\'f4le de s\'e9curit\'e9. Bonne chance !';\
-\
-  // Animer la barre\
-  const start = Date.now();\
-  const animBar = setInterval(() => \{\
-    const elapsed = Date.now() - start;\
-    const pct = Math.min(100, (elapsed / duree) * 100);\
-    loadingPlane.style.width = pct + '%';\
-    if (pct >= 100) clearInterval(animBar);\
-  \}, 50);\
-\
-  // Pr\'e9charger toutes les images\
-  const allImages = collectAllImages();\
-  await Promise.all([\
-    preloadImages(allImages),\
-    new Promise(r => setTimeout(r, duree))\
-  ]);\
-\
-  // Lancer le hall\
-  setupHall();\
-  showScreen('hall');\
-\}\
-\
-function collectAllImages() \{\
-  const urls = [];\
-  G.lieux.forEach(l => \{\
-    if (l.ecran) urls.push(BASE_URL + l.ecran);\
-  \});\
-  G.objets.forEach(o => \{\
-    if (o.icon) urls.push(BASE_URL + o.icon);\
-  \});\
-  ['icons/inventaire.png','icons/inventaire-icon.png','icons/chargement.png','icons/avion.png',\
-   'ecrans/Victors.jpg','ecrans/pullupbase.png','ecrans/Victor-pullup-body.png'].forEach(p => \{\
-    urls.push(BASE_URL + p);\
-  \});\
-  return urls;\
-\}\
-\
-function preloadImages(urls) \{\
-  return Promise.all(urls.map(url => new Promise(r => \{\
-    const img = new Image();\
-    img.onload = r; img.onerror = r;\
-    img.src = url;\
-  \})));\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// NAVIGATION\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-function showScreen(name) \{\
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));\
-  document.getElementById('screen-' + name).classList.add('active');\
-\}\
-\
-function goHall() \{\
-  setupHall();\
-  showScreen('hall');\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// HALL\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-function setupHall() \{\
-  const hall = G.lieux.find(l => l.id === 'hall');\
-  document.getElementById('hall-bg').style.backgroundImage = `url($\{BASE_URL\}$\{hall.ecran\})`;\
-  document.getElementById('inv-icon-img').src = BASE_URL + 'icons/inventaire-icon.png';\
-  document.getElementById('inv-icon-img2').src = BASE_URL + 'icons/inventaire-icon.png';\
-  document.getElementById('inventaire-bg-img').src = BASE_URL + 'icons/inventaire.png';\
-\
-  const container = document.getElementById('hall-btns');\
-  container.innerHTML = '';\
-\
-  G.lieux.filter(l => l.id !== 'hall' && l.actif === 'true').forEach(lieu => \{\
-    const btn = document.createElement('button');\
-    btn.className = 'hall-btn';\
-    btn.style.left = lieu.pos_x + '%';\
-    btn.style.top = lieu.pos_y + '%';\
-    const nom = lieu.nom.length > 10 ? lieu.nom.substring(0,10) + '\'85' : lieu.nom;\
-    btn.textContent = nom;\
-\
-    const accessible = peutAcceder(lieu);\
-    if (!accessible) btn.classList.add('locked');\
-\
-    btn.onclick = () => \{\
-      if (accessible) entrerLieu(lieu.id);\
-    \};\
-    container.appendChild(btn);\
-  \});\
-\
-  // Inventaire grid\
-  setupInventaireGrid();\
-\}\
-\
-function peutAcceder(lieu) \{\
-  if (!lieu.objets_requis) return true;\
-  const requis = lieu.objets_requis.split(',').map(s => s.trim()).filter(Boolean);\
-  return requis.every(r => G.inventaire.includes(r));\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// INVENTAIRE\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-function setupInventaireGrid() \{\
-  const grid = document.getElementById('inventaire-grid');\
-  grid.innerHTML = '';\
-  // Afficher seulement les 7 objets finaux requis + interm\'e9diaires collect\'e9s\
-  const objetsVoulus = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];\
-  const objetsExtras = G.inventaire.filter(id => !objetsVoulus.includes(id));\
-  const tousObjets = [...objetsVoulus, ...objetsExtras];\
-\
-  tousObjets.forEach(id => \{\
-    const obj = G.objets.find(o => o.id === id);\
-    if (!obj) return;\
-    const slot = document.createElement('div');\
-    slot.className = 'inv-slot' + (G.inventaire.includes(id) ? ' collected' : '');\
-    slot.innerHTML = `<img src="$\{BASE_URL\}$\{obj.icon\}" alt="$\{obj.nom\}"><span>$\{obj.nom\}</span>`;\
-    grid.appendChild(slot);\
-  \});\
-\}\
-\
-function openInventaire() \{\
-  setupInventaireGrid();\
-  document.getElementById('inventaire-overlay').classList.add('active');\
-\}\
-\
-function closeInventaire() \{\
-  document.getElementById('inventaire-overlay').classList.remove('active');\
-\}\
-\
-function showObjetNotif(objetId) \{\
-  const obj = G.objets.find(o => o.id === objetId);\
-  if (!obj) return;\
-  const notif = document.getElementById('objet-notif');\
-  document.getElementById('objet-notif-img').src = BASE_URL + obj.icon;\
-  document.getElementById('objet-notif-texte').textContent = obj.nom + ' ajout\'e9 !';\
-  notif.classList.add('show');\
-  setTimeout(() => notif.classList.remove('show'), 2500);\
-\}\
-\
-function ajouterObjet(id) \{\
-  if (!G.inventaire.includes(id)) \{\
-    G.inventaire.push(id);\
-    showObjetNotif(id);\
-  \}\
-\}\
-\
-function retirerObjet(id) \{\
-  G.inventaire = G.inventaire.filter(i => i !== id);\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// ENTRER DANS UN LIEU\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-function entrerLieu(lieuId) \{\
-  const lieu = G.lieux.find(l => l.id === lieuId);\
-  G.currentLieu = lieu;\
-  G.dialoguesLieu = G.dialogues.filter(d => d.lieu_id === lieuId)\
-    .sort((a,b) => parseInt(a.ordre) - parseInt(b.ordre));\
-  G.dialogueIndex = 0;\
-\
-  // Cas sp\'e9ciaux\
-  if (lieuId === 'toilettes') \{\
-    showCabines(lieu);\
-    return;\
-  \}\
-  if (lieuId === 'enregistrement') \{\
-    showValises(lieu);\
-    return;\
-  \}\
-\
-  // V\'e9rifier acc\'e8s\
-  if (!peutAcceder(lieu)) \{\
-    showEchecAcces(lieu);\
-    return;\
-  \}\
-\
-  // V\'e9rif sp\'e9ciale Oscar 2\'e8me passage\
-  if (lieuId === 'toilettes') \{\
-    // g\'e9r\'e9 via showCabines\
-  \}\
-\
-  showScene(lieu);\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// SC\'c8NE DIALOGUE\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-function showScene(lieu, startIndex) \{\
-  document.getElementById('scene-bg').style.backgroundImage = `url($\{BASE_URL\}$\{lieu.ecran\})`;\
-  showScreen('scene');\
-\
-  G.dialogueIndex = startIndex !== undefined ? startIndex : 0;\
-  renderDialogue();\
-\}\
-\
-function renderDialogue() \{\
-  const dlg = G.dialoguesLieu[G.dialogueIndex];\
-  if (!dlg) \{ goHall(); return; \}\
-\
-  const zone = document.getElementById('dialogue-zone');\
-  const choixZone = document.getElementById('choix-zone');\
-  const ctaZone = document.getElementById('cta-zone');\
-  const btnContinuer = document.getElementById('btn-continuer');\
-  const btnRetour = document.getElementById('btn-retour-scene');\
-\
-  zone.innerHTML = '';\
-  choixZone.style.display = 'none';\
-  choixZone.innerHTML = '';\
-  ctaZone.style.display = 'none';\
-  btnRetour.style.display = 'none';\
-\
-  const type = dlg.type;\
-\
-  // Blocs de texte\
-  const isVictor = dlg.personnage === 'Victor';\
-  const bloc = document.createElement('div');\
-  bloc.className = 'dialogue-bloc' + (isVictor ? ' victor' : '');\
-  bloc.innerHTML = `<div class="dialogue-nom">$\{dlg.personnage\}</div><div class="dialogue-texte">$\{dlg.texte\}</div>`;\
-  zone.appendChild(bloc);\
-\
-  if (type === 'pnj' || type === 'victor' || type === 'narration') \{\
-    ctaZone.style.display = 'block';\
-    btnContinuer.textContent = 'Continuer';\
-    btnContinuer.onclick = () => \{\
-      G.dialogueIndex++;\
-      renderDialogue();\
-    \};\
-  \}\
-\
-  else if (type === 'qcm') \{\
-    choixZone.style.display = 'flex';\
-    const options = dlg.meta.split('|');\
-    const bonne = options[options.length - 1];\
-    options.slice(0, -1).forEach(opt => \{\
-      const btn = document.createElement('button');\
-      btn.className = 'btn-choix';\
-      btn.textContent = opt;\
-      const lettre = opt.charAt(0);\
-      btn.onclick = () => \{\
-        if (lettre === bonne) \{\
-          G.dialogueIndex++;\
-          renderDialogue();\
-        \} else \{\
-          // Trouver la r\'e9ponse incorrecte\
-          const mauvaise = G.dialoguesLieu.find((d, i) => i > G.dialogueIndex && d.type === 'reponse_incorrecte');\
-          if (mauvaise) \{\
-            showDialogueTemp(mauvaise, () => renderDialogue());\
-          \}\
-        \}\
-      \};\
-      choixZone.appendChild(btn);\
-    \});\
-  \}\
-\
-  else if (type === 'choix') \{\
-    choixZone.style.display = 'flex';\
-    const options = dlg.meta.split('|');\
-    options.forEach((opt, idx) => \{\
-      const btn = document.createElement('button');\
-      btn.className = 'btn-choix';\
-      btn.textContent = opt;\
-      btn.onclick = () => \{\
-        G.dialogueIndex++;\
-        renderDialogue();\
-      \};\
-      choixZone.appendChild(btn);\
-    \});\
-  \}\
-\
-  else if (type === 'fin_succes') \{\
-    if (dlg.meta) ajouterObjet(dlg.meta);\
-    ctaZone.style.display = 'block';\
-    btnRetour.style.display = 'block';\
-    btnContinuer.style.display = 'none';\
-    btnRetour.textContent = 'Retour au hall';\
-  \}\
-\
-  else if (type === 'fin_succes_2') \{\
-    if (dlg.meta) ajouterObjet(dlg.meta);\
-    ctaZone.style.display = 'block';\
-    btnRetour.style.display = 'block';\
-    btnContinuer.style.display = 'none';\
-    btnRetour.textContent = 'Retour au hall';\
-  \}\
-\
-  else if (type === 'fin_echec') \{\
-    ctaZone.style.display = 'block';\
-    btnContinuer.style.display = 'none';\
-    btnRetour.style.display = 'block';\
-    btnRetour.textContent = 'Retour au hall';\
-  \}\
-\
-  else if (type === 'reponse_incorrecte') \{\
-    ctaZone.style.display = 'block';\
-    btnContinuer.textContent = 'R\'e9essayer';\
-    G.dialogueIndex++;\
-    btnContinuer.onclick = () => renderDialogue();\
-  \}\
-\
-  else if (type === 'tunnel_pacman') \{\
-    // Lancer Pacman\
-    const phrases = dlg.meta.split('|');\
-    startPacman(phrases, G.currentLieu);\
-    return;\
-  \}\
-\
-  else if (type === 'tunnel_tractions') \{\
-    const phrases = dlg.meta.split('|');\
-    startTractions(phrases, G.currentLieu);\
-    return;\
-  \}\
-\
-  // Gestion objet \'e0 donner\
-  if (G.currentLieu && G.currentLieu.objet_a_donner && type === 'pnj' && G.dialogueIndex === G.dialoguesLieu.length - 1) \{\
-    // dernier pnj -> afficher donner\
-  \}\
-\
-  // Si Antoine : apr\'e8s son monologue, il faut donner un objet\
-  if (G.currentLieu && G.currentLieu.id === 'exterieur' && type === 'pnj' && G.dialogueIndex === 0) \{\
-    G.dialogueIndex++;\
-    ctaZone.style.display = 'block';\
-    btnContinuer.textContent = 'Continuer';\
-    btnContinuer.onclick = () => renderDialogue();\
-  \}\
-\
-  // Si dernier dialogue est une demande d'objet\
-  const nextDlg = G.dialoguesLieu[G.dialogueIndex + 1];\
-  if (nextDlg && nextDlg.type === 'fin_succes' && G.currentLieu.objet_a_donner) \{\
-    ctaZone.style.display = 'block';\
-    btnContinuer.textContent = 'Donner un objet';\
-    btnContinuer.onclick = () => openDonner(G.currentLieu);\
-  \}\
-\}\
-\
-function showDialogueTemp(dlg, cb) \{\
-  const zone = document.getElementById('dialogue-zone');\
-  const extra = document.createElement('div');\
-  extra.className = 'dialogue-bloc';\
-  extra.innerHTML = `<div class="dialogue-nom">$\{dlg.personnage\}</div><div class="dialogue-texte">$\{dlg.texte\}</div>`;\
-  zone.appendChild(extra);\
-  setTimeout(() => \{ extra.remove(); cb(); \}, 1800);\
-\}\
-\
-function showEchecAcces(lieu) \{\
-  const echec = G.dialoguesLieu.find(d => d.type === 'fin_echec');\
-  if (!echec) \{ goHall(); return; \}\
-  document.getElementById('scene-bg').style.backgroundImage = `url($\{BASE_URL\}$\{lieu.ecran\})`;\
-  showScreen('scene');\
-  const zone = document.getElementById('dialogue-zone');\
-  zone.innerHTML = `<div class="dialogue-bloc"><div class="dialogue-nom">$\{echec.personnage\}</div><div class="dialogue-texte">$\{echec.texte\}</div></div>`;\
-  document.getElementById('choix-zone').style.display = 'none';\
-  const cta = document.getElementById('cta-zone');\
-  cta.style.display = 'block';\
-  document.getElementById('btn-continuer').style.display = 'none';\
-  const btnRetour = document.getElementById('btn-retour-scene');\
-  btnRetour.style.display = 'block';\
-  btnRetour.textContent = 'Retour au hall';\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// DONNER UN OBJET\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-function openDonner(lieu) \{\
-  const overlay = document.getElementById('donner-overlay');\
-  const grid = document.getElementById('donner-grid');\
-  grid.innerHTML = '';\
-\
-  G.inventaire.forEach(id => \{\
-    const obj = G.objets.find(o => o.id === id);\
-    if (!obj) return;\
-    const item = document.createElement('div');\
-    item.className = 'donner-item';\
-    item.innerHTML = `<img src="$\{BASE_URL\}$\{obj.icon\}" alt="$\{obj.nom\}"><span>$\{obj.nom\}</span>`;\
-    item.onclick = () => \{\
-      closeDonner();\
-      handleDonnerObjet(id, lieu);\
-    \};\
-    grid.appendChild(item);\
-  \});\
-\
-  overlay.classList.add('active');\
-\}\
-\
-function closeDonner() \{\
-  document.getElementById('donner-overlay').classList.remove('active');\
-\}\
-\
-function handleDonnerObjet(objetId, lieu) \{\
-  const attendu = lieu.objet_a_donner;\
-\
-  // Cas Antoine : besoin de 2 meujs\
-  if (lieu.id === 'exterieur') \{\
-    const nbMeujs = G.inventaire.filter(i => i === 'meuj').length;\
-    if (objetId === 'meuj' && nbMeujs >= 1) \{\
-      retirerObjet('meuj');\
-      const succes = G.dialoguesLieu.find(d => d.type === 'fin_succes');\
-      if (succes) \{\
-        ajouterObjet(succes.meta);\
-        showDialogueSucces(succes, lieu);\
-      \}\
-    \} else if (objetId === 'meuj' && nbMeujs < 1) \{\
-      const dlgUnSeul = G.dialoguesLieu.find(d => d.type === 'reponse_un_seul_meuj');\
-      showDialogueTemp(dlgUnSeul || \{personnage:'Antoine', texte:'Il t\\'en faut un pour toi aussi...'\}, () => showScene(lieu));\
-    \} else \{\
-      const mauvais = G.dialoguesLieu.find(d => d.type === 'reponse_incorrecte');\
-      showDialogueTemp(mauvais || \{personnage:'Antoine', texte:"Qu'est-ce que tu veux que je foute avec \'e7a ?"\}, () => showScene(lieu));\
-    \}\
-    return;\
-  \}\
-\
-  // Cas Charles : accepte n'importe quelle montre\
-  if (lieu.id === 'dutyfree_charles') \{\
-    if (objetId === 'montre') \{\
-      retirerObjet('montre');\
-      const succes = G.dialoguesLieu.find(d => d.type === 'fin_succes');\
-      if (succes) \{\
-        ajouterObjet(succes.meta);\
-        showDialogueSucces(succes, lieu);\
-      \}\
-    \} else \{\
-      const mauvais = G.dialoguesLieu.find(d => d.type === 'reponse_incorrecte');\
-      showDialogueTemp(mauvais || \{personnage:'Charles', texte:"C'est quoi \'e7a ?"\}, () => showScene(lieu));\
-    \}\
-    return;\
-  \}\
-\
-  if (objetId === attendu) \{\
-    retirerObjet(objetId);\
-    const succes = G.dialoguesLieu.find(d => d.type === 'fin_succes');\
-    if (succes) \{\
-      if (succes.meta) ajouterObjet(succes.meta);\
-      showDialogueSucces(succes, lieu);\
-    \}\
-  \} else \{\
-    const mauvais = G.dialoguesLieu.find(d => d.type === 'reponse_incorrecte');\
-    showDialogueTemp(mauvais || \{personnage: lieu.pnj, texte:"C'est pas \'e7a..."\}, () => showScene(lieu));\
-  \}\
-\}\
-\
-function showDialogueSucces(dlg, lieu) \{\
-  document.getElementById('scene-bg').style.backgroundImage = `url($\{BASE_URL\}$\{lieu.ecran\})`;\
-  showScreen('scene');\
-  const zone = document.getElementById('dialogue-zone');\
-  zone.innerHTML = `<div class="dialogue-bloc"><div class="dialogue-nom">$\{dlg.personnage\}</div><div class="dialogue-texte">$\{dlg.texte\}</div></div>`;\
-  document.getElementById('choix-zone').style.display = 'none';\
-  const cta = document.getElementById('cta-zone');\
-  cta.style.display = 'block';\
-  document.getElementById('btn-continuer').style.display = 'none';\
-  const btnRetour = document.getElementById('btn-retour-scene');\
-  btnRetour.style.display = 'block';\
-  btnRetour.textContent = 'Retour au hall';\
-  btnRetour.onclick = () => goHall();\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// MINI-JEU : VALISES (BAPTISTE)\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-let baptisteTunnelIndex = 0;\
-let baptisteTunnelPhrases = [];\
-\
-function showValises(lieu) \{\
-  if (!peutAcceder(lieu)) \{\
-    showEchecAcces(lieu);\
-    return;\
-  \}\
-\
-  document.getElementById('valises-bg').style.backgroundImage = `url($\{BASE_URL\}$\{lieu.ecran\})`;\
-  showScreen('valises');\
-\
-  baptisteTunnelIndex = 0;\
-  baptisteTunnelPhrases = G.dialogues.filter(d => d.lieu_id === 'enregistrement' && d.type === 'tunnel')\
-    .sort((a,b) => parseInt(a.ordre)-parseInt(b.ordre));\
-\
-  document.getElementById('tunnel-baptiste').style.display = 'none';\
-  document.getElementById('valise-succes-zone').style.display = 'none';\
-\
-  const container = document.getElementById('valises-container');\
-  container.innerHTML = '';\
-\
-  // 4 valises, la 4\'e8me est toujours la bonne\
-  const valiseIcons = ['\uc0\u55357 \u56550 ','\u55358 \u56819 ','\u55357 \u56412 ','\u55356 \u57234 '];\
-  valiseIcons.forEach((icon, idx) => \{\
-    const item = document.createElement('div');\
-    item.className = 'valise-item';\
-    item.innerHTML = `<span style="font-size:48px;">$\{icon\}</span>`;\
-    item.onclick = () => choisirValise(idx, item, lieu);\
-    container.appendChild(item);\
-  \});\
-\
-  // Intro Baptiste\
-  const intro = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'pnj');\
-  if (intro) \{\
-    const tunnel = document.getElementById('tunnel-baptiste');\
-    tunnel.style.display = 'block';\
-    document.getElementById('tunnel-baptiste-texte').textContent = intro.texte;\
-  \}\
-\}\
-\
-function choisirValise(idx, item, lieu) \{\
-  if (idx === 3) \{\
-    // Bonne valise\
-    item.style.borderColor = 'var(--rose)';\
-    document.getElementById('tunnel-baptiste').style.display = 'none';\
-\
-    const succes = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'fin_succes');\
-    if (succes) \{\
-      ajouterObjet(succes.meta);\
-      document.getElementById('tunnel-baptiste-texte').textContent = succes.texte;\
-      document.getElementById('tunnel-baptiste-nom').textContent = 'Baptiste';\
-      const t = document.getElementById('tunnel-baptiste');\
-      t.style.display = 'block';\
-    \}\
-    document.getElementById('valise-succes-zone').style.display = 'block';\
-    document.getElementById('valise-succes-zone').querySelector('.btn-cta').onclick = () => goHall();\
-  \} else \{\
-    // Mauvaise valise - afficher une phrase tunnel de Baptiste\
-    item.style.borderColor = '#888';\
-    if (baptisteTunnelIndex < baptisteTunnelPhrases.length) \{\
-      const tunnel = document.getElementById('tunnel-baptiste');\
-      tunnel.style.display = 'block';\
-      document.getElementById('tunnel-baptiste-texte').textContent = baptisteTunnelPhrases[baptisteTunnelIndex].texte;\
-      baptisteTunnelIndex++;\
-    \}\
-  \}\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// MINI-JEU : CABINES (OSCAR)\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-let cabinesOuvertes = [];\
-\
-function showCabines(lieu) \{\
-  if (!peutAcceder(lieu)) \{\
-    showEchecAcces(lieu);\
-    return;\
-  \}\
-\
-  document.getElementById('cabines-bg').style.backgroundImage = `url($\{BASE_URL\}$\{lieu.ecran\})`;\
-  showScreen('cabines');\
-  cabinesOuvertes = [];\
-  document.getElementById('cabines-result').style.display = 'none';\
-\
-  const container = document.getElementById('cabines-container');\
-  container.innerHTML = '';\
-\
-  // Cabine 1 = Oscar, Cabine 2 = 50K, Cabine 3 = Short\
-  const cabines = [\
-    \{ label: '\uc0\u55357 \u57002 ', contenu: 'oscar' \},\
-    \{ label: '\uc0\u55357 \u57002 ', contenu: '50k' \},\
-    \{ label: '\uc0\u55357 \u57002 ', contenu: 'short' \},\
-  ];\
-\
-  cabines.forEach((c, idx) => \{\
-    const btn = document.createElement('button');\
-    btn.className = 'cabine-btn';\
-    btn.textContent = c.label;\
-    btn.onclick = () => ouvrirCabine(idx, c.contenu, lieu, btn);\
-    container.appendChild(btn);\
-  \});\
-\}\
-\
-function ouvrirCabine(idx, contenu, lieu, btn) \{\
-  if (cabinesOuvertes.includes(idx)) return;\
-  cabinesOuvertes.push(idx);\
-  btn.classList.add('opened');\
-\
-  const resultZone = document.getElementById('cabines-result');\
-  const resultNom = document.getElementById('cabine-result-nom');\
-  const resultTexte = document.getElementById('cabine-result-texte');\
-  const resultBtn = document.getElementById('cabine-result-btn');\
-\
-  if (contenu === 'oscar') \{\
-    G.oscarVisites++;\
-    const dlgKey = G.oscarVisites === 1 ? 'fin_succes' : 'fin_succes_2';\
-    const dlg = G.dialogues.find(d => d.lieu_id === 'toilettes' && d.type === dlgKey);\
-    if (dlg) \{\
-      ajouterObjet('meuj');\
-      resultNom.textContent = 'Oscar';\
-      resultTexte.textContent = dlg.texte;\
-      resultZone.style.display = 'block';\
-      resultBtn.onclick = () => goHall();\
-    \}\
-  \} else if (contenu === '50k') \{\
-    if (!G.inventaire.includes('50k')) \{\
-      ajouterObjet('50k');\
-      resultNom.textContent = '\uc0\u55357 \u56496 ';\
-      resultTexte.textContent = 'Une mallette contenant 50 000\'80 en cash. Inattendu.';\
-      resultZone.style.display = 'block';\
-      resultBtn.onclick = () => \{ resultZone.style.display = 'none'; \};\
-    \}\
-  \} else if (contenu === 'short') \{\
-    if (!G.inventaire.includes('shortbernardini')) \{\
-      ajouterObjet('shortbernardini');\
-    \}\
-    resultNom.textContent = '\uc0\u55357 \u56876 ';\
-    resultTexte.textContent = "Le short d'Olivier Bernardini. Il vaut mieux ne pas savoir.";\
-    resultZone.style.display = 'block';\
-    resultBtn.onclick = () => \{ resultZone.style.display = 'none'; \};\
-  \}\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// MINI-JEU : PACMAN (PIERRE)\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-let pacmanState = null;\
-\
-function startPacman(phrases, lieu) \{\
-  showScreen('pacman');\
-  const canvas = document.getElementById('pacman-canvas');\
-  const ctx = canvas.getContext('2d');\
-\
-  const W = canvas.offsetWidth;\
-  const H = canvas.offsetHeight;\
-  canvas.width = W; canvas.height = H;\
-\
-  let phraseIdx = 0;\
-  let phraseTimer = 0;\
-  const PHRASE_INTERVAL = 3000;\
-\
-  document.getElementById('pacman-phrase-texte').textContent = phrases[0];\
-  document.getElementById('pacman-gameover').classList.remove('active');\
-\
-  // Victor (cercle jaune)\
-  let victor = \{ x: W/2, y: H/2, r: 18, vx: 2.5, vy: 2 \};\
-  // T\'eate de Pierre (carr\'e9 magenta)\
-  let pierre = \{ x: 80, y: 80, r: 22, vx: 1.8, vy: 1.5 \};\
-  // Points\
-  const dots = [];\
-  for (let i=0; i<20; i++) \{\
-    dots.push(\{ x: 20 + Math.random()*(W-40), y: 20 + Math.random()*(H-40), eaten: false \});\
-  \}\
-\
-  let running = true;\
-  let lastTime = null;\
-\
-  // Contr\'f4le tactile\
-  let touchStart = null;\
-  canvas.ontouchstart = e => \{ touchStart = \{x: e.touches[0].clientX, y: e.touches[0].clientY\}; \};\
-  canvas.ontouchmove = e => \{\
-    if (!touchStart) return;\
-    const dx = e.touches[0].clientX - touchStart.x;\
-    const dy = e.touches[0].clientY - touchStart.y;\
-    const spd = 3;\
-    if (Math.abs(dx) > Math.abs(dy)) \{\
-      victor.vx = dx > 0 ? spd : -spd;\
-      victor.vy = 0;\
-    \} else \{\
-      victor.vy = dy > 0 ? spd : -spd;\
-      victor.vx = 0;\
-    \}\
-    touchStart = \{x: e.touches[0].clientX, y: e.touches[0].clientY\};\
-    e.preventDefault();\
-  \};\
-\
-  pacmanState = \{ running \};\
-\
-  function loop(ts) \{\
-    if (!running) return;\
-    const dt = lastTime ? ts - lastTime : 16;\
-    lastTime = ts;\
-\
-    // Phrases\
-    phraseTimer += dt;\
-    if (phraseTimer >= PHRASE_INTERVAL) \{\
-      phraseTimer = 0;\
-      phraseIdx++;\
-      if (phraseIdx < phrases.length) \{\
-        document.getElementById('pacman-phrase-texte').textContent = phrases[phraseIdx];\
-      \} else \{\
-        // Fin du jeu : succ\'e8s\
-        running = false;\
-        const succes = G.dialoguesLieu.find(d => d.type === 'fin_succes');\
-        if (succes) \{\
-          ajouterObjet(succes.meta);\
-          showDialogueSucces(succes, lieu);\
-        \}\
-        return;\
-      \}\
-    \}\
-\
-    // Mouvement Victor\
-    victor.x += victor.vx;\
-    victor.y += victor.vy;\
-    if (victor.x - victor.r < 0 || victor.x + victor.r > W) victor.vx *= -1;\
-    if (victor.y - victor.r < 0 || victor.y + victor.r > H) victor.vy *= -1;\
-\
-    // Mouvement Pierre (chasse Victor)\
-    const dxP = victor.x - pierre.x;\
-    const dyP = victor.y - pierre.y;\
-    const dist = Math.sqrt(dxP*dxP + dyP*dyP);\
-    pierre.x += (dxP/dist) * pierre.vx;\
-    pierre.y += (dyP/dist) * pierre.vy;\
-\
-    // Vitesse Pierre augmente progressivement\
-    pierre.vx = 1.5 + (phraseIdx / phrases.length) * 1.5;\
-    pierre.vy = pierre.vx;\
-\
-    // Collision\
-    const dx2 = victor.x - pierre.x;\
-    const dy2 = victor.y - pierre.y;\
-    if (Math.sqrt(dx2*dx2+dy2*dy2) < victor.r + pierre.r) \{\
-      running = false;\
-      document.getElementById('pacman-gameover').classList.add('active');\
-      return;\
-    \}\
-\
-    // Points\
-    dots.forEach(dot => \{\
-      if (!dot.eaten) \{\
-        const d = Math.sqrt((victor.x-dot.x)**2+(victor.y-dot.y)**2);\
-        if (d < victor.r + 6) dot.eaten = true;\
-      \}\
-    \});\
-\
-    // Draw\
-    ctx.fillStyle = '#1a1a2e';\
-    ctx.fillRect(0, 0, W, H);\
-\
-    // Points\
-    dots.forEach(dot => \{\
-      if (!dot.eaten) \{\
-        ctx.fillStyle = '#FF6EC7';\
-        ctx.beginPath();\
-        ctx.arc(dot.x, dot.y, 5, 0, Math.PI*2);\
-        ctx.fill();\
-      \}\
-    \});\
-\
-    // Victor\
-    ctx.fillStyle = '#FFD700';\
-    ctx.beginPath();\
-    ctx.arc(victor.x, victor.y, victor.r, 0.2, Math.PI*1.8);\
-    ctx.lineTo(victor.x, victor.y);\
-    ctx.fill();\
-\
-    // Pierre\
-    ctx.fillStyle = '#FF6EC7';\
-    ctx.fillRect(pierre.x - pierre.r, pierre.y - pierre.r, pierre.r*2, pierre.r*2);\
-    ctx.fillStyle = '#000';\
-    ctx.font = `$\{pierre.r\}px $\{getComputedStyle(document.documentElement).getPropertyValue('--font-main')\}`;\
-    ctx.textAlign = 'center';\
-    ctx.textBaseline = 'middle';\
-    ctx.fillText('P', pierre.x, pierre.y);\
-\
-    requestAnimationFrame(loop);\
-  \}\
-\
-  requestAnimationFrame(loop);\
-\}\
-\
-function restartPacman() \{\
-  document.getElementById('pacman-gameover').classList.remove('active');\
-  const phrases = G.dialoguesLieu.find(d => d.type === 'tunnel_pacman').meta.split('|');\
-  startPacman(phrases, G.currentLieu);\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// MINI-JEU : TRACTIONS (KUPI)\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-let tractionsState = null;\
-\
-function startTractions(phrases, lieu) \{\
-  // V\'e9rifier objets\
-  const requis = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];\
-  const asTout = requis.every(r => G.inventaire.includes(r));\
-\
-  if (!asTout) \{\
-    // Afficher dialogue echec\
-    const echec = G.dialoguesLieu.find(d => d.type === 'fin_echec');\
-    if (echec) showDialogueSucces(echec, lieu);\
-    return;\
-  \}\
-\
-  showScreen('tractions');\
-  document.getElementById('tractions-bg-img').src = BASE_URL + 'ecrans/pullupbase.png';\
-  document.getElementById('tractions-body-img').src = BASE_URL + 'ecrans/Victor-pullup-body.png';\
-\
-  let phraseIdx = 0;\
-  let tapCount = 0;\
-  const TAPS_NEEDED = 40;\
-  let bodyBottom = 0; // 0 = bas, 100 = haut (traction r\'e9ussie)\
-  let decayInterval = null;\
-\
-  document.getElementById('tractions-phrase-texte').textContent = phrases[0];\
-  document.getElementById('tractions-count').textContent = '0';\
-\
-  // Descente automatique\
-  decayInterval = setInterval(() => \{\
-    bodyBottom = Math.max(0, bodyBottom - 2);\
-    document.getElementById('tractions-body-img').style.bottom = bodyBottom + 'px';\
-    document.getElementById('tractions-progress-fill').style.height = bodyBottom + '%';\
-  \}, 80);\
-\
-  // Phrases d\'e9filantes en fonction des taps\
-  const area = document.getElementById('tractions-area');\
-  area.onclick = area.ontouchstart = (e) => \{\
-    e.preventDefault();\
-    tapCount++;\
-    bodyBottom = Math.min(100, bodyBottom + 5);\
-    document.getElementById('tractions-body-img').style.bottom = bodyBottom + 'px';\
-    document.getElementById('tractions-progress-fill').style.height = bodyBottom + '%';\
-\
-    // Changer phrase toutes les N taps\
-    const phrasesPerTap = Math.floor(TAPS_NEEDED / phrases.length);\
-    const newPhraseIdx = Math.min(phrases.length - 1, Math.floor(tapCount / Math.max(1, phrasesPerTap)));\
-    if (newPhraseIdx !== phraseIdx) \{\
-      phraseIdx = newPhraseIdx;\
-      document.getElementById('tractions-phrase-texte').textContent = phrases[phraseIdx];\
-    \}\
-\
-    document.getElementById('tractions-count').textContent = tapCount;\
-\
-    // Succ\'e8s si assez de taps et barre pleine\
-    if (tapCount >= TAPS_NEEDED && bodyBottom >= 80) \{\
-      clearInterval(decayInterval);\
-      area.onclick = null;\
-      area.ontouchstart = null;\
-      // Fin du jeu !\
-      showFin();\
-    \}\
-  \};\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// FIN DU JEU\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-function showFin() \{\
-  showScreen('fin');\
-  // Utiliser l'image de fin si disponible, sinon placeholder\
-  const img = document.getElementById('fin-logo');\
-  img.src = BASE_URL + 'ecrans/Victors.jpg';\
-  img.onerror = () => \{\
-    img.style.display = 'none';\
-    document.getElementById('screen-fin').innerHTML += `\
-      <div style="color:white;font-size:32px;font-weight:700;text-align:center;padding:32px;">\
-        \uc0\u55356 \u57225  FARO, PORTUGAL \u55356 \u57225 <br>\
-        <span style="font-size:18px;margin-top:16px;display:block;">Victor's EVG commence !</span>\
-      </div>`;\
-  \};\
-  setTimeout(() => img.classList.add('show'), 100);\
-\}\
-\
-function recevoirObjetEtHall(objetId) \{\
-  ajouterObjet(objetId);\
-  goHall();\
-\}\
-\
-function nextDialogue() \{\
-  G.dialogueIndex++;\
-  renderDialogue();\
-\}\
-\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-// LANCEMENT\
-// \uc0\u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \u9552 \
-init().catch(err => \{\
-  document.body.innerHTML = `<div style="color:white;padding:32px;font-family:sans-serif;">\
-    Erreur de chargement : $\{err.message\}<br><small>V\'e9rifiez la connexion et l'URL Apps Script.</small>\
-  </div>`;\
-\});\
-</script>\
-</body>\
-</html>}
+  /* ── RESET ─────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: var(--font-main);
+    background: #000;
+    touch-action: manipulation;
+  }
+
+  /* ── ÉCRANS ─────────────────────────────────────────────────── */
+  .screen {
+    position: absolute; inset: 0;
+    display: none;
+    flex-direction: column;
+    width: 100%; height: 100%;
+  }
+  .screen.active { display: flex; }
+
+  /* ── FOND IMAGE ─────────────────────────────────────────────── */
+  .bg {
+    position: absolute; inset: 0;
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+  }
+
+  /* ── ÉCRAN CHARGEMENT ───────────────────────────────────────── */
+  #screen-loading {
+    align-items: center;
+    justify-content: flex-start;
+  }
+  #loading-bg {
+    position: absolute; inset: 0;
+    background-size: cover;
+    background-position: center top;
+  }
+  #loading-bar-wrap {
+    position: absolute;
+    top: 30%;
+    left: 8%;
+    width: 84%;
+    height: 18px;
+    z-index: 10;
+  }
+  #loading-bar-bg {
+    position: absolute; inset: 0;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: left center;
+  }
+  #loading-plane {
+    position: absolute;
+    top: 50%; left: 0;
+    transform: translateY(-50%);
+    height: 28px;
+    width: 0%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: right center;
+    transition: width 0.1s linear;
+  }
+  #loading-intro {
+    position: absolute;
+    bottom: 8%;
+    left: 0; right: 0;
+    padding: 0 24px;
+    text-align: center;
+    color: var(--blanc);
+    font-size: 14px;
+    line-height: 1.6;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    z-index: 10;
+  }
+
+  /* ── HALL ───────────────────────────────────────────────────── */
+  #screen-hall { position: relative; }
+  .hall-btn {
+    position: absolute;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--rose);
+    border: 3px solid var(--noir);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-main);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--noir);
+    text-align: center;
+    line-height: 1.1;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  .hall-btn.locked {
+    background: #888;
+    border-color: #555;
+  }
+  #inventaire-btn {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 52px; height: 52px;
+    z-index: 30;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  #inventaire-btn img { width: 100%; height: 100%; object-fit: contain; }
+
+  /* ── SCÈNE PNJ ──────────────────────────────────────────────── */
+  #screen-scene {
+    position: relative;
+    justify-content: flex-end;
+  }
+  #scene-bg { background-position: center top; }
+
+  #dialogue-zone {
+    position: relative;
+    z-index: 20;
+    width: 100%;
+    padding: 12px 16px 20px;
+    background: rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dialogue-bloc {
+    background: var(--gris-clair);
+    padding: 12px 14px;
+    border-radius: 0;
+  }
+  .dialogue-bloc.victor {
+    background: var(--gris-moyen);
+    margin-left: 32px;
+  }
+  .dialogue-nom {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gris-texte);
+    margin-bottom: 5px;
+  }
+  .dialogue-texte {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--gris-texte);
+  }
+
+  /* ── BOUTONS QCM / CHOIX ────────────────────────────────────── */
+  .choix-zone {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 16px 16px;
+    position: relative;
+    z-index: 20;
+  }
+  .btn-choix {
+    background: var(--gris-clair);
+    border: none;
+    padding: 12px 14px;
+    font-family: var(--font-main);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gris-texte);
+    text-align: left;
+    cursor: pointer;
+    border-radius: 0;
+    border-left: 4px solid transparent;
+  }
+  .btn-choix:active { border-left-color: var(--rose); }
+
+  /* ── BOUTON CONTINUER / CTA ─────────────────────────────────── */
+  .btn-cta {
+    background: var(--rose);
+    border: none;
+    padding: 14px 24px;
+    font-family: var(--font-main);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--noir);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    border-radius: 0;
+    width: 100%;
+  }
+  .btn-cta-zone {
+    padding: 0 16px 20px;
+    position: relative;
+    z-index: 20;
+  }
+  .btn-back {
+    background: var(--gris-moyen);
+    border: none;
+    padding: 12px 24px;
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gris-texte);
+    cursor: pointer;
+    border-radius: 0;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  /* ── NOTIFICATION OBJET REÇU ────────────────────────────────── */
+  #objet-notif {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(40px);
+    background: var(--noir);
+    color: var(--blanc);
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 100;
+    white-space: nowrap;
+  }
+  #objet-notif.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  #objet-notif img { width: 28px; height: 28px; object-fit: contain; }
+
+  /* ── INVENTAIRE OVERLAY ─────────────────────────────────────── */
+  #inventaire-overlay {
+    position: fixed; inset: 0;
+    z-index: 50;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    background: rgba(0,0,0,0.6);
+  }
+  #inventaire-overlay.active { display: flex; }
+  #inventaire-inner {
+    width: 100%;
+    max-height: 70vh;
+    overflow-y: auto;
+    position: relative;
+  }
+  #inventaire-bg-img {
+    width: 100%;
+    display: block;
+  }
+  #inventaire-grid {
+    position: absolute;
+    top: 18%;
+    left: 8%;
+    width: 84%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 8px;
+  }
+  .inv-slot {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .inv-slot img {
+    width: 56px; height: 56px;
+    object-fit: contain;
+    opacity: 0.3;
+  }
+  .inv-slot.collected img { opacity: 1; }
+  .inv-slot span {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--gris-texte);
+    text-align: center;
+    margin-top: 4px;
+  }
+  #inventaire-close {
+    margin-bottom: 16px;
+    margin-top: 12px;
+  }
+
+  /* ── MINI-JEU : VALISES (BAPTISTE) ─────────────────────────── */
+  #screen-valises {
+    position: relative;
+    justify-content: flex-end;
+    align-items: center;
+  }
+  #valises-container {
+    position: relative;
+    z-index: 20;
+    width: 100%;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .valise-item {
+    background: var(--gris-clair);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 3px solid transparent;
+  }
+  .valise-item img { width: 64px; height: 64px; object-fit: contain; }
+  #tunnel-baptiste {
+    position: relative;
+    z-index: 20;
+    background: var(--gris-clair);
+    margin: 0 16px;
+    padding: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--gris-texte);
+    min-height: 60px;
+    display: none;
+  }
+  #tunnel-baptiste-nom {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  /* ── MINI-JEU : CABINES (OSCAR) ─────────────────────────────── */
+  #screen-cabines {
+    position: relative;
+    justify-content: flex-end;
+  }
+  #cabines-container {
+    position: relative;
+    z-index: 20;
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    justify-content: center;
+  }
+  .cabine-btn {
+    width: 80px; height: 100px;
+    background: var(--gris-clair);
+    border: 3px solid var(--gris-moyen);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+  }
+  .cabine-btn.opened {
+    border-color: var(--rose);
+    background: #fff;
+  }
+
+  /* ── MINI-JEU : PACMAN (PIERRE) ─────────────────────────────── */
+  #screen-pacman {
+    position: relative;
+    background: #000;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  #pacman-phrase {
+    position: relative;
+    z-index: 20;
+    width: 100%;
+    padding: 16px;
+    background: var(--gris-clair);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gris-texte);
+    min-height: 60px;
+    text-align: center;
+  }
+  #pacman-phrase-nom {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    color: var(--gris-texte);
+  }
+  #pacman-canvas {
+    display: block;
+    width: 100%;
+    flex: 1;
+  }
+  #pacman-gameover {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 30;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 32px;
+  }
+  #pacman-gameover.active { display: flex; }
+  #pacman-gameover-texte {
+    background: var(--gris-clair);
+    padding: 16px;
+    width: 100%;
+  }
+  #pacman-gameover-texte .dialogue-nom { margin-bottom: 6px; }
+
+  /* ── MINI-JEU : TRACTIONS (KUPI) ────────────────────────────── */
+  #screen-tractions {
+    position: relative;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  #tractions-phrase {
+    position: relative;
+    z-index: 20;
+    width: 100%;
+    padding: 16px;
+    background: var(--gris-clair);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gris-texte);
+    text-align: center;
+    min-height: 60px;
+  }
+  #tractions-phrase-nom {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  #tractions-area {
+    flex: 1;
+    width: 100%;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+  }
+  #tractions-bg-img {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    object-fit: contain;
+    transition: bottom 0.15s ease-out;
+  }
+  #tractions-body-img {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    object-fit: contain;
+  }
+  #tractions-progress-wrap {
+    position: absolute;
+    right: 16px; top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 160px;
+    background: var(--gris-moyen);
+  }
+  #tractions-progress-fill {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--rose);
+    height: 0%;
+    transition: height 0.1s;
+  }
+  #tractions-count {
+    position: absolute;
+    top: 12px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 48px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.15);
+    font-family: var(--font-main);
+  }
+
+  /* ── FIN DE JEU ──────────────────────────────────────────────── */
+  #screen-fin {
+    align-items: center;
+    justify-content: center;
+    background: #000;
+  }
+  #fin-logo {
+    width: 80%;
+    max-width: 320px;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 1s, transform 1s;
+  }
+  #fin-logo.show {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* ── OVERLAY DONNEZ OBJET ────────────────────────────────────── */
+  #donner-overlay {
+    position: fixed; inset: 0;
+    z-index: 60;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    background: rgba(0,0,0,0.7);
+  }
+  #donner-overlay.active { display: flex; }
+  #donner-inner {
+    width: 100%;
+    background: var(--blanc);
+    padding: 20px 16px 32px;
+  }
+  #donner-titre {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 14px;
+    color: var(--gris-texte);
+  }
+  #donner-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .donner-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px;
+    background: var(--gris-clair);
+  }
+  .donner-item img { width: 48px; height: 48px; object-fit: contain; }
+  .donner-item span {
+    font-size: 9px;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 4px;
+    color: var(--gris-texte);
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ ÉCRAN CHARGEMENT ══════════════════════════════════════════ -->
+<div id="screen-loading" class="screen active">
+  <div id="loading-bg"></div>
+  <div id="loading-bar-wrap">
+    <div id="loading-bar-bg"></div>
+    <div id="loading-plane"></div>
+  </div>
+  <div id="loading-intro"></div>
+</div>
+
+<!-- ══ HALL ══════════════════════════════════════════════════════ -->
+<div id="screen-hall" class="screen">
+  <div class="bg" id="hall-bg"></div>
+  <button id="inventaire-btn" onclick="openInventaire()">
+    <img id="inv-icon-img" src="" alt="Inventaire">
+  </button>
+  <div id="hall-btns"></div>
+</div>
+
+<!-- ══ SCÈNE PNJ ══════════════════════════════════════════════════ -->
+<div id="screen-scene" class="screen">
+  <div class="bg" id="scene-bg"></div>
+  <button id="inventaire-btn-scene" style="position:absolute;top:16px;right:16px;width:52px;height:52px;z-index:30;cursor:pointer;background:none;border:none;padding:0;" onclick="openInventaire()">
+    <img id="inv-icon-img2" src="" alt="Inventaire">
+  </button>
+  <div id="dialogue-zone"></div>
+  <div id="choix-zone" class="choix-zone" style="display:none;"></div>
+  <div id="cta-zone" class="btn-cta-zone" style="display:none;">
+    <button class="btn-cta" id="btn-continuer" onclick="nextDialogue()">Continuer</button>
+    <button class="btn-back" id="btn-retour-scene" onclick="goHall()" style="display:none;">Retour au hall</button>
+  </div>
+</div>
+
+<!-- ══ MINI-JEU VALISES ═══════════════════════════════════════════ -->
+<div id="screen-valises" class="screen">
+  <div class="bg" id="valises-bg"></div>
+  <div id="tunnel-baptiste">
+    <div id="tunnel-baptiste-nom">Baptiste</div>
+    <div id="tunnel-baptiste-texte"></div>
+  </div>
+  <div id="valises-container"></div>
+  <div class="btn-cta-zone" style="display:none;" id="valise-succes-zone">
+    <button class="btn-cta" onclick="recevoirObjetEtHall('valise')">Continuer</button>
+  </div>
+</div>
+
+<!-- ══ MINI-JEU CABINES ═══════════════════════════════════════════ -->
+<div id="screen-cabines" class="screen">
+  <div class="bg" id="cabines-bg"></div>
+  <div id="cabines-result" class="btn-cta-zone" style="display:none;">
+    <div class="dialogue-bloc" style="margin-bottom:10px;">
+      <div class="dialogue-nom" id="cabine-result-nom"></div>
+      <div class="dialogue-texte" id="cabine-result-texte"></div>
+    </div>
+    <button class="btn-cta" id="cabine-result-btn" onclick="goHall()">Continuer</button>
+  </div>
+  <div id="cabines-container"></div>
+</div>
+
+<!-- ══ MINI-JEU PACMAN ═══════════════════════════════════════════ -->
+<div id="screen-pacman" class="screen">
+  <div id="pacman-phrase">
+    <div id="pacman-phrase-nom">Pierre</div>
+    <div id="pacman-phrase-texte"></div>
+  </div>
+  <canvas id="pacman-canvas"></canvas>
+  <div id="pacman-gameover">
+    <div id="pacman-gameover-texte">
+      <div class="dialogue-nom">Pierre</div>
+      <div class="dialogue-texte">Hé mec, t'endors pas, on est en pleine conversation !</div>
+    </div>
+    <button class="btn-cta" onclick="restartPacman()">Réessayer</button>
+    <button class="btn-back" onclick="goHall()">Quitter</button>
+  </div>
+</div>
+
+<!-- ══ MINI-JEU TRACTIONS ════════════════════════════════════════ -->
+<div id="screen-tractions" class="screen">
+  <div id="tractions-phrase">
+    <div id="tractions-phrase-nom">Kupi</div>
+    <div id="tractions-phrase-texte">Tapote l'écran pour faire des tractions !</div>
+  </div>
+  <div id="tractions-area">
+    <div id="tractions-count">0</div>
+    <img id="tractions-bg-img" src="" alt="">
+    <img id="tractions-body-img" src="" alt="">
+    <div id="tractions-progress-wrap">
+      <div id="tractions-progress-fill"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FIN ════════════════════════════════════════════════════════ -->
+<div id="screen-fin" class="screen">
+  <img id="fin-logo" src="" alt="Victor's">
+</div>
+
+<!-- ══ INVENTAIRE OVERLAY ══════════════════════════════════════════ -->
+<div id="inventaire-overlay">
+  <div id="inventaire-inner">
+    <img id="inventaire-bg-img" src="" alt="">
+    <div id="inventaire-grid"></div>
+  </div>
+  <button class="btn-cta" style="width:calc(100% - 32px);margin-bottom:20px;" onclick="closeInventaire()">Fermer</button>
+</div>
+
+<!-- ══ DONNER OBJET OVERLAY ════════════════════════════════════════ -->
+<div id="donner-overlay">
+  <div id="donner-inner">
+    <div id="donner-titre">Qu'est-ce que tu lui donnes ?</div>
+    <div id="donner-grid"></div>
+    <button class="btn-back" onclick="closeDonner()">Annuler</button>
+  </div>
+</div>
+
+<!-- ══ NOTIFICATION OBJET ══════════════════════════════════════════ -->
+<div id="objet-notif">
+  <img id="objet-notif-img" src="" alt="">
+  <span id="objet-notif-texte"></span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════════════════════
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzze8-guvyUP7j04Mg_RW1vXiKOIZ_KpLaWKlARLEi3usTmdHenEuuZCgYQJTKTQtXt2A/exec';
+
+let G = {
+  config: {},
+  objets: [],
+  lieux: [],
+  dialogues: [],
+  inventaire: [], // ids des objets collectés
+  currentLieu: null,
+  dialogueIndex: 0,
+  dialoguesLieu: [],
+  qcmStep: 0,
+  oscarVisites: 0,
+};
+
+let BASE_URL = '';
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+async function init() {
+  // Chargement données
+  const res = await fetch(APPS_SCRIPT_URL);
+  const data = await res.json();
+  G.config = data.config;
+  G.objets = data.objets;
+  G.lieux = data.lieux;
+  G.dialogues = data.dialogues;
+
+  BASE_URL = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
+
+  // Appliquer couleurs depuis config
+  document.documentElement.style.setProperty('--rose', G.config.couleur_rose || '#FF6EC7');
+  document.documentElement.style.setProperty('--gris-clair', G.config.couleur_bloc_pnj || '#E8E8E8');
+  document.documentElement.style.setProperty('--gris-moyen', G.config.couleur_bloc_victor || '#D0D0D0');
+  document.documentElement.style.setProperty('--gris-texte', G.config.couleur_texte || '#111111');
+  if (G.config.font_family) {
+    document.documentElement.style.setProperty('--font-main', `'${G.config.font_family}', sans-serif`);
+  }
+
+  const duree = parseInt(G.config.duree_chargement) || 4000;
+
+  // Setup écran chargement
+  const loadingBg = document.getElementById('loading-bg');
+  const loadingBarBg = document.getElementById('loading-bar-bg');
+  const loadingPlane = document.getElementById('loading-plane');
+  const loadingIntro = document.getElementById('loading-intro');
+
+  loadingBg.style.backgroundImage = `url(${BASE_URL}ecrans/Victors.jpg)`;
+  loadingBarBg.style.backgroundImage = `url(${BASE_URL}icons/chargement.png)`;
+  loadingPlane.style.backgroundImage = `url(${BASE_URL}icons/avion.png)`;
+
+  loadingIntro.textContent = 'Victor, bienvenue aux portes de ton EVG. Avant de pouvoir embarquer, une mission t\'attend : retrouver toutes les affaires indispensables à ton voyage. Explore l\'aéroport, rencontre ses occupants et relève les défis. Une fois tous les objets réunis, rends-toi au contrôle de sécurité. Bonne chance !';
+
+  // Animer la barre
+  const start = Date.now();
+  const animBar = setInterval(() => {
+    const elapsed = Date.now() - start;
+    const pct = Math.min(100, (elapsed / duree) * 100);
+    loadingPlane.style.width = pct + '%';
+    if (pct >= 100) clearInterval(animBar);
+  }, 50);
+
+  // Précharger toutes les images
+  const allImages = collectAllImages();
+  await Promise.all([
+    preloadImages(allImages),
+    new Promise(r => setTimeout(r, duree))
+  ]);
+
+  // Lancer le hall
+  setupHall();
+  showScreen('hall');
+}
+
+function collectAllImages() {
+  const urls = [];
+  G.lieux.forEach(l => {
+    if (l.ecran) urls.push(BASE_URL + l.ecran);
+  });
+  G.objets.forEach(o => {
+    if (o.icon) urls.push(BASE_URL + o.icon);
+  });
+  ['icons/inventaire.png','icons/inventaire-icon.png','icons/chargement.png','icons/avion.png',
+   'ecrans/Victors.jpg','ecrans/pullupbase.png','ecrans/Victor-pullup-body.png'].forEach(p => {
+    urls.push(BASE_URL + p);
+  });
+  return urls;
+}
+
+function preloadImages(urls) {
+  return Promise.all(urls.map(url => new Promise(r => {
+    const img = new Image();
+    img.onload = r; img.onerror = r;
+    img.src = url;
+  })));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+function goHall() {
+  setupHall();
+  showScreen('hall');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HALL
+// ═══════════════════════════════════════════════════════════════
+function setupHall() {
+  const hall = G.lieux.find(l => l.id === 'hall');
+  document.getElementById('hall-bg').style.backgroundImage = `url(${BASE_URL}${hall.ecran})`;
+  document.getElementById('inv-icon-img').src = BASE_URL + 'icons/inventaire-icon.png';
+  document.getElementById('inv-icon-img2').src = BASE_URL + 'icons/inventaire-icon.png';
+  document.getElementById('inventaire-bg-img').src = BASE_URL + 'icons/inventaire.png';
+
+  const container = document.getElementById('hall-btns');
+  container.innerHTML = '';
+
+  G.lieux.filter(l => l.id !== 'hall' && l.actif === 'true').forEach(lieu => {
+    const btn = document.createElement('button');
+    btn.className = 'hall-btn';
+    btn.style.left = lieu.pos_x + '%';
+    btn.style.top = lieu.pos_y + '%';
+    const nom = lieu.nom.length > 10 ? lieu.nom.substring(0,10) + '…' : lieu.nom;
+    btn.textContent = nom;
+
+    const accessible = peutAcceder(lieu);
+    if (!accessible) btn.classList.add('locked');
+
+    btn.onclick = () => {
+      if (accessible) entrerLieu(lieu.id);
+    };
+    container.appendChild(btn);
+  });
+
+  // Inventaire grid
+  setupInventaireGrid();
+}
+
+function peutAcceder(lieu) {
+  if (!lieu.objets_requis) return true;
+  const requis = lieu.objets_requis.split(',').map(s => s.trim()).filter(Boolean);
+  return requis.every(r => G.inventaire.includes(r));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INVENTAIRE
+// ═══════════════════════════════════════════════════════════════
+function setupInventaireGrid() {
+  const grid = document.getElementById('inventaire-grid');
+  grid.innerHTML = '';
+  // Afficher seulement les 7 objets finaux requis + intermédiaires collectés
+  const objetsVoulus = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];
+  const objetsExtras = G.inventaire.filter(id => !objetsVoulus.includes(id));
+  const tousObjets = [...objetsVoulus, ...objetsExtras];
+
+  tousObjets.forEach(id => {
+    const obj = G.objets.find(o => o.id === id);
+    if (!obj) return;
+    const slot = document.createElement('div');
+    slot.className = 'inv-slot' + (G.inventaire.includes(id) ? ' collected' : '');
+    slot.innerHTML = `<img src="${BASE_URL}${obj.icon}" alt="${obj.nom}"><span>${obj.nom}</span>`;
+    grid.appendChild(slot);
+  });
+}
+
+function openInventaire() {
+  setupInventaireGrid();
+  document.getElementById('inventaire-overlay').classList.add('active');
+}
+
+function closeInventaire() {
+  document.getElementById('inventaire-overlay').classList.remove('active');
+}
+
+function showObjetNotif(objetId) {
+  const obj = G.objets.find(o => o.id === objetId);
+  if (!obj) return;
+  const notif = document.getElementById('objet-notif');
+  document.getElementById('objet-notif-img').src = BASE_URL + obj.icon;
+  document.getElementById('objet-notif-texte').textContent = obj.nom + ' ajouté !';
+  notif.classList.add('show');
+  setTimeout(() => notif.classList.remove('show'), 2500);
+}
+
+function ajouterObjet(id) {
+  if (!G.inventaire.includes(id)) {
+    G.inventaire.push(id);
+    showObjetNotif(id);
+  }
+}
+
+function retirerObjet(id) {
+  G.inventaire = G.inventaire.filter(i => i !== id);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENTRER DANS UN LIEU
+// ═══════════════════════════════════════════════════════════════
+function entrerLieu(lieuId) {
+  const lieu = G.lieux.find(l => l.id === lieuId);
+  G.currentLieu = lieu;
+  G.dialoguesLieu = G.dialogues.filter(d => d.lieu_id === lieuId)
+    .sort((a,b) => parseInt(a.ordre) - parseInt(b.ordre));
+  G.dialogueIndex = 0;
+
+  // Cas spéciaux
+  if (lieuId === 'toilettes') {
+    showCabines(lieu);
+    return;
+  }
+  if (lieuId === 'enregistrement') {
+    showValises(lieu);
+    return;
+  }
+
+  // Vérifier accès
+  if (!peutAcceder(lieu)) {
+    showEchecAcces(lieu);
+    return;
+  }
+
+  // Vérif spéciale Oscar 2ème passage
+  if (lieuId === 'toilettes') {
+    // géré via showCabines
+  }
+
+  showScene(lieu);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCÈNE DIALOGUE
+// ═══════════════════════════════════════════════════════════════
+function showScene(lieu, startIndex) {
+  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
+  showScreen('scene');
+
+  G.dialogueIndex = startIndex !== undefined ? startIndex : 0;
+  renderDialogue();
+}
+
+function renderDialogue() {
+  const dlg = G.dialoguesLieu[G.dialogueIndex];
+  if (!dlg) { goHall(); return; }
+
+  const zone = document.getElementById('dialogue-zone');
+  const choixZone = document.getElementById('choix-zone');
+  const ctaZone = document.getElementById('cta-zone');
+  const btnContinuer = document.getElementById('btn-continuer');
+  const btnRetour = document.getElementById('btn-retour-scene');
+
+  zone.innerHTML = '';
+  choixZone.style.display = 'none';
+  choixZone.innerHTML = '';
+  ctaZone.style.display = 'none';
+  btnRetour.style.display = 'none';
+
+  const type = dlg.type;
+
+  // Blocs de texte
+  const isVictor = dlg.personnage === 'Victor';
+  const bloc = document.createElement('div');
+  bloc.className = 'dialogue-bloc' + (isVictor ? ' victor' : '');
+  bloc.innerHTML = `<div class="dialogue-nom">${dlg.personnage}</div><div class="dialogue-texte">${dlg.texte}</div>`;
+  zone.appendChild(bloc);
+
+  if (type === 'pnj' || type === 'victor' || type === 'narration') {
+    ctaZone.style.display = 'block';
+    btnContinuer.textContent = 'Continuer';
+    btnContinuer.onclick = () => {
+      G.dialogueIndex++;
+      renderDialogue();
+    };
+  }
+
+  else if (type === 'qcm') {
+    choixZone.style.display = 'flex';
+    const options = dlg.meta.split('|');
+    const bonne = options[options.length - 1];
+    options.slice(0, -1).forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-choix';
+      btn.textContent = opt;
+      const lettre = opt.charAt(0);
+      btn.onclick = () => {
+        if (lettre === bonne) {
+          G.dialogueIndex++;
+          renderDialogue();
+        } else {
+          // Trouver la réponse incorrecte
+          const mauvaise = G.dialoguesLieu.find((d, i) => i > G.dialogueIndex && d.type === 'reponse_incorrecte');
+          if (mauvaise) {
+            showDialogueTemp(mauvaise, () => renderDialogue());
+          }
+        }
+      };
+      choixZone.appendChild(btn);
+    });
+  }
+
+  else if (type === 'choix') {
+    choixZone.style.display = 'flex';
+    const options = dlg.meta.split('|');
+    options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-choix';
+      btn.textContent = opt;
+      btn.onclick = () => {
+        G.dialogueIndex++;
+        renderDialogue();
+      };
+      choixZone.appendChild(btn);
+    });
+  }
+
+  else if (type === 'fin_succes') {
+    if (dlg.meta) ajouterObjet(dlg.meta);
+    ctaZone.style.display = 'block';
+    btnRetour.style.display = 'block';
+    btnContinuer.style.display = 'none';
+    btnRetour.textContent = 'Retour au hall';
+  }
+
+  else if (type === 'fin_succes_2') {
+    if (dlg.meta) ajouterObjet(dlg.meta);
+    ctaZone.style.display = 'block';
+    btnRetour.style.display = 'block';
+    btnContinuer.style.display = 'none';
+    btnRetour.textContent = 'Retour au hall';
+  }
+
+  else if (type === 'fin_echec') {
+    ctaZone.style.display = 'block';
+    btnContinuer.style.display = 'none';
+    btnRetour.style.display = 'block';
+    btnRetour.textContent = 'Retour au hall';
+  }
+
+  else if (type === 'reponse_incorrecte') {
+    ctaZone.style.display = 'block';
+    btnContinuer.textContent = 'Réessayer';
+    G.dialogueIndex++;
+    btnContinuer.onclick = () => renderDialogue();
+  }
+
+  else if (type === 'tunnel_pacman') {
+    // Lancer Pacman
+    const phrases = dlg.meta.split('|');
+    startPacman(phrases, G.currentLieu);
+    return;
+  }
+
+  else if (type === 'tunnel_tractions') {
+    const phrases = dlg.meta.split('|');
+    startTractions(phrases, G.currentLieu);
+    return;
+  }
+
+  // Gestion objet à donner
+  if (G.currentLieu && G.currentLieu.objet_a_donner && type === 'pnj' && G.dialogueIndex === G.dialoguesLieu.length - 1) {
+    // dernier pnj -> afficher donner
+  }
+
+  // Si Antoine : après son monologue, il faut donner un objet
+  if (G.currentLieu && G.currentLieu.id === 'exterieur' && type === 'pnj' && G.dialogueIndex === 0) {
+    G.dialogueIndex++;
+    ctaZone.style.display = 'block';
+    btnContinuer.textContent = 'Continuer';
+    btnContinuer.onclick = () => renderDialogue();
+  }
+
+  // Si dernier dialogue est une demande d'objet
+  const nextDlg = G.dialoguesLieu[G.dialogueIndex + 1];
+  if (nextDlg && nextDlg.type === 'fin_succes' && G.currentLieu.objet_a_donner) {
+    ctaZone.style.display = 'block';
+    btnContinuer.textContent = 'Donner un objet';
+    btnContinuer.onclick = () => openDonner(G.currentLieu);
+  }
+}
+
+function showDialogueTemp(dlg, cb) {
+  const zone = document.getElementById('dialogue-zone');
+  const extra = document.createElement('div');
+  extra.className = 'dialogue-bloc';
+  extra.innerHTML = `<div class="dialogue-nom">${dlg.personnage}</div><div class="dialogue-texte">${dlg.texte}</div>`;
+  zone.appendChild(extra);
+  setTimeout(() => { extra.remove(); cb(); }, 1800);
+}
+
+function showEchecAcces(lieu) {
+  const echec = G.dialoguesLieu.find(d => d.type === 'fin_echec');
+  if (!echec) { goHall(); return; }
+  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
+  showScreen('scene');
+  const zone = document.getElementById('dialogue-zone');
+  zone.innerHTML = `<div class="dialogue-bloc"><div class="dialogue-nom">${echec.personnage}</div><div class="dialogue-texte">${echec.texte}</div></div>`;
+  document.getElementById('choix-zone').style.display = 'none';
+  const cta = document.getElementById('cta-zone');
+  cta.style.display = 'block';
+  document.getElementById('btn-continuer').style.display = 'none';
+  const btnRetour = document.getElementById('btn-retour-scene');
+  btnRetour.style.display = 'block';
+  btnRetour.textContent = 'Retour au hall';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DONNER UN OBJET
+// ═══════════════════════════════════════════════════════════════
+function openDonner(lieu) {
+  const overlay = document.getElementById('donner-overlay');
+  const grid = document.getElementById('donner-grid');
+  grid.innerHTML = '';
+
+  G.inventaire.forEach(id => {
+    const obj = G.objets.find(o => o.id === id);
+    if (!obj) return;
+    const item = document.createElement('div');
+    item.className = 'donner-item';
+    item.innerHTML = `<img src="${BASE_URL}${obj.icon}" alt="${obj.nom}"><span>${obj.nom}</span>`;
+    item.onclick = () => {
+      closeDonner();
+      handleDonnerObjet(id, lieu);
+    };
+    grid.appendChild(item);
+  });
+
+  overlay.classList.add('active');
+}
+
+function closeDonner() {
+  document.getElementById('donner-overlay').classList.remove('active');
+}
+
+function handleDonnerObjet(objetId, lieu) {
+  const attendu = lieu.objet_a_donner;
+
+  // Cas Antoine : besoin de 2 meujs
+  if (lieu.id === 'exterieur') {
+    const nbMeujs = G.inventaire.filter(i => i === 'meuj').length;
+    if (objetId === 'meuj' && nbMeujs >= 1) {
+      retirerObjet('meuj');
+      const succes = G.dialoguesLieu.find(d => d.type === 'fin_succes');
+      if (succes) {
+        ajouterObjet(succes.meta);
+        showDialogueSucces(succes, lieu);
+      }
+    } else if (objetId === 'meuj' && nbMeujs < 1) {
+      const dlgUnSeul = G.dialoguesLieu.find(d => d.type === 'reponse_un_seul_meuj');
+      showDialogueTemp(dlgUnSeul || {personnage:'Antoine', texte:'Il t\'en faut un pour toi aussi...'}, () => showScene(lieu));
+    } else {
+      const mauvais = G.dialoguesLieu.find(d => d.type === 'reponse_incorrecte');
+      showDialogueTemp(mauvais || {personnage:'Antoine', texte:"Qu'est-ce que tu veux que je foute avec ça ?"}, () => showScene(lieu));
+    }
+    return;
+  }
+
+  // Cas Charles : accepte n'importe quelle montre
+  if (lieu.id === 'dutyfree_charles') {
+    if (objetId === 'montre') {
+      retirerObjet('montre');
+      const succes = G.dialoguesLieu.find(d => d.type === 'fin_succes');
+      if (succes) {
+        ajouterObjet(succes.meta);
+        showDialogueSucces(succes, lieu);
+      }
+    } else {
+      const mauvais = G.dialoguesLieu.find(d => d.type === 'reponse_incorrecte');
+      showDialogueTemp(mauvais || {personnage:'Charles', texte:"C'est quoi ça ?"}, () => showScene(lieu));
+    }
+    return;
+  }
+
+  if (objetId === attendu) {
+    retirerObjet(objetId);
+    const succes = G.dialoguesLieu.find(d => d.type === 'fin_succes');
+    if (succes) {
+      if (succes.meta) ajouterObjet(succes.meta);
+      showDialogueSucces(succes, lieu);
+    }
+  } else {
+    const mauvais = G.dialoguesLieu.find(d => d.type === 'reponse_incorrecte');
+    showDialogueTemp(mauvais || {personnage: lieu.pnj, texte:"C'est pas ça..."}, () => showScene(lieu));
+  }
+}
+
+function showDialogueSucces(dlg, lieu) {
+  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
+  showScreen('scene');
+  const zone = document.getElementById('dialogue-zone');
+  zone.innerHTML = `<div class="dialogue-bloc"><div class="dialogue-nom">${dlg.personnage}</div><div class="dialogue-texte">${dlg.texte}</div></div>`;
+  document.getElementById('choix-zone').style.display = 'none';
+  const cta = document.getElementById('cta-zone');
+  cta.style.display = 'block';
+  document.getElementById('btn-continuer').style.display = 'none';
+  const btnRetour = document.getElementById('btn-retour-scene');
+  btnRetour.style.display = 'block';
+  btnRetour.textContent = 'Retour au hall';
+  btnRetour.onclick = () => goHall();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MINI-JEU : VALISES (BAPTISTE)
+// ═══════════════════════════════════════════════════════════════
+let baptisteTunnelIndex = 0;
+let baptisteTunnelPhrases = [];
+
+function showValises(lieu) {
+  if (!peutAcceder(lieu)) {
+    showEchecAcces(lieu);
+    return;
+  }
+
+  document.getElementById('valises-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
+  showScreen('valises');
+
+  baptisteTunnelIndex = 0;
+  baptisteTunnelPhrases = G.dialogues.filter(d => d.lieu_id === 'enregistrement' && d.type === 'tunnel')
+    .sort((a,b) => parseInt(a.ordre)-parseInt(b.ordre));
+
+  document.getElementById('tunnel-baptiste').style.display = 'none';
+  document.getElementById('valise-succes-zone').style.display = 'none';
+
+  const container = document.getElementById('valises-container');
+  container.innerHTML = '';
+
+  // 4 valises, la 4ème est toujours la bonne
+  const valiseIcons = ['📦','🧳','👜','🎒'];
+  valiseIcons.forEach((icon, idx) => {
+    const item = document.createElement('div');
+    item.className = 'valise-item';
+    item.innerHTML = `<span style="font-size:48px;">${icon}</span>`;
+    item.onclick = () => choisirValise(idx, item, lieu);
+    container.appendChild(item);
+  });
+
+  // Intro Baptiste
+  const intro = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'pnj');
+  if (intro) {
+    const tunnel = document.getElementById('tunnel-baptiste');
+    tunnel.style.display = 'block';
+    document.getElementById('tunnel-baptiste-texte').textContent = intro.texte;
+  }
+}
+
+function choisirValise(idx, item, lieu) {
+  if (idx === 3) {
+    // Bonne valise
+    item.style.borderColor = 'var(--rose)';
+    document.getElementById('tunnel-baptiste').style.display = 'none';
+
+    const succes = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'fin_succes');
+    if (succes) {
+      ajouterObjet(succes.meta);
+      document.getElementById('tunnel-baptiste-texte').textContent = succes.texte;
+      document.getElementById('tunnel-baptiste-nom').textContent = 'Baptiste';
+      const t = document.getElementById('tunnel-baptiste');
+      t.style.display = 'block';
+    }
+    document.getElementById('valise-succes-zone').style.display = 'block';
+    document.getElementById('valise-succes-zone').querySelector('.btn-cta').onclick = () => goHall();
+  } else {
+    // Mauvaise valise - afficher une phrase tunnel de Baptiste
+    item.style.borderColor = '#888';
+    if (baptisteTunnelIndex < baptisteTunnelPhrases.length) {
+      const tunnel = document.getElementById('tunnel-baptiste');
+      tunnel.style.display = 'block';
+      document.getElementById('tunnel-baptiste-texte').textContent = baptisteTunnelPhrases[baptisteTunnelIndex].texte;
+      baptisteTunnelIndex++;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MINI-JEU : CABINES (OSCAR)
+// ═══════════════════════════════════════════════════════════════
+let cabinesOuvertes = [];
+
+function showCabines(lieu) {
+  if (!peutAcceder(lieu)) {
+    showEchecAcces(lieu);
+    return;
+  }
+
+  document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
+  showScreen('cabines');
+  cabinesOuvertes = [];
+  document.getElementById('cabines-result').style.display = 'none';
+
+  const container = document.getElementById('cabines-container');
+  container.innerHTML = '';
+
+  // Cabine 1 = Oscar, Cabine 2 = 50K, Cabine 3 = Short
+  const cabines = [
+    { label: '🚪', contenu: 'oscar' },
+    { label: '🚪', contenu: '50k' },
+    { label: '🚪', contenu: 'short' },
+  ];
+
+  cabines.forEach((c, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'cabine-btn';
+    btn.textContent = c.label;
+    btn.onclick = () => ouvrirCabine(idx, c.contenu, lieu, btn);
+    container.appendChild(btn);
+  });
+}
+
+function ouvrirCabine(idx, contenu, lieu, btn) {
+  if (cabinesOuvertes.includes(idx)) return;
+  cabinesOuvertes.push(idx);
+  btn.classList.add('opened');
+
+  const resultZone = document.getElementById('cabines-result');
+  const resultNom = document.getElementById('cabine-result-nom');
+  const resultTexte = document.getElementById('cabine-result-texte');
+  const resultBtn = document.getElementById('cabine-result-btn');
+
+  if (contenu === 'oscar') {
+    G.oscarVisites++;
+    const dlgKey = G.oscarVisites === 1 ? 'fin_succes' : 'fin_succes_2';
+    const dlg = G.dialogues.find(d => d.lieu_id === 'toilettes' && d.type === dlgKey);
+    if (dlg) {
+      ajouterObjet('meuj');
+      resultNom.textContent = 'Oscar';
+      resultTexte.textContent = dlg.texte;
+      resultZone.style.display = 'block';
+      resultBtn.onclick = () => goHall();
+    }
+  } else if (contenu === '50k') {
+    if (!G.inventaire.includes('50k')) {
+      ajouterObjet('50k');
+      resultNom.textContent = '💰';
+      resultTexte.textContent = 'Une mallette contenant 50 000€ en cash. Inattendu.';
+      resultZone.style.display = 'block';
+      resultBtn.onclick = () => { resultZone.style.display = 'none'; };
+    }
+  } else if (contenu === 'short') {
+    if (!G.inventaire.includes('shortbernardini')) {
+      ajouterObjet('shortbernardini');
+    }
+    resultNom.textContent = '😬';
+    resultTexte.textContent = "Le short d'Olivier Bernardini. Il vaut mieux ne pas savoir.";
+    resultZone.style.display = 'block';
+    resultBtn.onclick = () => { resultZone.style.display = 'none'; };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MINI-JEU : PACMAN (PIERRE)
+// ═══════════════════════════════════════════════════════════════
+let pacmanState = null;
+
+function startPacman(phrases, lieu) {
+  showScreen('pacman');
+  const canvas = document.getElementById('pacman-canvas');
+  const ctx = canvas.getContext('2d');
+
+  const W = canvas.offsetWidth;
+  const H = canvas.offsetHeight;
+  canvas.width = W; canvas.height = H;
+
+  let phraseIdx = 0;
+  let phraseTimer = 0;
+  const PHRASE_INTERVAL = 3000;
+
+  document.getElementById('pacman-phrase-texte').textContent = phrases[0];
+  document.getElementById('pacman-gameover').classList.remove('active');
+
+  // Victor (cercle jaune)
+  let victor = { x: W/2, y: H/2, r: 18, vx: 2.5, vy: 2 };
+  // Tête de Pierre (carré magenta)
+  let pierre = { x: 80, y: 80, r: 22, vx: 1.8, vy: 1.5 };
+  // Points
+  const dots = [];
+  for (let i=0; i<20; i++) {
+    dots.push({ x: 20 + Math.random()*(W-40), y: 20 + Math.random()*(H-40), eaten: false });
+  }
+
+  let running = true;
+  let lastTime = null;
+
+  // Contrôle tactile
+  let touchStart = null;
+  canvas.ontouchstart = e => { touchStart = {x: e.touches[0].clientX, y: e.touches[0].clientY}; };
+  canvas.ontouchmove = e => {
+    if (!touchStart) return;
+    const dx = e.touches[0].clientX - touchStart.x;
+    const dy = e.touches[0].clientY - touchStart.y;
+    const spd = 3;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      victor.vx = dx > 0 ? spd : -spd;
+      victor.vy = 0;
+    } else {
+      victor.vy = dy > 0 ? spd : -spd;
+      victor.vx = 0;
+    }
+    touchStart = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+    e.preventDefault();
+  };
+
+  pacmanState = { running };
+
+  function loop(ts) {
+    if (!running) return;
+    const dt = lastTime ? ts - lastTime : 16;
+    lastTime = ts;
+
+    // Phrases
+    phraseTimer += dt;
+    if (phraseTimer >= PHRASE_INTERVAL) {
+      phraseTimer = 0;
+      phraseIdx++;
+      if (phraseIdx < phrases.length) {
+        document.getElementById('pacman-phrase-texte').textContent = phrases[phraseIdx];
+      } else {
+        // Fin du jeu : succès
+        running = false;
+        const succes = G.dialoguesLieu.find(d => d.type === 'fin_succes');
+        if (succes) {
+          ajouterObjet(succes.meta);
+          showDialogueSucces(succes, lieu);
+        }
+        return;
+      }
+    }
+
+    // Mouvement Victor
+    victor.x += victor.vx;
+    victor.y += victor.vy;
+    if (victor.x - victor.r < 0 || victor.x + victor.r > W) victor.vx *= -1;
+    if (victor.y - victor.r < 0 || victor.y + victor.r > H) victor.vy *= -1;
+
+    // Mouvement Pierre (chasse Victor)
+    const dxP = victor.x - pierre.x;
+    const dyP = victor.y - pierre.y;
+    const dist = Math.sqrt(dxP*dxP + dyP*dyP);
+    pierre.x += (dxP/dist) * pierre.vx;
+    pierre.y += (dyP/dist) * pierre.vy;
+
+    // Vitesse Pierre augmente progressivement
+    pierre.vx = 1.5 + (phraseIdx / phrases.length) * 1.5;
+    pierre.vy = pierre.vx;
+
+    // Collision
+    const dx2 = victor.x - pierre.x;
+    const dy2 = victor.y - pierre.y;
+    if (Math.sqrt(dx2*dx2+dy2*dy2) < victor.r + pierre.r) {
+      running = false;
+      document.getElementById('pacman-gameover').classList.add('active');
+      return;
+    }
+
+    // Points
+    dots.forEach(dot => {
+      if (!dot.eaten) {
+        const d = Math.sqrt((victor.x-dot.x)**2+(victor.y-dot.y)**2);
+        if (d < victor.r + 6) dot.eaten = true;
+      }
+    });
+
+    // Draw
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, W, H);
+
+    // Points
+    dots.forEach(dot => {
+      if (!dot.eaten) {
+        ctx.fillStyle = '#FF6EC7';
+        ctx.beginPath();
+        ctx.arc(dot.x, dot.y, 5, 0, Math.PI*2);
+        ctx.fill();
+      }
+    });
+
+    // Victor
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.arc(victor.x, victor.y, victor.r, 0.2, Math.PI*1.8);
+    ctx.lineTo(victor.x, victor.y);
+    ctx.fill();
+
+    // Pierre
+    ctx.fillStyle = '#FF6EC7';
+    ctx.fillRect(pierre.x - pierre.r, pierre.y - pierre.r, pierre.r*2, pierre.r*2);
+    ctx.fillStyle = '#000';
+    ctx.font = `${pierre.r}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-main')}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('P', pierre.x, pierre.y);
+
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+}
+
+function restartPacman() {
+  document.getElementById('pacman-gameover').classList.remove('active');
+  const phrases = G.dialoguesLieu.find(d => d.type === 'tunnel_pacman').meta.split('|');
+  startPacman(phrases, G.currentLieu);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MINI-JEU : TRACTIONS (KUPI)
+// ═══════════════════════════════════════════════════════════════
+let tractionsState = null;
+
+function startTractions(phrases, lieu) {
+  // Vérifier objets
+  const requis = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];
+  const asTout = requis.every(r => G.inventaire.includes(r));
+
+  if (!asTout) {
+    // Afficher dialogue echec
+    const echec = G.dialoguesLieu.find(d => d.type === 'fin_echec');
+    if (echec) showDialogueSucces(echec, lieu);
+    return;
+  }
+
+  showScreen('tractions');
+  document.getElementById('tractions-bg-img').src = BASE_URL + 'ecrans/pullupbase.png';
+  document.getElementById('tractions-body-img').src = BASE_URL + 'ecrans/Victor-pullup-body.png';
+
+  let phraseIdx = 0;
+  let tapCount = 0;
+  const TAPS_NEEDED = 40;
+  let bodyBottom = 0; // 0 = bas, 100 = haut (traction réussie)
+  let decayInterval = null;
+
+  document.getElementById('tractions-phrase-texte').textContent = phrases[0];
+  document.getElementById('tractions-count').textContent = '0';
+
+  // Descente automatique
+  decayInterval = setInterval(() => {
+    bodyBottom = Math.max(0, bodyBottom - 2);
+    document.getElementById('tractions-body-img').style.bottom = bodyBottom + 'px';
+    document.getElementById('tractions-progress-fill').style.height = bodyBottom + '%';
+  }, 80);
+
+  // Phrases défilantes en fonction des taps
+  const area = document.getElementById('tractions-area');
+  area.onclick = area.ontouchstart = (e) => {
+    e.preventDefault();
+    tapCount++;
+    bodyBottom = Math.min(100, bodyBottom + 5);
+    document.getElementById('tractions-body-img').style.bottom = bodyBottom + 'px';
+    document.getElementById('tractions-progress-fill').style.height = bodyBottom + '%';
+
+    // Changer phrase toutes les N taps
+    const phrasesPerTap = Math.floor(TAPS_NEEDED / phrases.length);
+    const newPhraseIdx = Math.min(phrases.length - 1, Math.floor(tapCount / Math.max(1, phrasesPerTap)));
+    if (newPhraseIdx !== phraseIdx) {
+      phraseIdx = newPhraseIdx;
+      document.getElementById('tractions-phrase-texte').textContent = phrases[phraseIdx];
+    }
+
+    document.getElementById('tractions-count').textContent = tapCount;
+
+    // Succès si assez de taps et barre pleine
+    if (tapCount >= TAPS_NEEDED && bodyBottom >= 80) {
+      clearInterval(decayInterval);
+      area.onclick = null;
+      area.ontouchstart = null;
+      // Fin du jeu !
+      showFin();
+    }
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FIN DU JEU
+// ═══════════════════════════════════════════════════════════════
+function showFin() {
+  showScreen('fin');
+  // Utiliser l'image de fin si disponible, sinon placeholder
+  const img = document.getElementById('fin-logo');
+  img.src = BASE_URL + 'ecrans/Victors.jpg';
+  img.onerror = () => {
+    img.style.display = 'none';
+    document.getElementById('screen-fin').innerHTML += `
+      <div style="color:white;font-size:32px;font-weight:700;text-align:center;padding:32px;">
+        🎉 FARO, PORTUGAL 🎉<br>
+        <span style="font-size:18px;margin-top:16px;display:block;">Victor's EVG commence !</span>
+      </div>`;
+  };
+  setTimeout(() => img.classList.add('show'), 100);
+}
+
+function recevoirObjetEtHall(objetId) {
+  ajouterObjet(objetId);
+  goHall();
+}
+
+function nextDialogue() {
+  G.dialogueIndex++;
+  renderDialogue();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LANCEMENT
+// ═══════════════════════════════════════════════════════════════
+init().catch(err => {
+  document.body.innerHTML = `<div style="color:white;padding:32px;font-family:sans-serif;">
+    Erreur de chargement : ${err.message}<br><small>Vérifiez la connexion et l'URL Apps Script.</small>
+  </div>`;
+});
+</script>
+</body>
+</html>
