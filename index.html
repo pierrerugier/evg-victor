@@ -969,11 +969,54 @@ function closeInventaire() {
 function showObjetNotif(objetId) {
   const obj = G.objets.find(o => o.id === objetId);
   if (!obj) return;
-  const notif = document.getElementById('objet-notif');
-  document.getElementById('objet-notif-img').src = BASE_URL + obj.icon;
-  document.getElementById('objet-notif-texte').textContent = obj.nom + ' ajouté !';
-  notif.classList.add('show');
-  setTimeout(() => notif.classList.remove('show'), 2500);
+
+  // Créer overlay de célébration
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:200;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.75);
+    animation:fadeInOverlay 0.3s ease;
+  `;
+
+  overlay.innerHTML = `
+    <style>@keyframes popIn{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}</style>
+    <img src="${BASE_URL}${obj.icon}"
+      style="width:220px;height:220px;object-fit:contain;animation:popIn 0.4s ease forwards;"
+    >
+    <div style="
+      margin-top:24px;
+      font-family:var(--font-main);
+      font-size:13px;
+      font-weight:700;
+      letter-spacing:0.15em;
+      text-transform:uppercase;
+      color:var(--blanc);
+    ">Objet récupéré</div>
+    <div style="
+      font-family:var(--font-main);
+      font-size:22px;
+      font-weight:700;
+      color:var(--rose);
+      margin-top:8px;
+    ">${obj.nom}</div>
+    <button onclick="this.parentElement.remove()" style="
+      margin-top:32px;
+      background:var(--rose);
+      border:none;
+      padding:14px 40px;
+      font-family:var(--font-main);
+      font-size:15px;
+      font-weight:700;
+      color:var(--noir);
+      text-transform:uppercase;
+      letter-spacing:0.08em;
+      cursor:pointer;
+    ">OK</button>
+  `;
+
+  document.getElementById('game-wrapper').appendChild(overlay);
 }
 
 function ajouterObjet(id) {
@@ -1106,15 +1149,17 @@ function renderDialogue() {
       const btn = document.createElement('button');
       btn.className = 'btn-choix';
       btn.textContent = opt;
-      const lettre = opt.charAt(0);
+      const lettre = opt.trim().charAt(0);
       btn.onclick = () => {
         G.phraseIndex = 0;
-        if (lettre === bonne) {
+        const bonneReponse = bonne.trim();
+        if (lettre === bonneReponse) {
           G.dialogueIndex++;
           renderDialogue();
         } else {
           const mauvaise = G.dialoguesLieu.find((d, i) => i > G.dialogueIndex && d.type === 'reponse_incorrecte');
           if (mauvaise) showDialogueTemp(mauvaise, () => renderDialogue());
+          else renderDialogue();
         }
       };
       choixZone.appendChild(btn);
@@ -1122,8 +1167,10 @@ function renderDialogue() {
   }
 
   else if (type === 'choix') {
-    // Mini-jeu choix montres : afficher les icônes
+    // Mini-jeu choix montres : fond montreschoix.jpg avec 3 zones cliquables
     if (G.currentLieu && G.currentLieu.id === 'rolex') {
+      // Changer le fond de scène vers l'écran de choix montres
+      document.getElementById('scene-bg').style.backgroundImage = `url(${BASE_URL}ecrans/montreschoix.jpg)`;
       choixZone.style.display = 'flex';
       choixZone.style.flexDirection = 'row';
       choixZone.style.justifyContent = 'space-around';
@@ -1139,7 +1186,6 @@ function renderDialogue() {
         btn.innerHTML = `<img src="${BASE_URL}${m.icon}" style="width:56px;height:56px;object-fit:contain;"><span style="font-family:var(--font-main);font-size:10px;font-weight:700;text-transform:uppercase;">${m.label}</span>`;
         btn.onclick = () => {
           G.phraseIndex = 0;
-          // Trouver la réponse correspondante
           const rep = G.dialoguesLieu.find(d => d.type === m.type);
           if (rep) {
             ajouterObjet(rep.meta);
@@ -1440,18 +1486,31 @@ function showCabines(lieu) {
   const container = document.getElementById('cabines-container');
   container.innerHTML = '';
 
-  // Cabine 1 = Oscar, Cabine 2 = 50K, Cabine 3 = Short
-  const cabines = [
-    { label: '🚪', contenu: 'oscar' },
-    { label: '🚪', contenu: '50k' },
-    { label: '🚪', contenu: 'short' },
+  // Pins roses positionnés sur les 3 portes de l'illustration
+  // Positions en % à ajuster selon l'image restroom-choice.jpg
+  const portes = [
+    { contenu: 'oscar',  pos_x: 25, pos_y: 55 },
+    { contenu: '50k',    pos_x: 50, pos_y: 50 },
+    { contenu: 'short',  pos_x: 75, pos_y: 55 },
   ];
 
-  cabines.forEach((c, idx) => {
+  portes.forEach((porte, idx) => {
     const btn = document.createElement('button');
-    btn.className = 'cabine-btn';
-    btn.textContent = c.label;
-    btn.onclick = () => ouvrirCabine(idx, c.contenu, lieu, btn);
+    btn.style.cssText = `
+      position:absolute;
+      left:${porte.pos_x}%;
+      top:${porte.pos_y}%;
+      transform:translate(-50%,-100%);
+      background:none;border:none;padding:0;cursor:pointer;
+      z-index:20;
+    `;
+    btn.innerHTML = `<svg width="36" height="46" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 0C6.268 0 0 6.268 0 14c0 9.625 14 22 14 22S28 23.625 28 14C28 6.268 21.732 0 14 0z" fill="var(--rose)"/>
+      <circle cx="14" cy="14" r="6" fill="#000"/>
+    </svg>`;
+    btn.onclick = () => {
+      if (!cabinesOuvertes.includes(idx)) ouvrirCabine(idx, porte.contenu, lieu, btn);
+    };
     container.appendChild(btn);
   });
 }
@@ -1459,7 +1518,6 @@ function showCabines(lieu) {
 function ouvrirCabine(idx, contenu, lieu, btn) {
   if (cabinesOuvertes.includes(idx)) return;
   cabinesOuvertes.push(idx);
-  btn.classList.add('opened');
 
   const resultZone = document.getElementById('cabines-result');
   const resultNom = document.getElementById('cabine-result-nom');
@@ -1467,6 +1525,8 @@ function ouvrirCabine(idx, contenu, lieu, btn) {
   const resultBtn = document.getElementById('cabine-result-btn');
 
   if (contenu === 'oscar') {
+    // Changer l'image de fond vers Oscar
+    document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE_URL}ecrans/Oscar.jpg)`;
     G.oscarVisites++;
     const dlgKey = G.oscarVisites === 1 ? 'fin_succes' : 'fin_succes_2';
     const dlg = G.dialogues.find(d => d.lieu_id === 'toilettes' && d.type === dlgKey);
@@ -1478,21 +1538,29 @@ function ouvrirCabine(idx, contenu, lieu, btn) {
       resultBtn.onclick = () => goHall();
     }
   } else if (contenu === '50k') {
+    document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE_URL}ecrans/toilette-50K.jpg)`;
     if (!G.inventaire.includes('50k')) {
       ajouterObjet('50k');
       resultNom.textContent = '💰';
       resultTexte.textContent = 'Une mallette contenant 50 000€ en cash. Inattendu.';
       resultZone.style.display = 'block';
-      resultBtn.onclick = () => { resultZone.style.display = 'none'; };
+      resultBtn.onclick = () => {
+        resultZone.style.display = 'none';
+        document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
+      };
     }
   } else if (contenu === 'short') {
+    document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE_URL}ecrans/toilette-shortbernardini.jpg)`;
     if (!G.inventaire.includes('shortbernardini')) {
       ajouterObjet('shortbernardini');
     }
     resultNom.textContent = '😬';
     resultTexte.textContent = "Le short d'Olivier Bernardini. Il vaut mieux ne pas savoir.";
     resultZone.style.display = 'block';
-    resultBtn.onclick = () => { resultZone.style.display = 'none'; };
+    resultBtn.onclick = () => {
+      resultZone.style.display = 'none';
+      document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
+    };
   }
 }
 
