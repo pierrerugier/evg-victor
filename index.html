@@ -708,7 +708,39 @@ function setupInvGrid() {
   });
 }
 
-function openInv() { setupInvGrid(); document.getElementById('inv-overlay').classList.add('open'); }
+function openInv() {
+  setupInvGrid();
+  document.getElementById('inv-overlay').classList.add('open');
+}
+
+function setupInvGrid() {
+  const grid = document.getElementById('inv-grid');
+  grid.innerHTML = '';
+  const extras = inventaire.filter(id => !OBJETS_FINAUX.includes(id));
+  [...OBJETS_FINAUX, ...extras].forEach(id => {
+    const obj = G.objets.find(o => o.id === id);
+    if (!obj) return;
+    const collected = inventaire.includes(id);
+    const slot = document.createElement('div');
+    slot.className = 'inv-slot' + (collected ? ' ok' : '');
+
+    // Si on est dans une scène qui attend un objet, rendre les slots cliquables
+    const needsObjet = currentLieu && currentLieu.objet_a_donner && collected;
+    if (needsObjet) {
+      slot.style.cursor = 'pointer';
+      slot.style.outline = '2px solid transparent';
+      slot.onmouseenter = () => slot.style.outline = '2px solid var(--rose)';
+      slot.onmouseleave = () => slot.style.outline = '2px solid transparent';
+      slot.onclick = () => {
+        closeInv();
+        handleDonner(id);
+      };
+    }
+
+    slot.innerHTML = `<img src="${BASE}${obj.icon}" alt="${obj.nom}"><span>${obj.nom}</span>`;
+    grid.appendChild(slot);
+  });
+}
 function closeInv() { document.getElementById('inv-overlay').classList.remove('open'); }
 
 function ajouterObjet(id) {
@@ -807,10 +839,12 @@ function renderDlg() {
     ctaZone.style.display = 'flex';
     requestAnimationFrame(adjustDlgBottom);
 
+    const isLast = phraseIndex >= phrases.length - 1;
+
     // Si dernier dialogue de type pnj ET lieu a un objet à donner
     if (isLast && currentLieu.objet_a_donner && dlgIndex === dlgList.findIndex(d => d.type === 'pnj')) {
-      btnContinuer.textContent = 'Donner un objet';
-      btnContinuer.onclick = () => { phraseIndex = 0; openDonner(); };
+      btnContinuer.textContent = 'Ouvrir l\'inventaire →';
+      btnContinuer.onclick = () => { phraseIndex = 0; openInv(); };
     } else {
       btnContinuer.textContent = 'Continuer';
       if (!isLast) {
@@ -848,15 +882,19 @@ function renderDlg() {
       btn.onclick = () => {
         const lettre = opt.trim().charAt(0);
         if (lettre === bonne) {
+          // Bonne réponse : avancer au prochain dialogue (phrase de transition)
+          phraseIndex = 0;
           dlgIndex++;
           renderDlg();
         } else {
+          // Mauvaise réponse : afficher message temporaire 3 secondes puis réafficher le QCM
           const mauvaise = dlgList.find((d, i) => i > dlgIndex && d.type === 'reponse_incorrecte');
-          if (mauvaise) showTempDlg(mauvaise, renderDlg);
+          if (mauvaise) showTempDlg(mauvaise, () => { renderDlg(); }, 3000);
         }
       };
       choixZone.appendChild(btn);
     });
+    requestAnimationFrame(adjustDlgBottom);
   }
 
   else if (type === 'choix' && currentLieu && currentLieu.id === 'rolex') {
@@ -924,13 +962,17 @@ function renderDlg() {
   }
 }
 
-function showTempDlg(dlg, cb) {
+function showTempDlg(dlg, cb, duree = 3000) {
+  const dlgZone = document.getElementById('dlg-zone');
+  dlgZone.innerHTML = '';
+  document.getElementById('choix-zone').style.display = 'none';
   const bloc = document.createElement('div');
   bloc.className = 'dlg-bloc';
   bloc.style.borderLeft = '3px solid var(--rose)';
   bloc.innerHTML = `<div class="dlg-nom">${dlg.personnage}</div><div class="dlg-txt">${dlg.texte}</div>`;
-  document.getElementById('dlg-zone').appendChild(bloc);
-  setTimeout(() => { bloc.remove(); cb(); }, 1800);
+  dlgZone.appendChild(bloc);
+  requestAnimationFrame(adjustDlgBottom);
+  setTimeout(() => cb(), duree);
 }
 
 function showSucces(dlg) {
@@ -991,8 +1033,12 @@ function handleDonner(objetId) {
       const succes = dlgList.find(d => d.type === 'fin_succes');
       if (succes) { if (succes.meta) ajouterObjet(succes.meta); showSucces(succes); }
     } else {
+      // Mauvais objet : message temporaire, on reste sur la scène sans reset
       const mauvais = dlgList.find(d => d.type === 'reponse_incorrecte');
-      showTempDlg(mauvais || {personnage:'Charles', texte:"T'as pas un truc qui brille ?"}, renderDlg);
+      showTempDlg(mauvais || {personnage:'Charles', texte:"T'as pas un truc qui brille ?"}, () => {
+        // Remettre l'inventaire ouvert pour qu'il puisse réessayer
+        openInv();
+      }, 3000);
     }
     return;
   }
