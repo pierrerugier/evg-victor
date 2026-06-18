@@ -478,7 +478,7 @@ html, body {
   </div>
 </div>
 
-<script>
+<script type="module">
 // ══════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════
@@ -622,20 +622,6 @@ function nextTuto() {
 // INVENTAIRE
 // ══════════════════════════════════════════════════════════
 const OBJETS_FINAUX = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];
-
-function setupInvGrid() {
-  const grid = document.getElementById('inv-grid');
-  grid.innerHTML = '';
-  const extras = inventaire.filter(id => !OBJETS_FINAUX.includes(id));
-  [...OBJETS_FINAUX, ...extras].forEach(id => {
-    const obj = G.objets.find(o => o.id === id);
-    if (!obj) return;
-    const slot = document.createElement('div');
-    slot.className = 'inv-slot' + (inventaire.includes(id) ? ' ok' : '');
-    slot.innerHTML = `<img src="${BASE}${obj.icon}" alt="${obj.nom}"><span>${obj.nom}</span>`;
-    grid.appendChild(slot);
-  });
-}
 
 function openInv() {
   setupInvGrid();
@@ -1139,22 +1125,21 @@ function ouvrirCabine(idx, contenu, lieu) {
   // Afficher d'abord le dialogue, puis le bouton ramasser après confirmation
   function showDialogue(nomTxt, texte, btnLabel, onRamasser, showRetour) {
     nom.textContent = nomTxt;
-    // Split le texte en phrases pour les afficher une par une
     const phrases = texte.split(/\n+/).map(p => p.trim()).filter(Boolean);
     let pi = 0;
     txt.textContent = phrases[pi] || texte;
-    btn.textContent = 'Continuer';
+    btn.textContent = pi < phrases.length - 1 ? 'Continuer' : btnLabel;
     btn.style.background = 'var(--rose)';
     btn.style.color = 'var(--noir)';
     retour.style.display = showRetour ? 'block' : 'none';
+    btn.onclick = () => {
       pi++;
       if (pi < phrases.length) {
         txt.textContent = phrases[pi];
+        btn.textContent = pi < phrases.length - 1 ? 'Continuer' : btnLabel;
       } else {
-        btn.textContent = btnLabel;
-        btn.style.background = 'var(--rose)';
-        btn.style.color = 'var(--noir)';
         btn.onclick = onRamasser;
+        onRamasser();
       }
     };
     dlg.style.display = 'block';
