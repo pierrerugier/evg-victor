@@ -221,10 +221,11 @@ html, body {
 
 /* ── OBJET GAGNÉ ── */
 #objet-popup {
-  position: absolute; inset: 0; z-index: 100;
+  position: absolute; inset: 0; z-index: 200;
   display: none; flex-direction: column;
   align-items: center; justify-content: center;
   background: rgba(0,0,0,0.82);
+  pointer-events: all;
 }
 #objet-popup.open { display: flex; }
 #objet-popup img {
@@ -658,21 +659,35 @@ function setupInvGrid() {
 }
 function closeInv() { document.getElementById('inv-overlay').classList.remove('open'); }
 
+let objetPopupQueue = [];
+
 function ajouterObjet(id) {
   if (!id || inventaire.includes(id)) return;
   inventaire.push(id);
+  objetPopupQueue.push(id);
+  if (objetPopupQueue.length === 1) showNextObjetPopup();
+}
+
+function showNextObjetPopup() {
+  if (objetPopupQueue.length === 0) return;
+  const id = objetPopupQueue[0];
   showObjetPopup(id);
 }
 
 function showObjetPopup(id) {
   const obj = G.objets.find(o => o.id === id);
-  if (!obj) return;
+  if (!obj) { closeObjetPopup(); return; }
   document.getElementById('objet-popup-img').src = BASE + obj.icon;
   document.getElementById('objet-popup-nom').textContent = obj.nom;
   document.getElementById('objet-popup').classList.add('open');
 }
+
 function closeObjetPopup() {
   document.getElementById('objet-popup').classList.remove('open');
+  objetPopupQueue.shift();
+  if (objetPopupQueue.length > 0) {
+    setTimeout(showNextObjetPopup, 200);
+  }
 }
 
 // ══════════════════════════════════════════════════════════
