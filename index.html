@@ -578,16 +578,15 @@ function setupHall() {
 
   G.lieux.filter(l => l.id !== 'hall' && String(l.actif).toLowerCase() === 'true').forEach(lieu => {
     if (!lieu.pos_x && lieu.pos_x !== 0) return;
-    const accessible = peutAcceder(lieu);
     const btn = document.createElement('button');
-    btn.className = 'hall-pin' + (accessible ? '' : ' locked');
+    btn.className = 'hall-pin'; // toujours rose
     btn.style.left = lieu.pos_x + '%';
     btn.style.top = lieu.pos_y + '%';
     btn.innerHTML = `<svg width="32" height="42" viewBox="0 0 28 36" fill="none">
-      <path d="M14 0C6.268 0 0 6.268 0 14c0 9.625 14 22 14 22S28 23.625 28 14C28 6.268 21.732 0 14 0z" fill="${accessible ? 'var(--rose)' : '#777'}"/>
-      <circle cx="14" cy="14" r="6" fill="${accessible ? '#000' : '#555'}"/>
+      <path d="M14 0C6.268 0 0 6.268 0 14c0 9.625 14 22 14 22S28 23.625 28 14C28 6.268 21.732 0 14 0z" fill="var(--rose)"/>
+      <circle cx="14" cy="14" r="6" fill="#000"/>
     </svg>`;
-    btn.onclick = () => { if (accessible) entrerLieu(lieu.id); };
+    btn.onclick = () => entrerLieu(lieu.id);
     pins.appendChild(btn);
   });
 
@@ -705,6 +704,16 @@ function entrerLieu(id) {
 
   document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('scene');
+
+  // Si les prérequis ne sont pas remplis, aller directement à fin_echec
+  if (!peutAcceder(lieu)) {
+    const echec = dlgList.find(d => d.type === 'fin_echec');
+    if (echec) {
+      // Positionner dlgIndex sur fin_echec
+      dlgIndex = dlgList.indexOf(echec);
+    }
+  }
+
   renderDlg();
 }
 
@@ -1063,7 +1072,15 @@ function choisirValise(idx) {
 let cabinesOuvertes = [];
 
 function showCabines(lieu) {
-  if (!peutAcceder(lieu)) { entrerLieuEchec(lieu); return; }
+  if (!peutAcceder(lieu)) {
+    // Afficher la phrase de refus sur l'écran de la scène (pas les cabines)
+    document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
+    showScreen('scene');
+    const echec = dlgList.find(d => d.type === 'fin_echec');
+    if (echec) { dlgIndex = dlgList.indexOf(echec); }
+    renderDlg();
+    return;
+  }
   document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('cabines');
   cabinesOuvertes = [];
