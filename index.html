@@ -4,1870 +4,1394 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>EVG Victor</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-  /* ── VARIABLES ─────────────────────────────────────────────── */
-  :root {
-    --font-main: 'Josefin Sans', sans-serif;
-    --rose: #FF6EC7;
-    --noir: #000000;
-    --blanc: #ffffff;
-    --gris-clair: #E8E8E8;
-    --gris-moyen: #D0D0D0;
-    --gris-texte: #111111;
-    --github: 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
-  }
+:root {
+  --font: 'Josefin Sans', sans-serif;
+  --rose: #FF6EC7;
+  --noir: #000000;
+  --blanc: #ffffff;
+  --dlg-bg: rgba(0,0,0,0.72);
+  --dlg-color: #ffffff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  font-family: var(--font);
+  background: #111;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: manipulation;
+}
+#app {
+  position: relative;
+  width: 100%; height: 100%;
+  overflow: hidden;
+}
+@media (min-aspect-ratio: 9/16) {
+  #app { width: calc(100vh * 9 / 16); height: 100vh; }
+}
 
-  /* ── RESET ─────────────────────────────────────────────────── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
-    width: 100%; height: 100%;
-    overflow: hidden;
-    font-family: var(--font-main);
-    background: #111;
-    touch-action: manipulation;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+/* SCREENS */
+.screen {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column;
+  width: 100%; height: 100%;
+}
+.screen.active { display: flex; }
 
-  #game-wrapper {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
+/* BG */
+.bg {
+  position: absolute; inset: 0;
+  background-size: cover;
+  background-position: center top;
+  z-index: 0;
+}
 
-  @media (min-aspect-ratio: 9/16) {
-    #game-wrapper {
-      width: calc(100vh * 9 / 16);
-      height: 100vh;
-    }
-  }
+/* BOUTON RETOUR */
+#btn-retour-hall, #btn-retour-titre {
+  position: absolute;
+  top: 14px; left: 14px;
+  z-index: 50;
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  border: none;
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  cursor: pointer;
+}
 
-  @media (max-aspect-ratio: 9/16) {
-    #game-wrapper {
-      width: 100vw;
-      height: calc(100vw * 16 / 9);
-    }
-  }
+/* INVENTAIRE ICON */
+.inv-btn {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 48px; height: 48px;
+  z-index: 50;
+  background: none; border: none;
+  cursor: pointer; padding: 0;
+}
+.inv-btn img { width: 100%; height: 100%; object-fit: contain; }
 
-  /* ── ÉCRANS ─────────────────────────────────────────────────── */
-  #game-wrapper { position: relative; }
-  .screen {
-    position: absolute; inset: 0;
-    display: none;
-    flex-direction: column;
-    width: 100%; height: 100%;
-  }
-  .screen.active { display: flex; }
+/* DIALOGUE */
+#dlg-zone {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 30;
+  padding: 10px 14px 4px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.dlg-bloc {
+  background: var(--dlg-bg);
+  padding: 10px 12px;
+}
+.dlg-nom {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--rose); margin-bottom: 4px;
+}
+.dlg-txt {
+  font-size: 14px; line-height: 1.5;
+  color: var(--dlg-color);
+}
 
-  /* ── FOND IMAGE ─────────────────────────────────────────────── */
-  .bg {
-    position: absolute; inset: 0;
-    background-size: cover;
-    background-position: center top;
-    background-repeat: no-repeat;
-  }
+/* CHOIX */
+#choix-zone {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 30;
+  padding: 0 14px 6px;
+  display: none; flex-direction: column; gap: 5px;
+}
+.btn-choix {
+  background: rgba(0,0,0,0.72);
+  border: none; border-left: 4px solid transparent;
+  padding: 11px 13px;
+  font-family: var(--font); font-size: 13px; font-weight: 600;
+  color: #fff; text-align: left; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-choix:active { border-left-color: var(--rose); }
 
-  /* ── ÉCRAN CHARGEMENT ───────────────────────────────────────── */
-  #screen-loading {
-    align-items: center;
-    justify-content: flex-start;
-  }
-  #loading-bg {
-    position: absolute; inset: 0;
-    background-size: cover;
-    background-position: center top;
-  }
-  #loading-bar-wrap {
-    position: absolute;
-    top: 30%;
-    left: 8%;
-    width: 84%;
-    height: 18px;
-    z-index: 10;
-  }
-  #loading-bar-bg {
-    position: absolute; inset: 0;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: left center;
-  }
-  #loading-plane {
-    position: absolute;
-    top: 50%; left: 0;
-    transform: translateY(-50%);
-    height: 28px;
-    width: 0%;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: right center;
-    transition: width 0.1s linear;
-  }
-  #loading-intro {
-    position: absolute;
-    bottom: 8%;
-    left: 0; right: 0;
-    padding: 0 24px;
-    text-align: center;
-    color: var(--blanc);
-    font-size: 14px;
-    line-height: 1.6;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
-    z-index: 10;
-  }
+/* CTA */
+#cta-zone {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 30;
+  padding: 6px 14px 16px;
+  display: none; flex-direction: column; gap: 6px;
+}
+.btn-cta {
+  background: var(--rose);
+  border: none; padding: 15px;
+  font-family: var(--font); font-size: 15px; font-weight: 700;
+  color: var(--noir); text-transform: uppercase;
+  letter-spacing: 0.08em; cursor: pointer;
+  width: 100%; min-height: 52px;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-sec {
+  background: rgba(0,0,0,0.7);
+  border: none; padding: 12px;
+  font-family: var(--font); font-size: 13px; font-weight: 600;
+  color: #fff; cursor: pointer; width: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
 
-  #screen-hall { position: relative; }
-  #hall-btns {
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-  }
-  #screen-hall { position: relative; }
-  /* ── HALL ───────────────────────────────────────────────────── */
-  .hall-btn {
-    position: absolute;
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    background: var(--rose);
-    border: 3px solid var(--noir);
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-main);
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--noir);
-    text-align: center;
-    line-height: 1.1;
-    transform: translate(-50%, -50%);
-    z-index: 20;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  }
-  .hall-btn.locked {
-    background: #888;
-    border-color: #555;
-  }
-  #inventaire-btn {
-    position: absolute;
-    top: 16px; right: 16px;
-    width: 52px; height: 52px;
-    z-index: 30;
-    cursor: pointer;
-    background: none;
-    border: none;
-    padding: 0;
-  }
-  #inventaire-btn img { width: 100%; height: 100%; object-fit: contain; }
+/* ── ÉCRAN CHARGEMENT ── */
+#screen-loading {
+  background: #000;
+  align-items: center; justify-content: flex-end;
+}
+#loading-cover {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+}
+#loading-bar-wrap {
+  position: absolute; top: 30%; left: 8%; width: 84%; height: 20px; z-index: 10;
+}
+#loading-bar-bg {
+  position: absolute; inset: 0;
+  background-size: contain; background-repeat: no-repeat; background-position: left center;
+}
+#loading-plane {
+  position: absolute; top: 50%; left: 0;
+  transform: translateY(-50%);
+  height: 30px; width: 0%;
+  background-size: contain; background-repeat: no-repeat; background-position: right center;
+  transition: width 0.1s linear;
+}
+#loading-intro {
+  position: relative; z-index: 10;
+  padding: 0 24px 40px;
+  text-align: center; color: #fff;
+  font-size: 13px; line-height: 1.6;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+}
+#btn-jouer {
+  display: none;
+  position: relative; z-index: 10;
+  margin: 0 24px 48px;
+  width: calc(100% - 48px);
+}
 
-  /* ── SCÈNE PNJ ──────────────────────────────────────────────── */
-  #screen-scene {
-    position: relative;
-    justify-content: flex-end;
-  }
-  #scene-bg { background-position: center top; }
+/* ── HALL ── */
+#screen-hall { position: relative; }
+#hall-pins { position: absolute; inset: 0; z-index: 10; }
+.hall-pin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: none; border: none; padding: 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.hall-pin.locked svg path { fill: #777; }
+.hall-pin.locked svg circle { fill: #555; }
 
-  #dialogue-zone {
-    position: relative;
-    z-index: 20;
-    width: 100%;
-    padding: 12px 16px 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+/* ── INVENTAIRE OVERLAY ── */
+#inv-overlay {
+  position: absolute; inset: 0; z-index: 60;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.5);
+}
+#inv-overlay.open { display: flex; }
+#inv-inner { position: relative; width: 100%; height: 100%; }
+#inv-bg { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+#inv-grid {
+  position: absolute;
+  top: 22%; left: 20%; width: 58%; height: 58%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+}
+.inv-slot {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.inv-slot img {
+  width: 46px; height: 46px; object-fit: contain;
+  opacity: 0.15; filter: grayscale(1);
+}
+.inv-slot.ok img { opacity: 1; filter: none; }
+.inv-slot span {
+  font-size: 7px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  text-align: center; margin-top: 2px; line-height: 1.2;
+}
+#inv-close-btn {
+  position: absolute; bottom: 5%; left: 10%; width: 80%; z-index: 2;
+}
 
-  .dialogue-bloc {
-    background: var(--gris-clair);
-    padding: 12px 14px;
-    border-radius: 0;
-  }
-  .dialogue-bloc.victor {
-    background: var(--gris-moyen);
-    margin-left: 32px;
-  }
-  .dialogue-nom {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--gris-texte);
-    margin-bottom: 5px;
-  }
-  .dialogue-texte {
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--gris-texte);
-  }
+/* ── OBJET GAGNÉ ── */
+#objet-popup {
+  position: absolute; inset: 0; z-index: 100;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.82);
+}
+#objet-popup.open { display: flex; }
+#objet-popup img {
+  width: 220px; height: 220px; object-fit: contain;
+  animation: popIn 0.4s ease forwards;
+}
+@keyframes popIn {
+  0%{ transform: scale(0.4); opacity: 0; }
+  70%{ transform: scale(1.1); }
+  100%{ transform: scale(1); opacity: 1; }
+}
+#objet-popup-label {
+  margin-top: 20px; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.15em; text-transform: uppercase; color: #fff;
+}
+#objet-popup-nom {
+  font-size: 22px; font-weight: 700; color: var(--rose); margin-top: 6px;
+}
+#objet-popup-ok {
+  margin-top: 28px; width: 70%;
+}
 
-  /* ── BOUTONS QCM / CHOIX ────────────────────────────────────── */
-  .choix-zone {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 0 16px 8px;
-    position: relative;
-    z-index: 20;
-  }
-  .btn-choix {
-    background: var(--gris-clair);
-    border: none;
-    padding: 12px 14px;
-    font-family: var(--font-main);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gris-texte);
-    text-align: left;
-    cursor: pointer;
-    border-radius: 0;
-    border-left: 4px solid transparent;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .btn-choix:active { border-left-color: var(--rose); background: var(--gris-moyen); }
+/* ── TUTO ── */
+#tuto-zone {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  z-index: 40; padding: 14px 14px 20px;
+}
+#tuto-bloc {
+  background: var(--rose); padding: 16px 14px 12px; margin-bottom: 10px;
+}
+#tuto-nom {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--noir); margin-bottom: 5px;
+}
+#tuto-txt { font-size: 14px; line-height: 1.5; color: var(--noir); }
+#tuto-btn { background: var(--noir); color: var(--blanc); }
 
-  /* ── BOUTON CONTINUER / CTA ─────────────────────────────────── */
-  .btn-cta {
-    background: var(--rose);
-    border: none;
-    padding: 16px 24px;
-    font-family: var(--font-main);
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--noir);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-    border-radius: 0;
-    width: 100%;
-    -webkit-tap-highlight-color: transparent;
-    min-height: 52px;
-  }
-  .btn-cta-zone {
-    padding: 4px 16px 16px;
-    position: relative;
-    z-index: 20;
-  }
-  .btn-back {
-    background: var(--gris-moyen);
-    border: none;
-    padding: 12px 24px;
-    font-family: var(--font-main);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gris-texte);
-    cursor: pointer;
-    border-radius: 0;
-    width: 100%;
-    margin-top: 8px;
-  }
+/* ── PACMAN ── */
+#screen-pacman { background: #1a1a2e; }
+#pac-phrase-bar {
+  width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.8);
+  flex-shrink: 0; z-index: 5;
+}
+#pac-phrase-nom {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--rose); margin-bottom: 3px;
+}
+#pac-phrase-txt { font-size: 13px; line-height: 1.4; color: #fff; min-height: 38px; }
+#pac-canvas { flex: 1; width: 100%; display: block; }
+#pac-controls {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  width: 100%; height: 120px; background: #111; flex-shrink: 0; gap: 4px; padding: 4px;
+}
+.pac-btn {
+  background: #2a2a2a; border: none; font-size: 24px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent; color: #fff;
+}
+.pac-btn:active { background: #444; }
+#pac-gameover {
+  display: none; position: absolute; inset: 0;
+  background: rgba(0,0,0,0.88); z-index: 20;
+  flex-direction: column; align-items: center;
+  justify-content: center; gap: 14px; padding: 28px;
+}
+#pac-gameover.open { display: flex; }
 
-  /* ── NOTIFICATION OBJET REÇU ────────────────────────────────── */
-  #objet-notif {
-    position: fixed;
-    bottom: 100px;
-    left: 50%;
-    transform: translateX(-50%) translateY(40px);
-    background: var(--noir);
-    color: var(--blanc);
-    font-family: var(--font-main);
-    font-size: 13px;
-    font-weight: 600;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    opacity: 0;
-    transition: opacity 0.3s, transform 0.3s;
-    z-index: 100;
-    white-space: nowrap;
-  }
-  #objet-notif.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  #objet-notif img { width: 28px; height: 28px; object-fit: contain; }
+/* ── TRACTIONS ── */
+#screen-tractions { background: #000; }
+#trac-phrase-bar {
+  width: 100%; padding: 10px 14px;
+  background: rgba(0,0,0,0.8); flex-shrink: 0;
+}
+#trac-phrase-nom {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--rose); margin-bottom: 3px;
+}
+#trac-phrase-txt { font-size: 13px; line-height: 1.4; color: #fff; min-height: 38px; }
+#trac-area { flex: 1; width: 100%; position: relative; overflow: hidden; }
+#trac-bg { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; object-fit: contain; }
+#trac-body { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 70%; object-fit: contain; transition: bottom 0.12s; }
+#trac-bar-wrap { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 10px; height: 150px; background: #333; }
+#trac-bar-fill { position: absolute; bottom: 0; left: 0; right: 0; background: var(--rose); height: 0%; transition: height 0.1s; }
+#trac-tap { flex-shrink: 0; height: 80px; font-size: 20px; }
 
-  /* ── INVENTAIRE OVERLAY ─────────────────────────────────────── */
-  #inventaire-overlay {
-    position: absolute; inset: 0;
-    z-index: 50;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,0,0,0.5);
-  }
-  #inventaire-overlay.active { display: flex; }
-  #inventaire-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
-  #inventaire-bg-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-  }
-  #inventaire-grid {
-    position: absolute;
-    top: 22%;
-    left: 20%;
-    width: 58%;
-    height: 58%;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(5, 1fr);
-    gap: 0;
-    z-index: 2;
-  }
-  .inv-slot {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    padding: 4px;
-  }
-  .inv-slot img {
-    width: 48px; height: 48px;
-    object-fit: contain;
-    opacity: 0.15;
-    filter: grayscale(1);
-  }
-  .inv-slot.collected img {
-    opacity: 1;
-    filter: none;
-  }
-  .inv-slot span {
-    font-size: 7px;
-    font-weight: 700;
-    color: #ffffff;
-    text-align: center;
-    margin-top: 2px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-    line-height: 1.2;
-  }
-  #inventaire-close-btn {
-    position: absolute;
-    bottom: 6%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    z-index: 3;
-  }
+/* ── VALISES (BAPTISTE) ── */
+#screen-valises { position: relative; }
+#valises-overlay { position: absolute; inset: 0; z-index: 10; }
+#baptiste-tunnel {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+  padding: 10px 14px 6px; display: none;
+}
+.baptiste-bloc {
+  background: rgba(0,0,0,0.8); padding: 10px 12px; margin-bottom: 6px;
+}
 
-  /* ── MINI-JEU : VALISES (BAPTISTE) ─────────────────────────── */
-  #screen-valises {
-    position: relative;
-    justify-content: flex-end;
-    align-items: center;
-  }
-  #valises-container {
-    position: relative;
-    z-index: 20;
-    width: 100%;
-    padding: 16px;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-  .valise-item {
-    background: var(--gris-clair);
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border: 3px solid transparent;
-  }
-  .valise-item img { width: 64px; height: 64px; object-fit: contain; }
-  #tunnel-baptiste {
-    position: relative;
-    z-index: 20;
-    background: var(--gris-clair);
-    margin: 0 16px;
-    padding: 14px;
-    font-size: 13px;
-    line-height: 1.5;
-    color: var(--gris-texte);
-    min-height: 60px;
-    display: none;
-  }
-  #tunnel-baptiste-nom {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 5px;
-  }
+/* ── CABINES (OSCAR) ── */
+#screen-cabines { position: relative; }
+#cabines-overlay { position: absolute; inset: 0; z-index: 10; }
+#cabine-dlg {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+  padding: 10px 14px 14px; display: none;
+}
 
-  /* ── MINI-JEU : CABINES (OSCAR) ─────────────────────────────── */
-  #screen-cabines {
-    position: relative;
-    justify-content: flex-end;
-  }
-  #cabines-container {
-    position: relative;
-    z-index: 20;
-    display: flex;
-    gap: 12px;
-    padding: 16px;
-    justify-content: center;
-  }
-  .cabine-btn {
-    width: 80px; height: 100px;
-    background: var(--gris-clair);
-    border: 3px solid var(--gris-moyen);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-  }
-  .cabine-btn.opened {
-    border-color: var(--rose);
-    background: #fff;
-  }
-
-  /* ── MINI-JEU : PACMAN (PIERRE) ─────────────────────────────── */
-  #screen-pacman {
-    position: relative;
-    background: #000;
-    align-items: center;
-    justify-content: flex-start;
-  }
-  #pacman-phrase {
-    position: relative;
-    z-index: 20;
-    width: 100%;
-    padding: 16px;
-    background: var(--gris-clair);
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--gris-texte);
-    min-height: 60px;
-    text-align: center;
-  }
-  #pacman-phrase-nom {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 5px;
-    color: var(--gris-texte);
-  }
-  #pacman-canvas {
-    display: block;
-    width: 100%;
-    flex: 1;
-  }
-  #pacman-gameover {
-    display: none;
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.8);
-    z-index: 30;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 32px;
-  }
-  #pacman-gameover.active { display: flex; }
-  #pacman-gameover-texte {
-    background: var(--gris-clair);
-    padding: 16px;
-    width: 100%;
-  }
-  #pacman-gameover-texte .dialogue-nom { margin-bottom: 6px; }
-
-  /* ── MINI-JEU : TRACTIONS (KUPI) ────────────────────────────── */
-  #screen-tractions {
-    position: relative;
-    align-items: center;
-    justify-content: flex-start;
-  }
-  #tractions-phrase {
-    position: relative;
-    z-index: 20;
-    width: 100%;
-    padding: 16px;
-    background: var(--gris-clair);
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--gris-texte);
-    text-align: center;
-    min-height: 60px;
-  }
-  #tractions-phrase-nom {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 5px;
-  }
-  #tractions-area {
-    flex: 1;
-    width: 100%;
-    position: relative;
-    cursor: pointer;
-    user-select: none;
-    -webkit-user-select: none;
-    overflow: hidden;
-  }
-  #tractions-bg-img {
-    position: absolute;
-    bottom: 0; left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    object-fit: contain;
-    transition: bottom 0.15s ease-out;
-  }
-  #tractions-body-img {
-    position: absolute;
-    bottom: 0; left: 50%;
-    transform: translateX(-50%);
-    width: 60%;
-    object-fit: contain;
-  }
-  #tractions-progress-wrap {
-    position: absolute;
-    right: 16px; top: 50%;
-    transform: translateY(-50%);
-    width: 12px;
-    height: 160px;
-    background: var(--gris-moyen);
-  }
-  #tractions-progress-fill {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    background: var(--rose);
-    height: 0%;
-    transition: height 0.1s;
-  }
-  #tractions-count {
-    position: absolute;
-    top: 12px; left: 50%;
-    transform: translateX(-50%);
-    font-size: 48px;
-    font-weight: 700;
-    color: rgba(255,255,255,0.15);
-    font-family: var(--font-main);
-  }
-
-  /* ── FIN DE JEU ──────────────────────────────────────────────── */
-  #screen-fin {
-    align-items: center;
-    justify-content: center;
-    background: #000;
-  }
-  #fin-logo {
-    width: 80%;
-    max-width: 320px;
-    opacity: 0;
-    transform: scale(0.8);
-    transition: opacity 1s, transform 1s;
-  }
-  #fin-logo.show {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  /* ── OVERLAY DONNEZ OBJET ────────────────────────────────────── */
-  #donner-overlay {
-    position: fixed; inset: 0;
-    z-index: 60;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    background: rgba(0,0,0,0.7);
-  }
-  #donner-overlay.active { display: flex; }
-  #donner-inner {
-    width: 100%;
-    background: var(--blanc);
-    padding: 20px 16px 32px;
-  }
-  #donner-titre {
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 14px;
-    color: var(--gris-texte);
-  }
-  #donner-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-  .donner-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    padding: 8px;
-    background: var(--gris-clair);
-  }
-  .donner-item img { width: 48px; height: 48px; object-fit: contain; }
-  .donner-item span {
-    font-size: 9px;
-    font-weight: 600;
-    text-align: center;
-    margin-top: 4px;
-    color: var(--gris-texte);
-  }
+/* FIN */
+#screen-fin { background: #000; align-items: center; justify-content: center; }
+#fin-img { width: 80%; opacity: 0; transform: scale(0.8); transition: opacity 1s, transform 1s; }
+#fin-img.show { opacity: 1; transform: scale(1); }
 </style>
 </head>
 <body>
+<div id="app">
 
-<div id="game-wrapper">
-<!-- ══ ÉCRAN CHARGEMENT ══════════════════════════════════════════ -->
+<!-- LOADING -->
 <div id="screen-loading" class="screen active">
-  <div id="loading-bg"></div>
+  <div id="loading-cover"></div>
   <div id="loading-bar-wrap">
     <div id="loading-bar-bg"></div>
     <div id="loading-plane"></div>
   </div>
   <div id="loading-intro"></div>
+  <button class="btn-cta" id="btn-jouer" onclick="goHall()">Jouer</button>
 </div>
 
-<!-- ══ HALL ══════════════════════════════════════════════════════ -->
+<!-- HALL -->
 <div id="screen-hall" class="screen">
   <div class="bg" id="hall-bg"></div>
-  <button id="inventaire-btn" onclick="openInventaire()">
-    <img id="inv-icon-img" src="" alt="Inventaire">
-  </button>
-  <div id="hall-btns"></div>
-
-  <!-- DIDACTICIEL -->
-  <div id="tuto-overlay" style="
-    position:absolute;inset:0;z-index:40;
-    display:flex;flex-direction:column;
-    justify-content:flex-end;
-    pointer-events:none;
-  ">
-    <div style="padding:16px 16px 32px;pointer-events:all;">
-      <div id="tuto-bloc" style="
-        background:var(--rose);
-        padding:18px 16px 14px;
-        margin-bottom:12px;
-      ">
-        <div id="tuto-nom" style="
-          font-size:10px;font-weight:700;
-          letter-spacing:0.12em;text-transform:uppercase;
-          color:var(--noir);margin-bottom:6px;
-        ">Mission</div>
-        <div id="tuto-texte" style="
-          font-size:14px;line-height:1.55;
-          color:var(--noir);font-family:var(--font-main);
-        "></div>
-      </div>
-      <button class="btn-cta" id="tuto-btn" onclick="nextTuto()" style="background:var(--noir);color:var(--blanc);">Suivant</button>
+  <button class="inv-btn" onclick="openInv()"><img id="inv-icon" src="" alt=""></button>
+  <button id="btn-retour-titre" onclick="goLoading()">← Titre</button>
+  <div id="hall-pins"></div>
+  <!-- TUTO -->
+  <div id="tuto-zone" style="display:none;">
+    <div id="tuto-bloc">
+      <div id="tuto-nom">Mission</div>
+      <div id="tuto-txt"></div>
     </div>
+    <button class="btn-cta" id="tuto-btn" onclick="nextTuto()">Suivant</button>
   </div>
 </div>
+
+<!-- SCENE PNJ -->
 <div id="screen-scene" class="screen">
   <div class="bg" id="scene-bg"></div>
-  <button id="inventaire-btn-scene" style="position:absolute;top:16px;right:16px;width:52px;height:52px;z-index:30;cursor:pointer;background:none;border:none;padding:0;" onclick="openInventaire()">
-    <img id="inv-icon-img2" src="" alt="Inventaire">
-  </button>
-  <div id="dialogue-zone"></div>
-  <div id="choix-zone" class="choix-zone" style="display:none;"></div>
-  <div id="cta-zone" class="btn-cta-zone" style="display:none;">
-    <button class="btn-cta" id="btn-continuer" onclick="nextDialogue()">Continuer</button>
-    <button class="btn-back" id="btn-retour-scene" onclick="goHall()" style="display:none;">Retour au hall</button>
+  <button id="btn-retour-hall" onclick="goHall()">← Hall</button>
+  <button class="inv-btn" onclick="openInv()"><img class="inv-icon-img" src="" alt=""></button>
+  <div id="dlg-zone"></div>
+  <div id="choix-zone" class="choix-zone"></div>
+  <div id="cta-zone">
+    <button class="btn-cta" id="btn-continuer">Continuer</button>
+    <button class="btn-sec" id="btn-hall-scene" style="display:none;" onclick="goHall()">Retour au hall</button>
   </div>
 </div>
 
-<!-- ══ MINI-JEU VALISES ═══════════════════════════════════════════ -->
+<!-- VALISES -->
 <div id="screen-valises" class="screen">
   <div class="bg" id="valises-bg"></div>
-  <div id="tunnel-baptiste">
-    <div id="tunnel-baptiste-nom">Baptiste</div>
-    <div id="tunnel-baptiste-texte"></div>
-  </div>
-  <div id="valises-container"></div>
-  <div class="btn-cta-zone" style="display:none;" id="valise-succes-zone">
-    <button class="btn-cta" onclick="recevoirObjetEtHall('valise')">Continuer</button>
+  <button id="btn-retour-hall-valises" style="position:absolute;top:14px;left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
+  <div id="valises-overlay"></div>
+  <div id="baptiste-tunnel">
+    <div class="baptiste-bloc">
+      <div class="dlg-nom">Baptiste</div>
+      <div class="dlg-txt" id="baptiste-txt"></div>
+    </div>
+    <button class="btn-cta" id="baptiste-ok-btn" style="display:none;" onclick="goHall()">Continuer</button>
   </div>
 </div>
 
-<!-- ══ MINI-JEU CABINES ═══════════════════════════════════════════ -->
+<!-- CABINES -->
 <div id="screen-cabines" class="screen">
   <div class="bg" id="cabines-bg"></div>
-  <div id="cabines-result" class="btn-cta-zone" style="display:none;">
-    <div class="dialogue-bloc" style="margin-bottom:10px;">
-      <div class="dialogue-nom" id="cabine-result-nom"></div>
-      <div class="dialogue-texte" id="cabine-result-texte"></div>
+  <button style="position:absolute;top:14px;left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
+  <div id="cabines-overlay"></div>
+  <div id="cabine-dlg">
+    <div class="dlg-bloc" style="background:rgba(0,0,0,0.8);padding:10px 12px;margin-bottom:6px;">
+      <div class="dlg-nom" id="cabine-nom"></div>
+      <div class="dlg-txt" id="cabine-txt"></div>
     </div>
-    <button class="btn-cta" id="cabine-result-btn" onclick="goHall()">Continuer</button>
+    <button class="btn-cta" id="cabine-ramasser">Ramasser</button>
+    <button class="btn-sec" id="cabine-retour" style="margin-top:6px;display:none;" onclick="retourCabines()">← Cabines</button>
   </div>
-  <div id="cabines-container"></div>
 </div>
 
-<!-- ══ MINI-JEU PACMAN ═══════════════════════════════════════════ -->
+<!-- PACMAN -->
 <div id="screen-pacman" class="screen">
-  <div id="pacman-phrase">
-    <div id="pacman-phrase-nom">Pierre</div>
-    <div id="pacman-phrase-texte"></div>
+  <div id="pac-phrase-bar">
+    <div id="pac-phrase-nom">Pierre</div>
+    <div id="pac-phrase-txt"></div>
   </div>
-  <canvas id="pacman-canvas"></canvas>
-  <div id="pacman-gameover">
-    <div id="pacman-gameover-texte">
-      <div class="dialogue-nom">Pierre</div>
-      <div class="dialogue-texte">Hé mec, t'endors pas, on est en pleine conversation !</div>
+  <canvas id="pac-canvas"></canvas>
+  <div id="pac-controls">
+    <div></div>
+    <button class="pac-btn" id="pac-up">▲</button>
+    <div></div>
+    <button class="pac-btn" id="pac-left">◀</button>
+    <button class="pac-btn" id="pac-down">▼</button>
+    <button class="pac-btn" id="pac-right">▶</button>
+  </div>
+  <div id="pac-gameover">
+    <div style="background:rgba(0,0,0,0.8);padding:12px;width:100%;margin-bottom:8px;">
+      <div class="dlg-nom">Pierre</div>
+      <div class="dlg-txt">Hé mec, t'endors pas, on est en pleine conversation !</div>
     </div>
     <button class="btn-cta" onclick="restartPacman()">Réessayer</button>
-    <button class="btn-back" onclick="goHall()">Quitter</button>
+    <button class="btn-sec" onclick="goHall()" style="margin-top:6px;">Quitter</button>
   </div>
 </div>
 
-<!-- ══ MINI-JEU TRACTIONS ════════════════════════════════════════ -->
+<!-- TRACTIONS -->
 <div id="screen-tractions" class="screen">
-  <div id="tractions-phrase">
-    <div id="tractions-phrase-nom">Kupi</div>
-    <div id="tractions-phrase-texte">Tapote l'écran pour faire des tractions !</div>
+  <div id="trac-phrase-bar">
+    <div id="trac-phrase-nom">Kupi</div>
+    <div id="trac-phrase-txt"></div>
   </div>
-  <div id="tractions-area">
-    <div id="tractions-count">0</div>
-    <img id="tractions-bg-img" src="" alt="">
-    <img id="tractions-body-img" src="" alt="">
-    <div id="tractions-progress-wrap">
-      <div id="tractions-progress-fill"></div>
-    </div>
+  <div id="trac-area">
+    <img id="trac-bg" src="" alt="">
+    <img id="trac-body" src="" alt="">
+    <div id="trac-bar-wrap"><div id="trac-bar-fill"></div></div>
   </div>
+  <button class="btn-cta" id="trac-tap">TAPOTE !</button>
 </div>
 
-<!-- ══ FIN ════════════════════════════════════════════════════════ -->
+<!-- FIN -->
 <div id="screen-fin" class="screen">
-  <img id="fin-logo" src="" alt="Victor's">
+  <img id="fin-img" src="" alt="">
 </div>
 
-<div id="inventaire-overlay">
-  <div id="inventaire-inner">
-    <img id="inventaire-bg-img" src="" alt="">
-    <div id="inventaire-grid"></div>
-    <button class="btn-cta" id="inventaire-close-btn" onclick="closeInventaire()">Fermer</button>
+<!-- INV OVERLAY -->
+<div id="inv-overlay">
+  <div id="inv-inner">
+    <img id="inv-bg" src="" alt="">
+    <div id="inv-grid"></div>
+    <button class="btn-cta" id="inv-close-btn" onclick="closeInv()">Fermer</button>
   </div>
 </div>
 
-<!-- ══ DONNER OBJET OVERLAY ════════════════════════════════════════ -->
-<div id="donner-overlay">
-  <div id="donner-inner">
-    <div id="donner-titre">Qu'est-ce que tu lui donnes ?</div>
-    <div id="donner-grid"></div>
-    <button class="btn-back" onclick="closeDonner()">Annuler</button>
+<!-- OBJET POPUP -->
+<div id="objet-popup">
+  <img id="objet-popup-img" src="" alt="">
+  <div id="objet-popup-label">Objet récupéré</div>
+  <div id="objet-popup-nom"></div>
+  <button class="btn-cta" id="objet-popup-ok" onclick="closeObjetPopup()">OK</button>
+</div>
+
+<!-- DONNER OVERLAY -->
+<div id="donner-overlay" style="position:absolute;inset:0;z-index:70;display:none;flex-direction:column;align-items:center;justify-content:flex-end;background:rgba(0,0,0,0.6);">
+  <div style="width:100%;background:#fff;padding:18px 14px 28px;">
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;color:#111;">Qu'est-ce que tu lui donnes ?</div>
+    <div id="donner-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;"></div>
+    <button class="btn-sec" style="background:#eee;color:#111;" onclick="closeDonner()">Annuler</button>
   </div>
 </div>
-
-<!-- ══ NOTIFICATION OBJET ══════════════════════════════════════════ -->
-<div id="objet-notif">
-  <img id="objet-notif-img" src="" alt="">
-  <span id="objet-notif-texte"></span>
-</div>
-
-</div><!-- /game-wrapper -->
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// CONFIG & STATE
-// ═══════════════════════════════════════════════════════════════
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzze8-guvyUP7j04Mg_RW1vXiKOIZ_KpLaWKlARLEi3usTmdHenEuuZCgYQJTKTQtXt2A/exec';
+// ══════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzze8-guvyUP7j04Mg_RW1vXiKOIZ_KpLaWKlARLEi3usTmdHenEuuZCgYQJTKTQtXt2A/exec';
 
-let G = {
-  config: {},
-  objets: [],
-  lieux: [],
-  dialogues: [],
-  inventaire: [],
-  currentLieu: null,
-  dialogueIndex: 0,
-  phraseIndex: 0,
-  dialoguesLieu: [],
-  qcmStep: 0,
-  oscarVisites: 0,
-};
+let BASE = '';
+let G = null; // { config, objets, lieux, dialogues }
 
-let BASE_URL = '';
+// État jeu
+let inventaire = [];
+let currentLieu = null;
+let dlgIndex = 0;
+let phraseIndex = 0;
+let dlgList = [];
+let oscarVisites = 0;
 
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // INIT
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 async function init() {
-  // Chargement données
-  const res = await fetch(APPS_SCRIPT_URL + '?v=' + Date.now());
-  const data = await res.json();
-  G.config = data.config;
-  G.objets = data.objets;
-  G.lieux = data.lieux;
-  G.dialogues = data.dialogues;
+  const res = await fetch(SHEET_URL + '?v=' + Date.now());
+  G = await res.json();
+  BASE = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
 
-  BASE_URL = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
-
-  // Appliquer couleurs depuis config
-  document.documentElement.style.setProperty('--rose', G.config.couleur_rose || '#FF6EC7');
-  document.documentElement.style.setProperty('--gris-clair', G.config.couleur_bloc_pnj || '#E8E8E8');
-  document.documentElement.style.setProperty('--gris-moyen', G.config.couleur_bloc_victor || '#D0D0D0');
-  document.documentElement.style.setProperty('--gris-texte', G.config.couleur_texte || '#111111');
+  // Appliquer couleurs config
+  if (G.config.couleur_rose) document.documentElement.style.setProperty('--rose', G.config.couleur_rose);
+  // Transparence blocs dialogue (depuis sheet)
+  const alpha = G.config.dlg_alpha || '0.72';
+  document.documentElement.style.setProperty('--dlg-bg', `rgba(0,0,0,${alpha})`);
   if (G.config.font_family) {
-    document.documentElement.style.setProperty('--font-main', `'${G.config.font_family}', sans-serif`);
+    document.documentElement.style.setProperty('--font', `'${G.config.font_family}', sans-serif`);
   }
 
+  // Setup loading
+  const cover = document.getElementById('loading-cover');
+  cover.style.backgroundImage = `url(${BASE}ecrans/Victors-laoding.jpg)`;
+  document.getElementById('loading-bar-bg').style.backgroundImage = `url(${BASE}icons/chargement.png)`;
+  document.getElementById('loading-plane').style.backgroundImage = `url(${BASE}icons/avion.png)`;
+  document.getElementById('loading-intro').textContent = 'Victor, bienvenue aux portes de ton EVG. Avant de pouvoir embarquer, une mission t\'attend : retrouver toutes les affaires indispensables à ton voyage. Explore l\'aéroport, relève les défis. Bonne chance !';
+
+  // Preload + barre de chargement
   const duree = parseInt(G.config.duree_chargement) || 4000;
-
-  // Setup écran chargement
-  const loadingBg = document.getElementById('loading-bg');
-  const loadingBarBg = document.getElementById('loading-bar-bg');
-  const loadingPlane = document.getElementById('loading-plane');
-  const loadingIntro = document.getElementById('loading-intro');
-
-  loadingBg.style.backgroundImage = `url(${BASE_URL}ecrans/Victors-laoding.jpg)`;
-  loadingBarBg.style.backgroundImage = `url(${BASE_URL}icons/chargement.png)`;
-  loadingPlane.style.backgroundImage = `url(${BASE_URL}icons/avion.png)`;
-
-  loadingIntro.textContent = 'Victor, bienvenue aux portes de ton EVG. Avant de pouvoir embarquer, une mission t\'attend : retrouver toutes les affaires indispensables à ton voyage. Explore l\'aéroport, rencontre ses occupants et relève les défis. Une fois tous les objets réunis, rends-toi au contrôle de sécurité. Bonne chance !';
-
-  // Animer la barre
   const start = Date.now();
-  const animBar = setInterval(() => {
-    const elapsed = Date.now() - start;
-    const pct = Math.min(100, (elapsed / duree) * 100);
-    loadingPlane.style.width = pct + '%';
-    if (pct >= 100) clearInterval(animBar);
+  const bar = setInterval(() => {
+    const pct = Math.min(100, ((Date.now() - start) / duree) * 100);
+    document.getElementById('loading-plane').style.width = pct + '%';
+    if (pct >= 100) clearInterval(bar);
   }, 50);
 
-  // Précharger toutes les images
-  const allImages = collectAllImages();
   await Promise.all([
-    preloadImages(allImages),
+    preload(collectImages()),
     new Promise(r => setTimeout(r, duree))
   ]);
 
-  // Lancer le hall
-  setupHall();
-  showScreen('hall');
-  showTuto();
+  // Afficher bouton Jouer
+  document.getElementById('btn-jouer').style.display = 'block';
+
+  // Setup inventaire icons
+  document.querySelectorAll('.inv-icon-img').forEach(el => el.src = BASE + 'icons/inventaire-icon.png');
+  document.getElementById('inv-icon').src = BASE + 'icons/inventaire-icon.png';
+  document.getElementById('inv-bg').src = BASE + 'icons/inventaire.png';
 }
 
-function collectAllImages() {
+function collectImages() {
   const urls = [];
-  G.lieux.forEach(l => {
-    if (l.ecran) urls.push(BASE_URL + l.ecran);
-  });
-  G.objets.forEach(o => {
-    if (o.icon) urls.push(BASE_URL + o.icon);
-  });
+  (G.lieux || []).forEach(l => l.ecran && urls.push(BASE + l.ecran));
+  (G.objets || []).forEach(o => o.icon && urls.push(BASE + o.icon));
   ['icons/inventaire.png','icons/inventaire-icon.png','icons/chargement.png','icons/avion.png',
-   'ecrans/Victors-laoding.jpg','ecrans/pullupbase.jpg','ecrans/victor-bodypullup.jpg'].forEach(p => {
-    urls.push(BASE_URL + p);
-  });
+   'ecrans/Victors-laoding.jpg','ecrans/pullupbase.jpg','ecrans/victor-bodypullup.png',
+   'ecrans/montreschoix.jpg'].forEach(p => urls.push(BASE + p));
   return urls;
 }
 
-function preloadImages(urls) {
+function preload(urls) {
   return Promise.all(urls.map(url => new Promise(r => {
-    const img = new Image();
-    img.onload = r; img.onerror = r;
-    img.src = url;
+    const img = new Image(); img.onload = r; img.onerror = r; img.src = url;
   })));
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // NAVIGATION
-// ═══════════════════════════════════════════════════════════════
-function showScreen(name) {
+// ══════════════════════════════════════════════════════════
+function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('screen-' + id).classList.add('active');
 }
+
+function goLoading() { showScreen('loading'); }
 
 function goHall() {
   setupHall();
   showScreen('hall');
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // HALL
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+let tutoIndex = 0;
+const TUTO = [
+  "Victor, bienvenue aux portes de ton EVG. Avant de pouvoir embarquer, une mission t'attend : retrouver toutes les affaires indispensables à ton voyage.",
+  "Explore l'aéroport en appuyant sur les pastilles. Rencontre les occupants, réponds à leurs questions et relève leurs défis pour récupérer les objets.",
+  "Une fois tous les objets réunis dans ta sacoche, rends-toi au contrôle de sécurité. Bonne chance !"
+];
+
 function setupHall() {
   const hall = G.lieux.find(l => l.id === 'hall');
-  document.getElementById('hall-bg').style.backgroundImage = `url(${BASE_URL}${hall.ecran})`;
-  document.getElementById('inv-icon-img').src = BASE_URL + 'icons/inventaire-icon.png';
-  document.getElementById('inv-icon-img2').src = BASE_URL + 'icons/inventaire-icon.png';
-  document.getElementById('inventaire-bg-img').src = BASE_URL + 'icons/inventaire.png';
+  document.getElementById('hall-bg').style.backgroundImage = `url(${BASE}${hall.ecran})`;
 
-  const container = document.getElementById('hall-btns');
-  container.innerHTML = '';
+  const pins = document.getElementById('hall-pins');
+  pins.innerHTML = '';
 
   G.lieux.filter(l => l.id !== 'hall' && String(l.actif).toLowerCase() === 'true').forEach(lieu => {
-    if (!lieu.pos_x || !lieu.pos_y) return;
-
+    if (!lieu.pos_x && lieu.pos_x !== 0) return;
+    const accessible = peutAcceder(lieu);
     const btn = document.createElement('button');
-    btn.className = 'hall-btn';
+    btn.className = 'hall-pin' + (accessible ? '' : ' locked');
     btn.style.left = lieu.pos_x + '%';
     btn.style.top = lieu.pos_y + '%';
-    btn.style.position = 'absolute';
-
-    // Icône point de localisation
-    btn.innerHTML = `<svg width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 0C6.268 0 0 6.268 0 14c0 9.625 14 22 14 22S28 23.625 28 14C28 6.268 21.732 0 14 0z" fill="${peutAcceder(lieu) ? 'var(--rose)' : '#888'}"/>
-      <circle cx="14" cy="14" r="6" fill="${peutAcceder(lieu) ? '#000' : '#555'}"/>
+    btn.innerHTML = `<svg width="32" height="42" viewBox="0 0 28 36" fill="none">
+      <path d="M14 0C6.268 0 0 6.268 0 14c0 9.625 14 22 14 22S28 23.625 28 14C28 6.268 21.732 0 14 0z" fill="${accessible ? 'var(--rose)' : '#777'}"/>
+      <circle cx="14" cy="14" r="6" fill="${accessible ? '#000' : '#555'}"/>
     </svg>`;
-
-    btn.style.background = 'none';
-    btn.style.border = 'none';
-    btn.style.width = '40px';
-    btn.style.height = '44px';
-    btn.style.padding = '0';
-    btn.style.cursor = peutAcceder(lieu) ? 'pointer' : 'default';
-    btn.style.transform = 'translate(-50%, -100%)';
-
-    btn.onclick = () => {
-      if (peutAcceder(lieu)) entrerLieu(lieu.id);
-    };
-    container.appendChild(btn);
+    btn.onclick = () => { if (accessible) entrerLieu(lieu.id); };
+    pins.appendChild(btn);
   });
 
-  setupInventaireGrid();
+  setupInvGrid();
 }
 
 function peutAcceder(lieu) {
   if (!lieu.objets_requis) return true;
-  const requis = lieu.objets_requis.split(',').map(s => s.trim()).filter(Boolean);
-  return requis.every(r => G.inventaire.includes(r));
+  return lieu.objets_requis.split(',').map(s => s.trim()).filter(Boolean).every(id => inventaire.includes(id));
 }
 
-// ═══════════════════════════════════════════════════════════════
-// INVENTAIRE
-// ═══════════════════════════════════════════════════════════════
-function setupInventaireGrid() {
-  const grid = document.getElementById('inventaire-grid');
-  grid.innerHTML = '';
-  // Afficher seulement les 7 objets finaux requis + intermédiaires collectés
-  const objetsVoulus = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];
-  const objetsExtras = G.inventaire.filter(id => !objetsVoulus.includes(id));
-  const tousObjets = [...objetsVoulus, ...objetsExtras];
+// TUTO
+function showTuto() {
+  tutoIndex = 0;
+  renderTuto();
+  document.getElementById('tuto-zone').style.display = 'block';
+}
+function renderTuto() {
+  document.getElementById('tuto-txt').textContent = TUTO[tutoIndex];
+  document.getElementById('tuto-btn').textContent = tutoIndex === TUTO.length - 1 ? "C'est parti !" : 'Suivant';
+}
+function nextTuto() {
+  tutoIndex++;
+  if (tutoIndex >= TUTO.length) {
+    document.getElementById('tuto-zone').style.display = 'none';
+  } else {
+    renderTuto();
+  }
+}
 
-  tousObjets.forEach(id => {
+// ══════════════════════════════════════════════════════════
+// INVENTAIRE
+// ══════════════════════════════════════════════════════════
+const OBJETS_FINAUX = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];
+
+function setupInvGrid() {
+  const grid = document.getElementById('inv-grid');
+  grid.innerHTML = '';
+  const extras = inventaire.filter(id => !OBJETS_FINAUX.includes(id));
+  [...OBJETS_FINAUX, ...extras].forEach(id => {
     const obj = G.objets.find(o => o.id === id);
     if (!obj) return;
     const slot = document.createElement('div');
-    slot.className = 'inv-slot' + (G.inventaire.includes(id) ? ' collected' : '');
-    slot.innerHTML = `<img src="${BASE_URL}${obj.icon}" alt="${obj.nom}"><span>${obj.nom}</span>`;
+    slot.className = 'inv-slot' + (inventaire.includes(id) ? ' ok' : '');
+    slot.innerHTML = `<img src="${BASE}${obj.icon}" alt="${obj.nom}"><span>${obj.nom}</span>`;
     grid.appendChild(slot);
   });
 }
 
-function openInventaire() {
-  setupInventaireGrid();
-  document.getElementById('inventaire-overlay').classList.add('active');
-}
-
-function closeInventaire() {
-  document.getElementById('inventaire-overlay').classList.remove('active');
-}
-
-function showObjetNotif(objetId) {
-  const obj = G.objets.find(o => o.id === objetId);
-  if (!obj) return;
-
-  // Créer overlay de célébration
-  const overlay = document.createElement('div');
-  overlay.style.cssText = `
-    position:fixed;inset:0;z-index:200;
-    display:flex;flex-direction:column;
-    align-items:center;justify-content:center;
-    background:rgba(0,0,0,0.75);
-    animation:fadeInOverlay 0.3s ease;
-  `;
-
-  overlay.innerHTML = `
-    <style>@keyframes popIn{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}</style>
-    <img src="${BASE_URL}${obj.icon}"
-      style="width:220px;height:220px;object-fit:contain;animation:popIn 0.4s ease forwards;"
-    >
-    <div style="
-      margin-top:24px;
-      font-family:var(--font-main);
-      font-size:13px;
-      font-weight:700;
-      letter-spacing:0.15em;
-      text-transform:uppercase;
-      color:var(--blanc);
-    ">Objet récupéré</div>
-    <div style="
-      font-family:var(--font-main);
-      font-size:22px;
-      font-weight:700;
-      color:var(--rose);
-      margin-top:8px;
-    ">${obj.nom}</div>
-    <button onclick="this.parentElement.remove()" style="
-      margin-top:32px;
-      background:var(--rose);
-      border:none;
-      padding:14px 40px;
-      font-family:var(--font-main);
-      font-size:15px;
-      font-weight:700;
-      color:var(--noir);
-      text-transform:uppercase;
-      letter-spacing:0.08em;
-      cursor:pointer;
-    ">OK</button>
-  `;
-
-  document.getElementById('game-wrapper').appendChild(overlay);
-}
+function openInv() { setupInvGrid(); document.getElementById('inv-overlay').classList.add('open'); }
+function closeInv() { document.getElementById('inv-overlay').classList.remove('open'); }
 
 function ajouterObjet(id) {
-  if (!G.inventaire.includes(id)) {
-    G.inventaire.push(id);
-    showObjetNotif(id);
-  }
+  if (!id || inventaire.includes(id)) return;
+  inventaire.push(id);
+  showObjetPopup(id);
 }
 
-function retirerObjet(id) {
-  G.inventaire = G.inventaire.filter(i => i !== id);
+function showObjetPopup(id) {
+  const obj = G.objets.find(o => o.id === id);
+  if (!obj) return;
+  document.getElementById('objet-popup-img').src = BASE + obj.icon;
+  document.getElementById('objet-popup-nom').textContent = obj.nom;
+  document.getElementById('objet-popup').classList.add('open');
+}
+function closeObjetPopup() {
+  document.getElementById('objet-popup').classList.remove('open');
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // ENTRER DANS UN LIEU
-// ═══════════════════════════════════════════════════════════════
-function entrerLieu(lieuId) {
-  const lieu = G.lieux.find(l => l.id === lieuId);
-  G.currentLieu = lieu;
-  G.dialoguesLieu = G.dialogues.filter(d => d.lieu_id === lieuId)
-    .sort((a,b) => parseInt(a.ordre) - parseInt(b.ordre));
-  G.dialogueIndex = 0;
+// ══════════════════════════════════════════════════════════
+function entrerLieu(id) {
+  const lieu = G.lieux.find(l => l.id === id);
+  currentLieu = lieu;
+  dlgList = G.dialogues.filter(d => d.lieu_id === id).sort((a, b) => +a.ordre - +b.ordre);
+  dlgIndex = 0;
+  phraseIndex = 0;
 
-  // Cas spéciaux
-  if (lieuId === 'toilettes') {
-    showCabines(lieu);
-    return;
-  }
-  if (lieuId === 'enregistrement') {
-    showValises(lieu);
-    return;
-  }
+  if (id === 'toilettes') { showCabines(lieu); return; }
+  if (id === 'enregistrement') { showValises(lieu); return; }
 
-  // Vérifier accès
-  if (!peutAcceder(lieu)) {
-    showEchecAcces(lieu);
-    return;
-  }
-
-  // Vérif spéciale Oscar 2ème passage
-  if (lieuId === 'toilettes') {
-    // géré via showCabines
-  }
-
-  showScene(lieu);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SCÈNE DIALOGUE
-// ═══════════════════════════════════════════════════════════════
-function showScene(lieu, startIndex) {
-  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
+  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('scene');
-
-  G.dialogueIndex = startIndex !== undefined ? startIndex : 0;
-  renderDialogue();
+  renderDlg();
 }
 
-function renderDialogue() {
-  const dlg = G.dialoguesLieu[G.dialogueIndex];
+// ══════════════════════════════════════════════════════════
+// DIALOGUE ENGINE
+// ══════════════════════════════════════════════════════════
+function renderDlg() {
+  const dlg = dlgList[dlgIndex];
   if (!dlg) { goHall(); return; }
 
-  const zone = document.getElementById('dialogue-zone');
+  // Reset UI
+  const dlgZone = document.getElementById('dlg-zone');
   const choixZone = document.getElementById('choix-zone');
   const ctaZone = document.getElementById('cta-zone');
   const btnContinuer = document.getElementById('btn-continuer');
-  const btnRetour = document.getElementById('btn-retour-scene');
-
-  zone.innerHTML = '';
-  choixZone.style.display = 'none';
+  const btnHall = document.getElementById('btn-hall-scene');
+  dlgZone.innerHTML = '';
   choixZone.innerHTML = '';
+  choixZone.style.display = 'none';
   ctaZone.style.display = 'none';
-  btnRetour.style.display = 'none';
+  btnHall.style.display = 'none';
   btnContinuer.style.display = 'block';
+  // Nettoyer zones montres si elles existent
+  document.querySelectorAll('.montre-zone').forEach(el => el.remove());
 
   const type = dlg.type;
   const isVictor = dlg.personnage === 'Victor';
 
-  // Découper les longs textes en phrases pour les types pnj/narration
-  if (type === 'pnj' || type === 'victor' || type === 'narration') {
-    // Split sur les retours à la ligne ou les points de ponctuation forts
-    const phrases = dlg.texte
-      .split(/\n+/)
-      .flatMap(p => p.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ü])/))
-      .map(p => p.trim())
-      .filter(Boolean);
+  // Types à afficher phrase par phrase
+  if (['pnj','victor','narration'].includes(type)) {
+    const phrases = dlg.texte.split(/\n+/).flatMap(p =>
+      p.split(/(?<=[.!?…])\s+(?=[A-ZÀ-Ü«"])/)
+    ).map(p => p.trim()).filter(Boolean);
 
-    // Afficher seulement la phrase courante (sous-index dans le dialogue)
-    if (!G.phraseIndex) G.phraseIndex = 0;
-    const phrase = phrases[G.phraseIndex] || dlg.texte;
-
+    const phrase = phrases[phraseIndex] || dlg.texte;
     const bloc = document.createElement('div');
-    bloc.className = 'dialogue-bloc' + (isVictor ? ' victor' : '');
-    bloc.innerHTML = `<div class="dialogue-nom">${dlg.personnage}</div><div class="dialogue-texte">${phrase}</div>`;
-    zone.appendChild(bloc);
+    bloc.className = 'dlg-bloc';
+    bloc.innerHTML = `<div class="dlg-nom">${dlg.personnage}</div><div class="dlg-txt">${phrase}</div>`;
+    dlgZone.appendChild(bloc);
 
-    ctaZone.style.display = 'block';
+    ctaZone.style.display = 'flex';
 
-    if (G.phraseIndex < phrases.length - 1) {
-      btnContinuer.textContent = 'Continuer';
-      btnContinuer.onclick = () => {
-        G.phraseIndex++;
-        renderDialogue();
-      };
+    const isLast = phraseIndex >= phrases.length - 1;
+
+    // Si dernier dialogue de type pnj ET lieu a un objet à donner
+    if (isLast && currentLieu.objet_a_donner && dlgIndex === dlgList.findIndex(d => d.type === 'pnj')) {
+      btnContinuer.textContent = 'Donner un objet';
+      btnContinuer.onclick = () => { phraseIndex = 0; openDonner(); };
     } else {
       btnContinuer.textContent = 'Continuer';
-      btnContinuer.onclick = () => {
-        G.phraseIndex = 0;
-        G.dialogueIndex++;
-        renderDialogue();
-      };
+      if (!isLast) {
+        btnContinuer.onclick = () => { phraseIndex++; renderDlg(); };
+      } else {
+        btnContinuer.onclick = () => { phraseIndex = 0; dlgIndex++; renderDlg(); };
+      }
     }
     return;
   }
 
-  // Reset phraseIndex pour les autres types
-  G.phraseIndex = 0;
+  phraseIndex = 0;
 
-  // Bloc texte standard
+  // Bloc texte standard pour les autres types
   const bloc = document.createElement('div');
-  bloc.className = 'dialogue-bloc' + (isVictor ? ' victor' : '');
-  bloc.innerHTML = `<div class="dialogue-nom">${dlg.personnage}</div><div class="dialogue-texte">${dlg.texte}</div>`;
-  zone.appendChild(bloc);
+  bloc.className = 'dlg-bloc';
+  bloc.innerHTML = `<div class="dlg-nom">${dlg.personnage}</div><div class="dlg-txt">${dlg.texte}</div>`;
+  dlgZone.appendChild(bloc);
 
   if (type === 'qcm') {
+    const opts = dlg.meta.split('|');
+    const bonne = opts[opts.length - 1].trim();
+    const options = opts.slice(0, -1);
+    const court = options.every(o => o.length < 28);
+
     choixZone.style.display = 'flex';
-    const options = dlg.meta.split('|');
-    const bonne = options[options.length - 1];
-    options.slice(0, -1).forEach(opt => {
+    choixZone.style.flexDirection = court ? 'row' : 'column';
+    choixZone.style.flexWrap = court ? 'wrap' : 'nowrap';
+
+    options.forEach(opt => {
       const btn = document.createElement('button');
       btn.className = 'btn-choix';
+      if (court) btn.style.cssText = 'flex:1;min-width:44%;text-align:center;margin:2px;';
       btn.textContent = opt;
-      const lettre = opt.trim().charAt(0);
       btn.onclick = () => {
-        G.phraseIndex = 0;
-        const bonneReponse = bonne.trim();
-        if (lettre === bonneReponse) {
-          G.dialogueIndex++;
-          renderDialogue();
+        const lettre = opt.trim().charAt(0);
+        if (lettre === bonne) {
+          dlgIndex++;
+          renderDlg();
         } else {
-          const mauvaise = G.dialoguesLieu.find((d, i) => i > G.dialogueIndex && d.type === 'reponse_incorrecte');
-          if (mauvaise) showDialogueTemp(mauvaise, () => renderDialogue());
-          else renderDialogue();
+          const mauvaise = dlgList.find((d, i) => i > dlgIndex && d.type === 'reponse_incorrecte');
+          if (mauvaise) showTempDlg(mauvaise, renderDlg);
         }
       };
       choixZone.appendChild(btn);
     });
   }
 
+  else if (type === 'choix' && currentLieu && currentLieu.id === 'rolex') {
+    // Montres : zones cliquables sur montreschoix.jpg
+    document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}ecrans/montreschoix.jpg)`;
+    const montres = [
+      { label:'Daytona', type:'reponse_daytona', left:'5%',  top:'52%', w:'30%', h:'30%' },
+      { label:'Milgauss', type:'reponse_milgauss', left:'36%', top:'50%', w:'28%', h:'32%' },
+      { label:'GMT',      type:'reponse_gmt',      left:'64%', top:'52%', w:'31%', h:'30%' },
+    ];
+    montres.forEach(m => {
+      const z = document.createElement('div');
+      z.className = 'montre-zone';
+      z.style.cssText = `position:absolute;left:${m.left};top:${m.top};width:${m.w};height:${m.h};cursor:pointer;z-index:25;border:2px solid transparent;transition:border-color 0.15s;`;
+      z.ontouchstart = () => z.style.borderColor = 'var(--rose)';
+      z.ontouchend = () => z.style.borderColor = 'transparent';
+      z.onmouseenter = () => z.style.borderColor = 'var(--rose)';
+      z.onmouseleave = () => z.style.borderColor = 'transparent';
+      z.onclick = () => {
+        document.querySelectorAll('.montre-zone').forEach(el => el.remove());
+        const rep = dlgList.find(d => d.type === m.type);
+        if (rep) { ajouterObjet(rep.meta); showSucces(rep); }
+      };
+      document.getElementById('screen-scene').appendChild(z);
+    });
+  }
+
   else if (type === 'choix') {
-    // Mini-jeu choix montres : fond montreschoix.jpg avec 3 zones cliquables
-    if (G.currentLieu && G.currentLieu.id === 'rolex') {
-      // Changer le fond de scène vers l'écran de choix montres
-      document.getElementById('scene-bg').style.backgroundImage = `url(${BASE_URL}ecrans/montreschoix.jpg)`;
-      choixZone.style.display = 'flex';
-      choixZone.style.flexDirection = 'row';
-      choixZone.style.justifyContent = 'space-around';
-      choixZone.style.padding = '8px 16px';
-      const montres = [
-        { label: 'Daytona', icon: 'icons/daytona.png', type: 'reponse_daytona' },
-        { label: 'Milgauss', icon: 'icons/milgauss.png', type: 'reponse_milgauss' },
-        { label: 'GMT', icon: 'icons/GMT.png', type: 'reponse_gmt' },
-      ];
-      montres.forEach(m => {
-        const btn = document.createElement('button');
-        btn.style.cssText = 'background:var(--gris-clair);border:none;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;flex:1;margin:0 4px;';
-        btn.innerHTML = `<img src="${BASE_URL}${m.icon}" style="width:56px;height:56px;object-fit:contain;"><span style="font-family:var(--font-main);font-size:10px;font-weight:700;text-transform:uppercase;">${m.label}</span>`;
-        btn.onclick = () => {
-          G.phraseIndex = 0;
-          const rep = G.dialoguesLieu.find(d => d.type === m.type);
-          if (rep) {
-            ajouterObjet(rep.meta);
-            showDialogueSucces(rep, G.currentLieu);
-          }
-        };
-        choixZone.appendChild(btn);
-      });
-    } else {
-      choixZone.style.display = 'flex';
-      choixZone.style.flexDirection = 'column';
-      const options = dlg.meta.split('|');
-      options.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.className = 'btn-choix';
-        btn.textContent = opt;
-        btn.onclick = () => {
-          G.phraseIndex = 0;
-          G.dialogueIndex++;
-          renderDialogue();
-        };
-        choixZone.appendChild(btn);
-      });
-    }
-  }
-
-  else if (type === 'fin_succes') {
-    if (dlg.meta) ajouterObjet(dlg.meta);
-    ctaZone.style.display = 'block';
-    btnRetour.style.display = 'block';
-    btnContinuer.style.display = 'none';
-    btnRetour.textContent = 'Retour au hall';
-    btnRetour.onclick = () => { G.phraseIndex = 0; goHall(); };
-  }
-
-  else if (type === 'fin_succes_2') {
-    if (dlg.meta) ajouterObjet(dlg.meta);
-    ctaZone.style.display = 'block';
-    btnRetour.style.display = 'block';
-    btnContinuer.style.display = 'none';
-    btnRetour.textContent = 'Retour au hall';
-    btnRetour.onclick = () => { G.phraseIndex = 0; goHall(); };
-  }
-
-  else if (type === 'fin_echec') {
-    ctaZone.style.display = 'block';
-    btnContinuer.style.display = 'none';
-    btnRetour.style.display = 'block';
-    btnRetour.textContent = 'Retour au hall';
-    btnRetour.onclick = () => { G.phraseIndex = 0; goHall(); };
+    choixZone.style.display = 'flex';
+    choixZone.style.flexDirection = 'column';
+    dlg.meta.split('|').forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-choix';
+      btn.textContent = opt;
+      btn.onclick = () => { dlgIndex++; renderDlg(); };
+      choixZone.appendChild(btn);
+    });
   }
 
   else if (type === 'reponse_incorrecte') {
-    ctaZone.style.display = 'block';
+    ctaZone.style.display = 'flex';
     btnContinuer.textContent = 'Réessayer';
-    G.dialogueIndex++;
-    btnContinuer.onclick = () => { G.phraseIndex = 0; renderDialogue(); };
+    btnContinuer.onclick = () => { dlgIndex++; renderDlg(); };
+  }
+
+  else if (type === 'fin_succes' || type === 'fin_succes_2') {
+    if (dlg.meta) ajouterObjet(dlg.meta);
+    ctaZone.style.display = 'flex';
+    btnContinuer.style.display = 'none';
+    btnHall.style.display = 'block';
+  }
+
+  else if (type === 'fin_echec') {
+    ctaZone.style.display = 'flex';
+    btnContinuer.style.display = 'none';
+    btnHall.style.display = 'block';
   }
 
   else if (type === 'tunnel_pacman') {
-    G.phraseIndex = 0;
-    const phrases = dlg.meta.split('|');
-    startPacman(phrases, G.currentLieu);
-    return;
+    startPacman(dlg.meta.split('|'));
   }
 
   else if (type === 'tunnel_tractions') {
-    G.phraseIndex = 0;
-    const phrases = dlg.meta.split('|');
-    startTractions(phrases, G.currentLieu);
-    return;
-  }
-
-  // Si dernier dialogue est une demande d'objet
-  const nextDlg = G.dialoguesLieu[G.dialogueIndex + 1];
-  if (nextDlg && nextDlg.type === 'fin_succes' && G.currentLieu.objet_a_donner) {
-    ctaZone.style.display = 'block';
-    btnContinuer.textContent = 'Donner un objet';
-    btnContinuer.onclick = () => { G.phraseIndex = 0; openDonner(G.currentLieu); };
-  }
-
-  // Antoine : demande d'objet après son monologue
-  if (G.currentLieu && G.currentLieu.id === 'exterieur' && type === 'pnj') {
-    ctaZone.style.display = 'block';
-    btnContinuer.textContent = 'Donner un objet';
-    btnContinuer.onclick = () => { G.phraseIndex = 0; openDonner(G.currentLieu); };
+    startTractions(dlg.meta.split('|'));
   }
 }
 
-function showDialogueTemp(dlg, cb) {
-  const zone = document.getElementById('dialogue-zone');
-  const extra = document.createElement('div');
-  extra.className = 'dialogue-bloc';
-  extra.innerHTML = `<div class="dialogue-nom">${dlg.personnage}</div><div class="dialogue-texte">${dlg.texte}</div>`;
-  zone.appendChild(extra);
-  setTimeout(() => { extra.remove(); cb(); }, 1800);
+function showTempDlg(dlg, cb) {
+  const bloc = document.createElement('div');
+  bloc.className = 'dlg-bloc';
+  bloc.style.borderLeft = '3px solid var(--rose)';
+  bloc.innerHTML = `<div class="dlg-nom">${dlg.personnage}</div><div class="dlg-txt">${dlg.texte}</div>`;
+  document.getElementById('dlg-zone').appendChild(bloc);
+  setTimeout(() => { bloc.remove(); cb(); }, 1800);
 }
 
-function showEchecAcces(lieu) {
-  const echec = G.dialoguesLieu.find(d => d.type === 'fin_echec');
-  if (!echec) { goHall(); return; }
-  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
-  showScreen('scene');
-  const zone = document.getElementById('dialogue-zone');
-  zone.innerHTML = `<div class="dialogue-bloc"><div class="dialogue-nom">${echec.personnage}</div><div class="dialogue-texte">${echec.texte}</div></div>`;
-  document.getElementById('choix-zone').style.display = 'none';
-  const cta = document.getElementById('cta-zone');
-  cta.style.display = 'block';
+function showSucces(dlg) {
+  const dlgZone = document.getElementById('dlg-zone');
+  dlgZone.innerHTML = '';
+  const bloc = document.createElement('div');
+  bloc.className = 'dlg-bloc';
+  bloc.innerHTML = `<div class="dlg-nom">${dlg.personnage}</div><div class="dlg-txt">${dlg.texte}</div>`;
+  dlgZone.appendChild(bloc);
+  const ctaZone = document.getElementById('cta-zone');
+  ctaZone.style.display = 'flex';
   document.getElementById('btn-continuer').style.display = 'none';
-  const btnRetour = document.getElementById('btn-retour-scene');
-  btnRetour.style.display = 'block';
-  btnRetour.textContent = 'Retour au hall';
+  const btnHall = document.getElementById('btn-hall-scene');
+  btnHall.style.display = 'block';
+  btnHall.onclick = goHall;
+  document.getElementById('choix-zone').style.display = 'none';
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // DONNER UN OBJET
-// ═══════════════════════════════════════════════════════════════
-function openDonner(lieu) {
-  const overlay = document.getElementById('donner-overlay');
+// ══════════════════════════════════════════════════════════
+function openDonner() {
   const grid = document.getElementById('donner-grid');
   grid.innerHTML = '';
-
-  G.inventaire.forEach(id => {
+  inventaire.forEach(id => {
     const obj = G.objets.find(o => o.id === id);
     if (!obj) return;
     const item = document.createElement('div');
-    item.className = 'donner-item';
-    item.innerHTML = `<img src="${BASE_URL}${obj.icon}" alt="${obj.nom}"><span>${obj.nom}</span>`;
-    item.onclick = () => {
-      closeDonner();
-      handleDonnerObjet(id, lieu);
-    };
+    item.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;padding:8px;background:#f5f5f5;';
+    item.innerHTML = `<img src="${BASE}${obj.icon}" style="width:48px;height:48px;object-fit:contain;"><span style="font-size:9px;font-weight:700;text-transform:uppercase;text-align:center;margin-top:4px;color:#111;">${obj.nom}</span>`;
+    item.onclick = () => { closeDonner(); handleDonner(id); };
     grid.appendChild(item);
   });
-
-  overlay.classList.add('active');
+  document.getElementById('donner-overlay').style.display = 'flex';
 }
+function closeDonner() { document.getElementById('donner-overlay').style.display = 'none'; }
 
-function closeDonner() {
-  document.getElementById('donner-overlay').classList.remove('active');
-}
+function handleDonner(objetId) {
+  const attendu = currentLieu.objet_a_donner;
 
-function handleDonnerObjet(objetId, lieu) {
-  const attendu = lieu.objet_a_donner;
-
-  // Cas Antoine : besoin de 2 meujs
-  if (lieu.id === 'exterieur') {
-    const nbMeujs = G.inventaire.filter(i => i === 'meuj').length;
+  if (currentLieu.id === 'exterieur') {
+    const nbMeujs = inventaire.filter(i => i === 'meuj').length;
     if (objetId === 'meuj' && nbMeujs >= 1) {
-      retirerObjet('meuj');
-      const succes = G.dialoguesLieu.find(d => d.type === 'fin_succes');
-      if (succes) {
-        ajouterObjet(succes.meta);
-        showDialogueSucces(succes, lieu);
-      }
-    } else if (objetId === 'meuj' && nbMeujs < 1) {
-      const dlgUnSeul = G.dialoguesLieu.find(d => d.type === 'reponse_un_seul_meuj');
-      showDialogueTemp(dlgUnSeul || {personnage:'Antoine', texte:'Il t\'en faut un pour toi aussi...'}, () => showScene(lieu));
+      inventaire.splice(inventaire.indexOf('meuj'), 1);
+      const succes = dlgList.find(d => d.type === 'fin_succes');
+      if (succes) { if (succes.meta) ajouterObjet(succes.meta); showSucces(succes); }
+    } else if (objetId === 'meuj') {
+      showTempDlg({personnage:'Antoine', texte:"Gros, il est pour toi celui-là, mais chaud d'un petit pour moi aussi."}, renderDlg);
     } else {
-      const mauvais = G.dialoguesLieu.find(d => d.type === 'reponse_incorrecte');
-      showDialogueTemp(mauvais || {personnage:'Antoine', texte:"Qu'est-ce que tu veux que je foute avec ça ?"}, () => showScene(lieu));
+      showTempDlg({personnage:'Antoine', texte:"Qu'est-ce que tu veux que je foute avec ça ?"}, renderDlg);
     }
     return;
   }
 
-  // Cas Charles : accepte n'importe quelle montre
-  if (lieu.id === 'dutyfree_charles') {
+  if (currentLieu.id === 'dutyfree_charles') {
     if (objetId === 'montre') {
-      retirerObjet('montre');
-      const succes = G.dialoguesLieu.find(d => d.type === 'fin_succes');
-      if (succes) {
-        ajouterObjet(succes.meta);
-        showDialogueSucces(succes, lieu);
-      }
+      inventaire.splice(inventaire.indexOf('montre'), 1);
+      const succes = dlgList.find(d => d.type === 'fin_succes');
+      if (succes) { if (succes.meta) ajouterObjet(succes.meta); showSucces(succes); }
     } else {
-      const mauvais = G.dialoguesLieu.find(d => d.type === 'reponse_incorrecte');
-      showDialogueTemp(mauvais || {personnage:'Charles', texte:"C'est quoi ça ?"}, () => showScene(lieu));
+      const mauvais = dlgList.find(d => d.type === 'reponse_incorrecte');
+      showTempDlg(mauvais || {personnage:'Charles', texte:"T'as pas un truc qui brille ?"}, renderDlg);
     }
     return;
   }
 
   if (objetId === attendu) {
-    retirerObjet(objetId);
-    const succes = G.dialoguesLieu.find(d => d.type === 'fin_succes');
-    if (succes) {
-      if (succes.meta) ajouterObjet(succes.meta);
-      showDialogueSucces(succes, lieu);
-    }
+    inventaire.splice(inventaire.indexOf(objetId), 1);
+    const succes = dlgList.find(d => d.type === 'fin_succes');
+    if (succes) { if (succes.meta) ajouterObjet(succes.meta); showSucces(succes); }
   } else {
-    const mauvais = G.dialoguesLieu.find(d => d.type === 'reponse_incorrecte');
-    showDialogueTemp(mauvais || {personnage: lieu.pnj, texte:"C'est pas ça..."}, () => showScene(lieu));
+    const mauvais = dlgList.find(d => d.type === 'reponse_incorrecte');
+    showTempDlg(mauvais || {personnage: currentLieu.pnj, texte:"C'est pas ça..."}, renderDlg);
   }
 }
 
-function showDialogueSucces(dlg, lieu) {
-  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
-  showScreen('scene');
-  const zone = document.getElementById('dialogue-zone');
-  zone.innerHTML = `<div class="dialogue-bloc"><div class="dialogue-nom">${dlg.personnage}</div><div class="dialogue-texte">${dlg.texte}</div></div>`;
-  document.getElementById('choix-zone').style.display = 'none';
-  const cta = document.getElementById('cta-zone');
-  cta.style.display = 'block';
-  document.getElementById('btn-continuer').style.display = 'none';
-  const btnRetour = document.getElementById('btn-retour-scene');
-  btnRetour.style.display = 'block';
-  btnRetour.textContent = 'Retour au hall';
-  btnRetour.onclick = () => goHall();
-}
-
-// ═══════════════════════════════════════════════════════════════
-// MINI-JEU : VALISES (BAPTISTE)
-// ═══════════════════════════════════════════════════════════════
-let baptisteTunnelIndex = 0;
+// ══════════════════════════════════════════════════════════
+// VALISES (BAPTISTE)
+// ══════════════════════════════════════════════════════════
+let baptisteTunnelIdx = 0;
 let baptisteTunnelPhrases = [];
 
 function showValises(lieu) {
-  if (!peutAcceder(lieu)) {
-    showEchecAcces(lieu);
-    return;
-  }
-
-  document.getElementById('valises-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
+  if (!peutAcceder(lieu)) { entrerLieuEchec(lieu); return; }
+  document.getElementById('valises-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('valises');
 
-  baptisteTunnelIndex = 0;
+  baptisteTunnelIdx = 0;
   baptisteTunnelPhrases = G.dialogues.filter(d => d.lieu_id === 'enregistrement' && d.type === 'tunnel')
-    .sort((a,b) => parseInt(a.ordre)-parseInt(b.ordre));
+    .sort((a,b) => +a.ordre - +b.ordre);
 
-  document.getElementById('tunnel-baptiste').style.display = 'none';
-  document.getElementById('valise-succes-zone').style.display = 'none';
-
-  const container = document.getElementById('valises-container');
-  container.innerHTML = '';
-
-  // 4 valises, la 4ème est toujours la bonne
-  const valiseIcons = ['📦','🧳','👜','🎒'];
-  valiseIcons.forEach((icon, idx) => {
-    const item = document.createElement('div');
-    item.className = 'valise-item';
-    item.innerHTML = `<span style="font-size:48px;">${icon}</span>`;
-    item.onclick = () => choisirValise(idx, item, lieu);
-    container.appendChild(item);
-  });
-
-  // Intro Baptiste
+  const tunnel = document.getElementById('baptiste-tunnel');
   const intro = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'pnj');
   if (intro) {
-    const tunnel = document.getElementById('tunnel-baptiste');
+    document.getElementById('baptiste-txt').textContent = intro.texte;
     tunnel.style.display = 'block';
-    document.getElementById('tunnel-baptiste-texte').textContent = intro.texte;
   }
+  document.getElementById('baptiste-ok-btn').style.display = 'none';
+
+  const overlay = document.getElementById('valises-overlay');
+  overlay.innerHTML = '';
+
+  // 4 valises : zones cliquables sur l'image Baptiste
+  // Baptiste.jpg 1080x1920 - les valises sont dans le bas de l'image
+  // Zones approximatives à ajuster
+  const valises = [
+    { left:'5%',  top:'55%', w:'20%', h:'25%' },
+    { left:'27%', top:'57%', w:'20%', h:'23%' },
+    { left:'52%', top:'55%', w:'20%', h:'25%' },
+    { left:'74%', top:'53%', w:'22%', h:'27%' }, // la bonne
+  ];
+
+  valises.forEach((v, idx) => {
+    const zone = document.createElement('div');
+    zone.style.cssText = `position:absolute;left:${v.left};top:${v.top};width:${v.w};height:${v.h};cursor:pointer;z-index:10;-webkit-tap-highlight-color:rgba(255,110,199,0.2);`;
+    zone.ontouchstart = () => zone.style.background = 'rgba(255,110,199,0.2)';
+    zone.ontouchend = () => zone.style.background = 'transparent';
+    zone.onclick = () => choisirValise(idx);
+    overlay.appendChild(zone);
+  });
 }
 
-function choisirValise(idx, item, lieu) {
+function choisirValise(idx) {
   if (idx === 3) {
     // Bonne valise
-    item.style.borderColor = 'var(--rose)';
-    document.getElementById('tunnel-baptiste').style.display = 'none';
-
     const succes = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'fin_succes');
     if (succes) {
       ajouterObjet(succes.meta);
-      document.getElementById('tunnel-baptiste-texte').textContent = succes.texte;
-      document.getElementById('tunnel-baptiste-nom').textContent = 'Baptiste';
-      const t = document.getElementById('tunnel-baptiste');
-      t.style.display = 'block';
+      document.getElementById('baptiste-txt').textContent = succes.texte;
+      document.getElementById('baptiste-ok-btn').style.display = 'block';
     }
-    document.getElementById('valise-succes-zone').style.display = 'block';
-    document.getElementById('valise-succes-zone').querySelector('.btn-cta').onclick = () => goHall();
   } else {
-    // Mauvaise valise - afficher une phrase tunnel de Baptiste
-    item.style.borderColor = '#888';
-    if (baptisteTunnelIndex < baptisteTunnelPhrases.length) {
-      const tunnel = document.getElementById('tunnel-baptiste');
-      tunnel.style.display = 'block';
-      document.getElementById('tunnel-baptiste-texte').textContent = baptisteTunnelPhrases[baptisteTunnelIndex].texte;
-      baptisteTunnelIndex++;
+    // Mauvaise : afficher phrase tunnel
+    if (baptisteTunnelIdx < baptisteTunnelPhrases.length) {
+      document.getElementById('baptiste-txt').textContent = baptisteTunnelPhrases[baptisteTunnelIdx].texte;
+      baptisteTunnelIdx++;
     }
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// MINI-JEU : CABINES (OSCAR)
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// CABINES (OSCAR)
+// ══════════════════════════════════════════════════════════
 let cabinesOuvertes = [];
 
 function showCabines(lieu) {
-  if (!peutAcceder(lieu)) {
-    showEchecAcces(lieu);
-    return;
-  }
-
-  document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
+  if (!peutAcceder(lieu)) { entrerLieuEchec(lieu); return; }
+  document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('cabines');
   cabinesOuvertes = [];
-  document.getElementById('cabines-result').style.display = 'none';
+  document.getElementById('cabine-dlg').style.display = 'none';
 
-  const container = document.getElementById('cabines-container');
-  container.innerHTML = '';
+  const overlay = document.getElementById('cabines-overlay');
+  overlay.innerHTML = '';
 
-  // Pins roses positionnés sur les 3 portes de l'illustration
-  // Positions en % à ajuster selon l'image restroom-choice.jpg
+  // Zones cliquables sur restroom-choice.jpg
+  // Gauche=50K, Milieu=Short, Droite=Oscar
   const portes = [
-    { contenu: 'oscar',  pos_x: 25, pos_y: 55 },
-    { contenu: '50k',    pos_x: 50, pos_y: 50 },
-    { contenu: 'short',  pos_x: 75, pos_y: 55 },
+    { contenu:'50k',   left:'2%',  top:'12%', w:'29%', h:'62%' },
+    { contenu:'short', left:'33%', top:'18%', w:'29%', h:'58%' },
+    { contenu:'oscar', left:'63%', top:'18%', w:'35%', h:'58%' },
   ];
 
-  portes.forEach((porte, idx) => {
-    const btn = document.createElement('button');
-    btn.style.cssText = `
-      position:absolute;
-      left:${porte.pos_x}%;
-      top:${porte.pos_y}%;
-      transform:translate(-50%,-100%);
-      background:none;border:none;padding:0;cursor:pointer;
-      z-index:20;
-    `;
-    btn.innerHTML = `<svg width="36" height="46" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 0C6.268 0 0 6.268 0 14c0 9.625 14 22 14 22S28 23.625 28 14C28 6.268 21.732 0 14 0z" fill="var(--rose)"/>
-      <circle cx="14" cy="14" r="6" fill="#000"/>
-    </svg>`;
-    btn.onclick = () => {
-      if (!cabinesOuvertes.includes(idx)) ouvrirCabine(idx, porte.contenu, lieu, btn);
-    };
-    container.appendChild(btn);
+  portes.forEach((p, idx) => {
+    const z = document.createElement('div');
+    z.style.cssText = `position:absolute;left:${p.left};top:${p.top};width:${p.w};height:${p.h};cursor:pointer;z-index:10;`;
+    z.ontouchstart = () => z.style.background = 'rgba(255,110,199,0.15)';
+    z.ontouchend = () => z.style.background = 'transparent';
+    z.onclick = () => { if (!cabinesOuvertes.includes(idx)) ouvrirCabine(idx, p.contenu, lieu); };
+    overlay.appendChild(z);
   });
 }
 
-function ouvrirCabine(idx, contenu, lieu, btn) {
-  if (cabinesOuvertes.includes(idx)) return;
-  cabinesOuvertes.push(idx);
-
-  const resultZone = document.getElementById('cabines-result');
-  const resultNom = document.getElementById('cabine-result-nom');
-  const resultTexte = document.getElementById('cabine-result-texte');
-  const resultBtn = document.getElementById('cabine-result-btn');
-
-  if (contenu === 'oscar') {
-    // Changer l'image de fond vers Oscar
-    document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE_URL}ecrans/Oscar.jpg)`;
-    G.oscarVisites++;
-    const dlgKey = G.oscarVisites === 1 ? 'fin_succes' : 'fin_succes_2';
-    const dlg = G.dialogues.find(d => d.lieu_id === 'toilettes' && d.type === dlgKey);
-    if (dlg) {
-      ajouterObjet('meuj');
-      resultNom.textContent = 'Oscar';
-      resultTexte.textContent = dlg.texte;
-      resultZone.style.display = 'block';
-      resultBtn.onclick = () => goHall();
-    }
-  } else if (contenu === '50k') {
-    document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE_URL}ecrans/toilette-50K.jpg)`;
-    if (!G.inventaire.includes('50k')) {
-      ajouterObjet('50k');
-      resultNom.textContent = '💰';
-      resultTexte.textContent = 'Une mallette contenant 50 000€ en cash. Inattendu.';
-      resultZone.style.display = 'block';
-      resultBtn.onclick = () => {
-        resultZone.style.display = 'none';
-        document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
-      };
-    }
-  } else if (contenu === 'short') {
-    document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE_URL}ecrans/toilette-shortbernardini.jpg)`;
-    if (!G.inventaire.includes('shortbernardini')) {
-      ajouterObjet('shortbernardini');
-    }
-    resultNom.textContent = '😬';
-    resultTexte.textContent = "Le short d'Olivier Bernardini. Il vaut mieux ne pas savoir.";
-    resultZone.style.display = 'block';
-    resultBtn.onclick = () => {
-      resultZone.style.display = 'none';
-      document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE_URL}${lieu.ecran})`;
-    };
-  }
+function retourCabines() {
+  document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
+  document.getElementById('cabine-dlg').style.display = 'none';
 }
 
-// ═══════════════════════════════════════════════════════════════
-// MINI-JEU : PACMAN (PIERRE)
-// ═══════════════════════════════════════════════════════════════
-let pacmanState = null;
+function ouvrirCabine(idx, contenu, lieu) {
+  cabinesOuvertes.push(idx);
+  const dlg = document.getElementById('cabine-dlg');
+  const nom = document.getElementById('cabine-nom');
+  const txt = document.getElementById('cabine-txt');
+  const btn = document.getElementById('cabine-ramasser');
+  const retour = document.getElementById('cabine-retour');
 
-function startPacman(phrases, lieu) {
+  if (contenu === 'oscar') {
+    document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/Oscar.jpg)`;
+    oscarVisites++;
+    const dlgKey = oscarVisites === 1 ? 'fin_succes' : 'fin_succes_2';
+    const d = G.dialogues.find(d => d.lieu_id === 'toilettes' && d.type === dlgKey);
+    nom.textContent = 'Oscar';
+    txt.textContent = d ? d.texte : '';
+    btn.textContent = 'Prendre le meuj';
+    btn.onclick = () => {
+      ajouterObjet('meuj');
+      retourCabines();
+    };
+    retour.style.display = 'none';
+  } else if (contenu === '50k') {
+    document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/toilette-50K.jpg)`;
+    nom.textContent = '💰';
+    txt.textContent = 'Une mallette contenant 50 000€ en cash. Inattendu.';
+    btn.textContent = 'Prendre la mallette';
+    btn.onclick = () => {
+      if (!inventaire.includes('50k')) ajouterObjet('50k');
+      retourCabines();
+    };
+    retour.style.display = 'block';
+  } else if (contenu === 'short') {
+    document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/toilette-shortbernardini.jpg)`;
+    nom.textContent = '😬';
+    txt.textContent = "Le short d'Olivier Bernardini. Il vaut mieux ne pas savoir.";
+    btn.textContent = 'Ramasser quand même';
+    btn.onclick = () => {
+      if (!inventaire.includes('shortbernardini')) ajouterObjet('shortbernardini');
+      retourCabines();
+    };
+    retour.style.display = 'block';
+  }
+
+  dlg.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════════
+// ECHEC ACCÈS
+// ══════════════════════════════════════════════════════════
+function entrerLieuEchec(lieu) {
+  const echec = G.dialogues.find(d => d.lieu_id === lieu.id && d.type === 'fin_echec');
+  if (!echec) { goHall(); return; }
+  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
+  showScreen('scene');
+  const dlgZone = document.getElementById('dlg-zone');
+  dlgZone.innerHTML = '';
+  const bloc = document.createElement('div');
+  bloc.className = 'dlg-bloc';
+  bloc.innerHTML = `<div class="dlg-nom">${echec.personnage}</div><div class="dlg-txt">${echec.texte}</div>`;
+  dlgZone.appendChild(bloc);
+  document.getElementById('choix-zone').style.display = 'none';
+  const cta = document.getElementById('cta-zone');
+  cta.style.display = 'flex';
+  document.getElementById('btn-continuer').style.display = 'none';
+  document.getElementById('btn-hall-scene').style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════════
+// PACMAN
+// ══════════════════════════════════════════════════════════
+let pacRunning = false;
+let pacRAF = null;
+let pacPhrases = [];
+let pacLieu = null;
+
+function startPacman(phrases) {
+  pacPhrases = phrases;
+  pacLieu = currentLieu;
   showScreen('pacman');
-  const canvas = document.getElementById('pacman-canvas');
-  const ctx = canvas.getContext('2d');
+  pacRunning = false;
+  if (pacRAF) cancelAnimationFrame(pacRAF);
 
+  const canvas = document.getElementById('pac-canvas');
+  const ctx = canvas.getContext('2d');
   const W = canvas.offsetWidth;
   const H = canvas.offsetHeight;
   canvas.width = W; canvas.height = H;
 
-  let phraseIdx = 0;
-  let phraseTimer = 0;
-  const PHRASE_INTERVAL = 3000;
+  document.getElementById('pac-phrase-txt').textContent = phrases[0];
+  document.getElementById('pac-gameover').classList.remove('open');
 
-  document.getElementById('pacman-phrase-texte').textContent = phrases[0];
-  document.getElementById('pacman-gameover').classList.remove('active');
+  const COLS = 15, ROWS = 11;
+  const CW = Math.floor(W / COLS);
+  const CH = Math.floor(H / ROWS);
 
-  // Victor (cercle jaune)
-  let victor = { x: W/2, y: H/2, r: 18, vx: 2.5, vy: 2 };
-  // Tête de Pierre (carré magenta)
-  let pierre = { x: 80, y: 80, r: 22, vx: 1.8, vy: 1.5 };
-  // Points
-  const dots = [];
-  for (let i=0; i<20; i++) {
-    dots.push({ x: 20 + Math.random()*(W-40), y: 20 + Math.random()*(H-40), eaten: false });
+  // Labyrinthe : 1=mur, 0=couloir, 2=point
+  const maze = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,2,2,2,2,2,1,2,1,2,2,2,2,2,1],
+    [1,2,1,1,2,2,1,2,1,2,2,1,1,2,1],
+    [1,2,1,1,2,2,2,2,2,2,2,1,1,2,1],
+    [1,2,2,2,2,1,0,0,0,1,2,2,2,2,1],
+    [1,1,1,2,2,2,2,2,2,2,2,2,1,1,1],
+    [1,2,2,2,2,1,0,0,0,1,2,2,2,2,1],
+    [1,2,1,1,2,2,2,2,2,2,2,1,1,2,1],
+    [1,2,1,2,2,2,2,2,2,2,2,2,1,2,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  ];
+  const mazeOriginal = maze.map(r => [...r]);
+
+  function canMove(c, r) {
+    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
+    return maze[r][c] !== 1;
   }
 
-  let running = true;
-  let lastTime = null;
+  let vic = { col:7, row:8, dir:{dc:1,dr:0}, next:{dc:1,dr:0}, t:0 };
+  let pier = { col:7, row:1, dir:{dc:0,dr:1}, t:0 };
 
-  // Contrôle tactile
-  let touchStart = null;
-  canvas.ontouchstart = e => { touchStart = {x: e.touches[0].clientX, y: e.touches[0].clientY}; };
+  const VSPEED = 0.13, PSPEED = 0.07;
+  let phraseIdx = 0, phraseTimer = 0;
+  const PHRASE_MS = 4000;
+  let lastTs = null;
+
+  pacRunning = true;
+
+  // Contrôles boutons
+  document.getElementById('pac-up').onclick = () => vic.next = {dc:0,dr:-1};
+  document.getElementById('pac-down').onclick = () => vic.next = {dc:0,dr:1};
+  document.getElementById('pac-left').onclick = () => vic.next = {dc:-1,dr:0};
+  document.getElementById('pac-right').onclick = () => vic.next = {dc:1,dr:0};
+
+  // Swipe canvas
+  let sw = null;
+  canvas.ontouchstart = e => { sw = {x:e.touches[0].clientX, y:e.touches[0].clientY}; e.preventDefault(); };
   canvas.ontouchmove = e => {
-    if (!touchStart) return;
-    const dx = e.touches[0].clientX - touchStart.x;
-    const dy = e.touches[0].clientY - touchStart.y;
-    const spd = 3;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      victor.vx = dx > 0 ? spd : -spd;
-      victor.vy = 0;
-    } else {
-      victor.vy = dy > 0 ? spd : -spd;
-      victor.vx = 0;
+    if (!sw) return;
+    const dx = e.touches[0].clientX - sw.x, dy = e.touches[0].clientY - sw.y;
+    if (Math.abs(dx) > 15 || Math.abs(dy) > 15) {
+      if (Math.abs(dx) > Math.abs(dy)) vic.next = {dc: dx > 0 ? 1 : -1, dr: 0};
+      else vic.next = {dc: 0, dr: dy > 0 ? 1 : -1};
+      sw = null;
     }
-    touchStart = {x: e.touches[0].clientX, y: e.touches[0].clientY};
     e.preventDefault();
   };
 
-  pacmanState = { running };
+  function movePierre() {
+    const dirs = [{dc:1,dr:0},{dc:-1,dr:0},{dc:0,dr:1},{dc:0,dr:-1}];
+    const valid = dirs.filter(d => canMove(pier.col+d.dc, pier.row+d.dr));
+    if (!valid.length) return;
+    valid.sort((a,b) => {
+      const da = Math.abs(pier.col+a.dc-vic.col)+Math.abs(pier.row+a.dr-vic.row);
+      const db = Math.abs(pier.col+b.dc-vic.col)+Math.abs(pier.row+b.dr-vic.row);
+      return da-db;
+    });
+    const noBack = valid.filter(d => !(d.dc===-pier.dir.dc && d.dr===-pier.dir.dr));
+    pier.dir = noBack.length ? noBack[0] : valid[0];
+  }
+
+  function draw() {
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0,0,W,H);
+
+    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) {
+      const x=c*CW, y=r*CH;
+      if (maze[r][c]===1) {
+        ctx.fillStyle='#2a2a7e';
+        ctx.fillRect(x+1,y+1,CW-2,CH-2);
+        ctx.strokeStyle='#5555cc';
+        ctx.lineWidth=1;
+        ctx.strokeRect(x+1,y+1,CW-2,CH-2);
+      } else if (maze[r][c]===2) {
+        ctx.fillStyle='var(--rose)';
+        ctx.beginPath();
+        ctx.arc(x+CW/2, y+CH/2, 3, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    // Victor (pacman)
+    const vx=(vic.col+0.5)*CW, vy=(vic.row+0.5)*CH;
+    const ang = vic.dir.dc===1?0:vic.dir.dc===-1?Math.PI:vic.dir.dr===1?Math.PI/2:-Math.PI/2;
+    ctx.fillStyle='#FFD700';
+    ctx.beginPath();
+    ctx.moveTo(vx,vy);
+    ctx.arc(vx,vy,CW*0.4,ang+0.25,ang+Math.PI*2-0.25);
+    ctx.closePath();
+    ctx.fill();
+
+    // Pierre (fantôme rose)
+    const px=(pier.col+0.5)*CW, py=(pier.row+0.5)*CH;
+    const pr=CW*0.42;
+    ctx.fillStyle='#FF6EC7';
+    ctx.beginPath();
+    ctx.arc(px,py-pr*0.1,pr,Math.PI,0);
+    ctx.lineTo(px+pr,py+pr*0.8);
+    ctx.quadraticCurveTo(px+pr*0.66,py+pr*0.5,px+pr*0.33,py+pr*0.8);
+    ctx.quadraticCurveTo(px,py+pr*0.5,px-pr*0.33,py+pr*0.8);
+    ctx.quadraticCurveTo(px-pr*0.66,py+pr*0.5,px-pr,py+pr*0.8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(px-pr*0.25,py-pr*0.1,pr*0.18,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(px+pr*0.25,py-pr*0.1,pr*0.18,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#222';
+    ctx.beginPath(); ctx.arc(px-pr*0.22,py-pr*0.08,pr*0.09,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(px+pr*0.28,py-pr*0.08,pr*0.09,0,Math.PI*2); ctx.fill();
+  }
 
   function loop(ts) {
-    if (!running) return;
-    const dt = lastTime ? ts - lastTime : 16;
-    lastTime = ts;
+    if (!pacRunning) return;
+    const dt = lastTs ? ts-lastTs : 16;
+    lastTs = ts;
 
     // Phrases
     phraseTimer += dt;
-    if (phraseTimer >= PHRASE_INTERVAL) {
+    if (phraseTimer >= PHRASE_MS) {
       phraseTimer = 0;
       phraseIdx++;
       if (phraseIdx < phrases.length) {
-        document.getElementById('pacman-phrase-texte').textContent = phrases[phraseIdx];
+        document.getElementById('pac-phrase-txt').textContent = phrases[phraseIdx];
       } else {
-        // Fin du jeu : succès
-        running = false;
-        const succes = G.dialoguesLieu.find(d => d.type === 'fin_succes');
-        if (succes) {
-          ajouterObjet(succes.meta);
-          showDialogueSucces(succes, lieu);
-        }
+        // Succès
+        pacRunning = false;
+        const succes = dlgList.find(d => d.type === 'fin_succes');
+        if (succes) { ajouterObjet(succes.meta); showSuccesFromPacman(succes); }
         return;
       }
     }
 
     // Mouvement Victor
-    victor.x += victor.vx;
-    victor.y += victor.vy;
-    if (victor.x - victor.r < 0 || victor.x + victor.r > W) victor.vx *= -1;
-    if (victor.y - victor.r < 0 || victor.y + victor.r > H) victor.vy *= -1;
+    vic.t += VSPEED;
+    if (vic.t >= 1) {
+      vic.t = 0;
+      if (canMove(vic.col+vic.next.dc, vic.row+vic.next.dr)) vic.dir = {...vic.next};
+      if (canMove(vic.col+vic.dir.dc, vic.row+vic.dir.dr)) {
+        vic.col += vic.dir.dc; vic.row += vic.dir.dr;
+        if (maze[vic.row][vic.col]===2) maze[vic.row][vic.col]=0;
+      }
+    }
 
-    // Mouvement Pierre (chasse Victor)
-    const dxP = victor.x - pierre.x;
-    const dyP = victor.y - pierre.y;
-    const dist = Math.sqrt(dxP*dxP + dyP*dyP);
-    pierre.x += (dxP/dist) * pierre.vx;
-    pierre.y += (dyP/dist) * pierre.vy;
-
-    // Vitesse Pierre augmente progressivement
-    pierre.vx = 1.5 + (phraseIdx / phrases.length) * 1.5;
-    pierre.vy = pierre.vx;
+    // Mouvement Pierre
+    pier.t += PSPEED + phraseIdx*0.008;
+    if (pier.t >= 1) {
+      pier.t = 0;
+      movePierre();
+      if (canMove(pier.col+pier.dir.dc, pier.row+pier.dir.dr)) {
+        pier.col += pier.dir.dc; pier.row += pier.dir.dr;
+      }
+    }
 
     // Collision
-    const dx2 = victor.x - pierre.x;
-    const dy2 = victor.y - pierre.y;
-    if (Math.sqrt(dx2*dx2+dy2*dy2) < victor.r + pierre.r) {
-      running = false;
-      document.getElementById('pacman-gameover').classList.add('active');
+    if (Math.abs(vic.col-pier.col)<1 && Math.abs(vic.row-pier.row)<1) {
+      pacRunning = false;
+      document.getElementById('pac-gameover').classList.add('open');
       return;
     }
 
-    // Points
-    dots.forEach(dot => {
-      if (!dot.eaten) {
-        const d = Math.sqrt((victor.x-dot.x)**2+(victor.y-dot.y)**2);
-        if (d < victor.r + 6) dot.eaten = true;
-      }
-    });
-
-    // Draw
-    ctx.fillStyle = '#1a1a2e';
-    ctx.fillRect(0, 0, W, H);
-
-    // Points
-    dots.forEach(dot => {
-      if (!dot.eaten) {
-        ctx.fillStyle = '#FF6EC7';
-        ctx.beginPath();
-        ctx.arc(dot.x, dot.y, 5, 0, Math.PI*2);
-        ctx.fill();
-      }
-    });
-
-    // Victor
-    ctx.fillStyle = '#FFD700';
-    ctx.beginPath();
-    ctx.arc(victor.x, victor.y, victor.r, 0.2, Math.PI*1.8);
-    ctx.lineTo(victor.x, victor.y);
-    ctx.fill();
-
-    // Pierre
-    ctx.fillStyle = '#FF6EC7';
-    ctx.fillRect(pierre.x - pierre.r, pierre.y - pierre.r, pierre.r*2, pierre.r*2);
-    ctx.fillStyle = '#000';
-    ctx.font = `${pierre.r}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-main')}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('P', pierre.x, pierre.y);
-
-    requestAnimationFrame(loop);
+    draw();
+    pacRAF = requestAnimationFrame(loop);
   }
 
-  requestAnimationFrame(loop);
+  pacRAF = requestAnimationFrame(loop);
+}
+
+function showSuccesFromPacman(succes) {
+  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
+  showScreen('scene');
+  showSucces(succes);
 }
 
 function restartPacman() {
-  document.getElementById('pacman-gameover').classList.remove('active');
-  const phrases = G.dialoguesLieu.find(d => d.type === 'tunnel_pacman').meta.split('|');
-  startPacman(phrases, G.currentLieu);
+  document.getElementById('pac-gameover').classList.remove('open');
+  startPacman(pacPhrases);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// MINI-JEU : TRACTIONS (KUPI)
-// ═══════════════════════════════════════════════════════════════
-let tractionsState = null;
-
-function startTractions(phrases, lieu) {
-  // Vérifier objets
+// ══════════════════════════════════════════════════════════
+// TRACTIONS (KUPI)
+// ══════════════════════════════════════════════════════════
+function startTractions(phrases) {
   const requis = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];
-  const asTout = requis.every(r => G.inventaire.includes(r));
-
-  if (!asTout) {
-    // Afficher dialogue echec
-    const echec = G.dialoguesLieu.find(d => d.type === 'fin_echec');
-    if (echec) showDialogueSucces(echec, lieu);
+  if (!requis.every(r => inventaire.includes(r))) {
+    const echec = dlgList.find(d => d.type === 'fin_echec');
+    if (echec) { showScreen('scene'); showSucces(echec); }
     return;
   }
 
   showScreen('tractions');
-  document.getElementById('tractions-bg-img').src = BASE_URL + 'ecrans/pullupbase.jpg';
-  document.getElementById('tractions-body-img').src = BASE_URL + 'ecrans/victor-bodypullup.jpg';
+  document.getElementById('trac-bg').src = BASE + 'ecrans/pullupbase.jpg';
+  document.getElementById('trac-body').src = BASE + 'ecrans/victor-bodypullup.png';
 
   let phraseIdx = 0;
   let tapCount = 0;
-  const TAPS_NEEDED = 40;
-  let bodyBottom = 0; // 0 = bas, 100 = haut (traction réussie)
-  let decayInterval = null;
+  const TAPS = 30;
+  let bodyBottom = 0;
+  let decayTimer = null;
 
-  document.getElementById('tractions-phrase-texte').textContent = phrases[0];
-  document.getElementById('tractions-count').textContent = '0';
+  document.getElementById('trac-phrase-txt').textContent = phrases[0];
 
-  // Descente automatique
-  decayInterval = setInterval(() => {
-    bodyBottom = Math.max(0, bodyBottom - 2);
-    document.getElementById('tractions-body-img').style.bottom = bodyBottom + 'px';
-    document.getElementById('tractions-progress-fill').style.height = bodyBottom + '%';
+  if (decayTimer) clearInterval(decayTimer);
+  decayTimer = setInterval(() => {
+    bodyBottom = Math.max(0, bodyBottom - 1.5);
+    update();
   }, 80);
 
-  // Phrases défilantes en fonction des taps
-  const area = document.getElementById('tractions-area');
-  area.onclick = area.ontouchstart = (e) => {
-    e.preventDefault();
+  function update() {
+    document.getElementById('trac-body').style.bottom = bodyBottom + 'px';
+    document.getElementById('trac-bar-fill').style.height = bodyBottom + '%';
+  }
+
+  function onTap(e) {
+    if (e) e.preventDefault();
     tapCount++;
-    bodyBottom = Math.min(100, bodyBottom + 5);
-    document.getElementById('tractions-body-img').style.bottom = bodyBottom + 'px';
-    document.getElementById('tractions-progress-fill').style.height = bodyBottom + '%';
+    bodyBottom = Math.min(100, bodyBottom + 7);
+    update();
 
-    // Changer phrase toutes les N taps
-    const phrasesPerTap = Math.floor(TAPS_NEEDED / phrases.length);
-    const newPhraseIdx = Math.min(phrases.length - 1, Math.floor(tapCount / Math.max(1, phrasesPerTap)));
-    if (newPhraseIdx !== phraseIdx) {
-      phraseIdx = newPhraseIdx;
-      document.getElementById('tractions-phrase-texte').textContent = phrases[phraseIdx];
+    const newIdx = Math.min(phrases.length-1, Math.floor(tapCount / Math.max(1, Math.floor(TAPS/phrases.length))));
+    if (newIdx !== phraseIdx) {
+      phraseIdx = newIdx;
+      document.getElementById('trac-phrase-txt').textContent = phrases[phraseIdx];
     }
 
-    document.getElementById('tractions-count').textContent = tapCount;
-
-    // Succès si assez de taps et barre pleine
-    if (tapCount >= TAPS_NEEDED && bodyBottom >= 80) {
-      clearInterval(decayInterval);
-      area.onclick = null;
-      area.ontouchstart = null;
-      // Fin du jeu !
-      showFin();
+    if (tapCount >= TAPS && bodyBottom >= 70) {
+      clearInterval(decayTimer);
+      const btn = document.getElementById('trac-tap');
+      btn.onclick = null; btn.ontouchstart = null;
+      setTimeout(showFin, 500);
     }
-  };
+  }
+
+  const btn = document.getElementById('trac-tap');
+  btn.onclick = onTap;
+  btn.ontouchstart = onTap;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// FIN DU JEU
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// FIN
+// ══════════════════════════════════════════════════════════
 function showFin() {
   showScreen('fin');
-  // Utiliser l'image de fin si disponible, sinon placeholder
-  const img = document.getElementById('fin-logo');
-  img.src = BASE_URL + 'ecrans/Victors-laoding.jpg';
-  img.onerror = () => {
-    img.style.display = 'none';
-    document.getElementById('screen-fin').innerHTML += `
-      <div style="color:white;font-size:32px;font-weight:700;text-align:center;padding:32px;">
-        🎉 FARO, PORTUGAL 🎉<br>
-        <span style="font-size:18px;margin-top:16px;display:block;">Victor's EVG commence !</span>
-      </div>`;
-  };
+  const img = document.getElementById('fin-img');
+  img.src = BASE + 'ecrans/Victors-laoding.jpg';
   setTimeout(() => img.classList.add('show'), 100);
 }
 
-function recevoirObjetEtHall(objetId) {
-  ajouterObjet(objetId);
+// ══════════════════════════════════════════════════════════
+// LANCEMENT
+// ══════════════════════════════════════════════════════════
+init().then(() => {
   goHall();
-}
-
-function nextDialogue() {
-  G.dialogueIndex++;
-  renderDialogue();
-}
-
-// ═══════════════════════════════════════════════════════════════
-// DIDACTICIEL HALL
-// ═══════════════════════════════════════════════════════════════
-const TUTO_MESSAGES = [
-  "Victor, bienvenue aux portes de ton EVG. Avant de pouvoir embarquer, une mission t'attend : retrouver toutes les affaires indispensables à ton voyage.",
-  "Explore l'aéroport en appuyant sur les pastilles roses. Rencontre les occupants, réponds à leurs questions et relève leurs défis pour récupérer les objets.",
-  "Une fois tous les objets réunis dans ta sacoche, rends-toi au contrôle de sécurité. Tu découvriras alors ce qui t'attend de l'autre côté... Bonne chance !",
-];
-let tutoIndex = 0;
-
-function showTuto() {
-  tutoIndex = 0;
-  const overlay = document.getElementById('tuto-overlay');
-  overlay.style.display = 'flex';
-  renderTuto();
-}
-
-function renderTuto() {
-  document.getElementById('tuto-texte').textContent = TUTO_MESSAGES[tutoIndex];
-  const btn = document.getElementById('tuto-btn');
-  if (tutoIndex === TUTO_MESSAGES.length - 1) {
-    btn.textContent = "C'est parti !";
-  } else {
-    btn.textContent = 'Suivant';
-  }
-}
-
-function nextTuto() {
-  tutoIndex++;
-  if (tutoIndex >= TUTO_MESSAGES.length) {
-    const el = document.getElementById('tuto-overlay');
-    el.style.display = 'none';
-    el.style.visibility = 'hidden';
-    el.style.pointerEvents = 'none';
-  } else {
-    renderTuto();
-  }
-}
-
-
-init().catch(err => {
-  document.body.innerHTML = `<div style="color:white;padding:32px;font-family:sans-serif;">
-    Erreur de chargement : ${err.message}<br><small>Vérifiez la connexion et l'URL Apps Script.</small>
-  </div>`;
+  showTuto();
+}).catch(err => {
+  document.body.innerHTML = `<div style="color:#fff;padding:32px;font-family:sans-serif;">Erreur : ${err.message}</div>`;
 });
 </script>
+</div>
 </body>
 </html>
