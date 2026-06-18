@@ -75,13 +75,18 @@ html, body {
 }
 .inv-btn img { width: 100%; height: 100%; object-fit: contain; }
 
-/* DIALOGUE */
-#dlg-zone {
+/* DIALOGUE ZONE + CTA wrapper */
+#scene-bottom {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   z-index: 30;
-  padding: 10px 14px 4px;
-  display: flex; flex-direction: column; gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+#dlg-zone {
+  padding: 10px 14px 6px;
+  display: flex; flex-direction: column; gap: 8px;
 }
 .dlg-bloc {
   background: var(--dlg-bg);
@@ -99,9 +104,6 @@ html, body {
 
 /* CHOIX */
 #choix-zone {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  z-index: 30;
   padding: 0 14px 6px;
   display: none; flex-direction: column; gap: 5px;
 }
@@ -117,9 +119,6 @@ html, body {
 
 /* CTA */
 #cta-zone {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  z-index: 30;
   padding: 6px 14px 16px;
   display: none; flex-direction: column; gap: 6px;
 }
@@ -362,11 +361,13 @@ html, body {
   <div class="bg" id="scene-bg"></div>
   <button id="btn-retour-hall" onclick="goHall()">← Hall</button>
   <button class="inv-btn" onclick="openInv()"><img class="inv-icon-img" src="" alt=""></button>
-  <div id="dlg-zone"></div>
-  <div id="choix-zone" class="choix-zone"></div>
-  <div id="cta-zone">
-    <button class="btn-cta" id="btn-continuer">Continuer</button>
-    <button class="btn-sec" id="btn-hall-scene" style="display:none;" onclick="goHall()">Retour au hall</button>
+  <div id="scene-bottom">
+    <div id="dlg-zone"></div>
+    <div id="choix-zone"></div>
+    <div id="cta-zone">
+      <button class="btn-cta" id="btn-continuer">Continuer</button>
+      <button class="btn-sec" id="btn-hall-scene" style="display:none;" onclick="goHall()">Retour au hall</button>
+    </div>
   </div>
 </div>
 
