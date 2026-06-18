@@ -151,26 +151,38 @@ html, body {
 }
 #loading-bar-wrap {
   position: absolute;
-  bottom: 22%;
+  bottom: 18%;
   left: 0; right: 0;
-  height: 48px;
+  height: 84px; /* ratio de chargement.png : 1054x206 → 431 * 206/1054 ≈ 84px */
   z-index: 10;
 }
 #loading-bar-bg {
   position: absolute; inset: 0;
-  background-size: 100% 100%;
+  background-size: 100% auto;
   background-repeat: no-repeat;
   background-position: center;
 }
 #loading-plane {
   position: absolute; top: 0; left: 0;
   height: 100%; width: 0%;
-  background-size: auto 100%;
-  background-repeat: no-repeat;
-  background-position: right center;
-  background-color: transparent;
+  /* L'avion masque la barre avec la couleur de fond de l'image de chargement */
+  background-color: #c9877a; /* couleur approximative du bas de Victors-laoding.jpg */
+  background-image: none; /* on ne met pas l'avion comme bg-image, on utilise un ::after */
   transition: width 0.1s linear;
   z-index: 2;
+  overflow: visible;
+}
+/* L'icône avion est positionnée à droite du masque */
+#loading-plane::after {
+  content: '';
+  position: absolute;
+  right: -42px; top: 50%;
+  transform: translateY(-50%);
+  width: 84px; height: 84px;
+  background-image: var(--plane-img);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 #loading-intro {
   position: relative; z-index: 10;
@@ -530,17 +542,27 @@ async function init() {
   const cover = document.getElementById('loading-cover');
   cover.style.backgroundImage = `url(${BASE}ecrans/Victors-laoding.jpg)`;
 
-  // La barre de chargement : chargement.png pleine largeur en bas
   const barBg = document.getElementById('loading-bar-bg');
   barBg.style.backgroundImage = `url(${BASE}icons/chargement.png)`;
-  barBg.style.backgroundSize = '100% 100%';
+  barBg.style.backgroundSize = '100% auto';
 
-  // L'avion se déplace de gauche à droite et efface la barre dessous
-  const plane = document.getElementById('loading-plane');
-  plane.style.backgroundImage = `url(${BASE}icons/avion.png)`;
-  // Le plan couvre la barre avec un fond qui reprend la couleur de l'image de fond
-  // On utilise un gradient transparent → couleur image (approximée)
-  plane.style.backgroundColor = 'transparent';
+  // Calculer la hauteur correcte une fois l'image chargée
+  const chargImg = new Image();
+  chargImg.onload = () => {
+    const wrap = document.getElementById('loading-bar-wrap');
+    const appW = document.getElementById('app').offsetWidth;
+    const ratio = chargImg.naturalHeight / chargImg.naturalWidth;
+    const h = Math.round(appW * ratio);
+    wrap.style.height = h + 'px';
+  };
+  chargImg.src = BASE + 'icons/chargement.png';
+
+  // L'avion via CSS variable pour le ::after
+  document.documentElement.style.setProperty('--plane-img', `url(${BASE}icons/avion.png)`);
+  // Couleur de masque : lire la couleur moyenne du bas de l'image de fond
+  // On utilise une valeur approximative (couleur peau/beige du bas de Victors-laoding.jpg)
+  document.getElementById('loading-plane').style.backgroundColor = '#d4a07a';
+
   document.getElementById('loading-intro').textContent = 'Victor, bienvenue aux portes de ton EVG. Avant de pouvoir embarquer, une mission t\'attend : retrouver toutes les affaires indispensables à ton voyage. Explore l\'aéroport, relève les défis. Bonne chance !';
 
   // Preload + barre de chargement
