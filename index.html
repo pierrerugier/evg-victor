@@ -797,8 +797,12 @@ function renderDlg() {
 
     const isLast = phraseIndex >= phrases.length - 1;
 
-    // Si dernier dialogue de type pnj ET lieu a un objet à donner
-    if (isLast && currentLieu.objet_a_donner && dlgIndex === dlgList.findIndex(d => d.type === 'pnj')) {
+    // Si lieu attend un objet et qu'on est sur la dernière phrase du dernier dialogue pnj
+    const isPnjDlg = type === 'pnj' || type === 'victor' || type === 'narration';
+    const nextDlgType = dlgList[dlgIndex + 1]?.type;
+    const noMorePnjAfter = !nextDlgType || ['fin_succes','fin_echec','reponse_incorrecte','qcm','choix','tunnel_pacman','tunnel_tractions'].includes(nextDlgType);
+
+    if (isLast && currentLieu.objet_a_donner && isPnjDlg && noMorePnjAfter) {
       btnContinuer.textContent = 'Ouvrir l\'inventaire →';
       btnContinuer.onclick = () => { phraseIndex = 0; openInv(); };
     } else {
@@ -998,7 +1002,7 @@ function handleDonner(objetId) {
     if (objetId === 'meuj' && nbMeujs >= 1) {
       inventaire.splice(inventaire.indexOf('meuj'), 1);
       const succes = dlgList.find(d => d.type === 'fin_succes');
-      if (succes) { if (succes.meta) ajouterObjet(succes.meta); showSucces(succes); }
+      if (succes) showSucces(succes); // objet donné au clic retour via showSucces
     } else if (objetId === 'meuj') {
       showTempDlg({personnage:'Antoine', texte:"Gros, il est pour toi celui-là, mais chaud d'un petit pour moi aussi."}, renderDlg);
     } else {
@@ -1011,12 +1015,10 @@ function handleDonner(objetId) {
     if (objetId === 'montre') {
       inventaire.splice(inventaire.indexOf('montre'), 1);
       const succes = dlgList.find(d => d.type === 'fin_succes');
-      if (succes) { if (succes.meta) ajouterObjet(succes.meta); showSucces(succes); }
+      if (succes) showSucces(succes); // billet donné au clic retour via showSucces
     } else {
-      // Mauvais objet : message temporaire, on reste sur la scène sans reset
       const mauvais = dlgList.find(d => d.type === 'reponse_incorrecte');
       showTempDlg(mauvais || {personnage:'Charles', texte:"T'as pas un truc qui brille ?"}, () => {
-        // Remettre l'inventaire ouvert pour qu'il puisse réessayer
         openInv();
       }, 3000);
     }
@@ -1026,7 +1028,7 @@ function handleDonner(objetId) {
   if (objetId === attendu) {
     inventaire.splice(inventaire.indexOf(objetId), 1);
     const succes = dlgList.find(d => d.type === 'fin_succes');
-    if (succes) { if (succes.meta) ajouterObjet(succes.meta); showSucces(succes); }
+    if (succes) showSucces(succes); // objet donné au clic retour via showSucces
   } else {
     const mauvais = dlgList.find(d => d.type === 'reponse_incorrecte');
     showTempDlg(mauvais || {personnage: currentLieu.pnj, texte:"C'est pas ça..."}, renderDlg);
