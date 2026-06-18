@@ -150,18 +150,28 @@ html, body {
   background-size: cover; background-position: center;
 }
 #loading-bar-wrap {
-  position: absolute; top: 30%; left: 8%; width: 84%; height: 20px; z-index: 10;
+  position: absolute;
+  bottom: 28%;
+  left: 0; right: 0;
+  height: 28px;
+  z-index: 10;
 }
 #loading-bar-bg {
   position: absolute; inset: 0;
-  background-size: contain; background-repeat: no-repeat; background-position: left center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 #loading-plane {
-  position: absolute; top: 50%; left: 0;
-  transform: translateY(-50%);
-  height: 30px; width: 0%;
-  background-size: contain; background-repeat: no-repeat; background-position: right center;
+  position: absolute; top: 0; left: 0;
+  height: 100%; width: 0%;
+  background-size: auto 100%;
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-color: transparent;
   transition: width 0.1s linear;
+  /* L'avion efface la barre en la couvrant avec le fond */
+  z-index: 2;
 }
 #loading-intro {
   position: relative; z-index: 10;
@@ -520,8 +530,18 @@ async function init() {
   // Setup loading
   const cover = document.getElementById('loading-cover');
   cover.style.backgroundImage = `url(${BASE}ecrans/Victors-laoding.jpg)`;
-  document.getElementById('loading-bar-bg').style.backgroundImage = `url(${BASE}icons/chargement.png)`;
-  document.getElementById('loading-plane').style.backgroundImage = `url(${BASE}icons/avion.png)`;
+
+  // La barre de chargement : chargement.png pleine largeur en bas
+  const barBg = document.getElementById('loading-bar-bg');
+  barBg.style.backgroundImage = `url(${BASE}icons/chargement.png)`;
+  barBg.style.backgroundSize = '100% 100%';
+
+  // L'avion se déplace de gauche à droite et efface la barre dessous
+  const plane = document.getElementById('loading-plane');
+  plane.style.backgroundImage = `url(${BASE}icons/avion.png)`;
+  // Le plan couvre la barre avec un fond qui reprend la couleur de l'image de fond
+  // On utilise un gradient transparent → couleur image (approximée)
+  plane.style.backgroundColor = 'transparent';
   document.getElementById('loading-intro').textContent = 'Victor, bienvenue aux portes de ton EVG. Avant de pouvoir embarquer, une mission t\'attend : retrouver toutes les affaires indispensables à ton voyage. Explore l\'aéroport, relève les défis. Bonne chance !';
 
   // Preload + barre de chargement
@@ -614,8 +634,9 @@ function setupHall() {
 }
 
 function peutAcceder(lieu) {
-  if (!lieu.objets_requis) return true;
-  return lieu.objets_requis.split(',').map(s => s.trim()).filter(Boolean).every(id => inventaire.includes(id));
+  const requis = String(lieu.objets_requis || '').trim();
+  if (!requis) return true;
+  return requis.split(',').map(s => s.trim()).filter(Boolean).every(id => inventaire.includes(id));
 }
 
 // TUTO
@@ -721,11 +742,23 @@ function renderDlg() {
 
   // Types à afficher phrase par phrase
   if (['pnj','victor','narration'].includes(type)) {
-    const phrases = dlg.texte.split(/\n+/).flatMap(p =>
-      p.split(/(?<=[.!?…])\s+(?=[A-ZÀ-Ü«"])/)
-    ).map(p => p.trim()).filter(Boolean);
+    // Split sur les points de fin de phrase suivis d'une majuscule
+    // On garde les phrases courtes (max ~120 chars) pour la lisibilité
+    let phrases = dlg.texte
+      .split(/\n+/)
+      .join(' ')
+      .split(/(?<=[.!?…])\s+(?=[A-ZÀ-ÙA-Z«0-9])/)
+      .map(p => p.trim())
+      .filter(p => p.length > 0);
 
-    const phrase = phrases[phraseIndex] || dlg.texte;
+    if (phrases.length === 0) phrases = [dlg.texte];
+
+    // Clamp phraseIndex
+    if (phraseIndex >= phrases.length) phraseIndex = phrases.length - 1;
+    const phrase = phrases[phraseIndex];
+
+    // Un seul bloc, toujours vidé avant
+    dlgZone.innerHTML = '';
     const bloc = document.createElement('div');
     bloc.className = 'dlg-bloc';
     bloc.innerHTML = `<div class="dlg-nom">${dlg.personnage}</div><div class="dlg-txt">${phrase}</div>`;
