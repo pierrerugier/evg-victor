@@ -505,6 +505,10 @@ async function init() {
   G = await res.json();
   BASE = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
 
+  // Charger le tuto depuis le Sheet
+  TUTO = (G.tuto || []).map(t => t.texte).filter(Boolean);
+  if (TUTO.length === 0) TUTO = ["Bienvenue dans le jeu !", "Explore l'aéroport.", "Bonne chance !"];
+
   // Appliquer couleurs config
   if (G.config.couleur_rose) document.documentElement.style.setProperty('--rose', G.config.couleur_rose);
   // Transparence blocs dialogue (depuis sheet)
@@ -565,11 +569,7 @@ function goHall() {
 // HALL
 // ══════════════════════════════════════════════════════════
 let tutoIndex = 0;
-const TUTO = [
-  "Victor, bienvenue aux portes de ton EVG. Avant de pouvoir embarquer, une mission t'attend : retrouver toutes les affaires indispensables à ton voyage.",
-  "Explore l'aéroport en appuyant sur les pastilles. Rencontre les occupants, réponds à leurs questions et relève leurs défis pour récupérer les objets.",
-  "Une fois tous les objets réunis dans ta sacoche, rends-toi au contrôle de sécurité. Bonne chance !"
-];
+let TUTO = []; // chargé depuis le Sheet onglet 'tuto'
 
 function setupHall() {
   const hall = G.lieux.find(l => l.id === 'hall');
