@@ -716,8 +716,11 @@ function adjustDlgBottom() {
   const dlg = document.getElementById('dlg-zone');
   const choix = document.getElementById('choix-zone');
   const ctaH = cta.offsetHeight || 58;
-  dlg.style.bottom = ctaH + 'px';
+  const choixH = choix.style.display !== 'none' ? (choix.offsetHeight || 0) : 0;
+  // Choix juste au-dessus du CTA
   choix.style.bottom = ctaH + 'px';
+  // Question au-dessus des choix
+  dlg.style.bottom = (ctaH + choixH) + 'px';
 }
 
 function renderDlg() {
@@ -814,9 +817,13 @@ function renderDlg() {
       btn.onclick = () => {
         const lettre = opt.trim().charAt(0);
         if (lettre === bonne) {
-          // Bonne réponse : avancer au prochain dialogue (phrase de transition)
+          // Bonne réponse : sauter les reponse_incorrecte et aller au prochain dialogue utile
           phraseIndex = 0;
           dlgIndex++;
+          // Sauter les entrées reponse_incorrecte
+          while (dlgIndex < dlgList.length && dlgList[dlgIndex].type === 'reponse_incorrecte') {
+            dlgIndex++;
+          }
           renderDlg();
         } else {
           // Mauvaise réponse : afficher message temporaire 3 secondes puis réafficher le QCM
@@ -826,7 +833,8 @@ function renderDlg() {
       };
       choixZone.appendChild(btn);
     });
-    requestAnimationFrame(adjustDlgBottom);
+    // Ajuster après que les choix sont dans le DOM
+    requestAnimationFrame(() => requestAnimationFrame(adjustDlgBottom));
   }
 
   else if (type === 'choix' && currentLieu && currentLieu.id === 'rolex') {
