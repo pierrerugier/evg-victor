@@ -847,12 +847,11 @@ function renderDlg() {
   }
 
   else if (type === 'choix' && currentLieu && currentLieu.id === 'rolex') {
-    // Montres : zones cliquables sur montreschoix.jpg
     document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}ecrans/montreschoix.jpg)`;
     const montres = [
-      { label:'Daytona', type:'reponse_daytona', left:'5%',  top:'52%', w:'30%', h:'30%' },
-      { label:'Milgauss', type:'reponse_milgauss', left:'36%', top:'50%', w:'28%', h:'32%' },
-      { label:'GMT',      type:'reponse_gmt',      left:'64%', top:'52%', w:'31%', h:'30%' },
+      { label:'Daytona',  type:'reponse_daytona',  objetId:'montre', icon:'icons/daytona.png',  left:'5%',  top:'52%', w:'30%', h:'30%' },
+      { label:'Milgauss', type:'reponse_milgauss', objetId:'montre', icon:'icons/milgauss.png', left:'36%', top:'50%', w:'28%', h:'32%' },
+      { label:'GMT',      type:'reponse_gmt',      objetId:'montre', icon:'icons/GMT.png',      left:'64%', top:'52%', w:'31%', h:'30%' },
     ];
     montres.forEach(m => {
       const z = document.createElement('div');
@@ -865,7 +864,11 @@ function renderDlg() {
       z.onclick = () => {
         document.querySelectorAll('.montre-zone').forEach(el => el.remove());
         const rep = dlgList.find(d => d.type === m.type);
-        if (rep) { ajouterObjet(rep.meta); showSucces(rep); }
+        // Stocker la montre avec son icône spécifique dans l'inventaire
+        // On utilise l'id 'montre' mais on met à jour l'icône dans G.objets
+        const objMontre = G.objets.find(o => o.id === 'montre');
+        if (objMontre) objMontre.icon = m.icon;
+        if (rep) { ajouterObjet('montre'); showSucces(rep); }
       };
       document.getElementById('screen-scene').appendChild(z);
     });
@@ -890,16 +893,24 @@ function renderDlg() {
   }
 
   else if (type === 'fin_succes' || type === 'fin_succes_2') {
-    if (dlg.meta) ajouterObjet(dlg.meta);
     ctaZone.style.display = 'flex';
     btnContinuer.style.display = 'none';
     btnHall.style.display = 'block';
+    btnHall.textContent = 'Retour au hall';
+    // Donner l'objet au clic sur le bouton retour (pas au rendu)
+    btnHall.onclick = () => {
+      if (dlg.meta) ajouterObjet(dlg.meta);
+      goHall();
+    };
   }
 
   else if (type === 'fin_echec') {
     ctaZone.style.display = 'flex';
     btnContinuer.style.display = 'none';
     btnHall.style.display = 'block';
+    btnHall.textContent = 'Retour au hall';
+    btnHall.onclick = goHall;
+    requestAnimationFrame(adjustDlgBottom);
   }
 
   else if (type === 'tunnel_pacman') {
@@ -934,10 +945,15 @@ function showSucces(dlg) {
   const ctaZone = document.getElementById('cta-zone');
   ctaZone.style.display = 'flex';
   document.getElementById('btn-continuer').style.display = 'none';
+  document.getElementById('choix-zone').style.display = 'none';
   const btnHall = document.getElementById('btn-hall-scene');
   btnHall.style.display = 'block';
-  btnHall.onclick = goHall;
-  document.getElementById('choix-zone').style.display = 'none';
+  btnHall.textContent = 'Retour au hall';
+  btnHall.onclick = () => {
+    if (dlg.meta) ajouterObjet(dlg.meta);
+    goHall();
+  };
+  requestAnimationFrame(adjustDlgBottom);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1128,16 +1144,13 @@ function ouvrirCabine(idx, contenu, lieu) {
     let pi = 0;
     txt.textContent = phrases[pi] || texte;
     btn.textContent = 'Continuer';
-    btn.style.background = 'rgba(255,255,255,0.15)';
-    btn.style.color = '#fff';
+    btn.style.background = 'var(--rose)';
+    btn.style.color = 'var(--noir)';
     retour.style.display = showRetour ? 'block' : 'none';
-
-    btn.onclick = () => {
       pi++;
       if (pi < phrases.length) {
         txt.textContent = phrases[pi];
       } else {
-        // Toutes les phrases affichées → montrer bouton ramasser
         btn.textContent = btnLabel;
         btn.style.background = 'var(--rose)';
         btn.style.color = 'var(--noir)';
@@ -1244,7 +1257,7 @@ function startPacman(phrases) {
   let vic = { col:7, row:8, dir:{dc:1,dr:0}, next:{dc:1,dr:0}, t:0 };
   let pier = { col:7, row:1, dir:{dc:0,dr:1}, t:0 };
 
-  const VSPEED = 0.13, PSPEED = 0.07;
+  const VSPEED = 0.06, PSPEED = 0.03;
   let phraseIdx = 0, phraseTimer = 0;
   const PHRASE_MS = 4000;
   let lastTs = null;
@@ -1367,7 +1380,7 @@ function startPacman(phrases) {
     }
 
     // Mouvement Pierre
-    pier.t += PSPEED + phraseIdx*0.008;
+    pier.t += PSPEED + phraseIdx*0.002;
     if (pier.t >= 1) {
       pier.t = 0;
       movePierre();
