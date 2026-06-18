@@ -779,9 +779,10 @@ let G = {
   objets: [],
   lieux: [],
   dialogues: [],
-  inventaire: [], // ids des objets collectés
+  inventaire: [],
   currentLieu: null,
   dialogueIndex: 0,
+  phraseIndex: 0,
   dialoguesLieu: [],
   qcmStep: 0,
   oscarVisites: 0,
@@ -1046,26 +1047,58 @@ function renderDialogue() {
   choixZone.innerHTML = '';
   ctaZone.style.display = 'none';
   btnRetour.style.display = 'none';
+  btnContinuer.style.display = 'block';
 
   const type = dlg.type;
-
-  // Blocs de texte
   const isVictor = dlg.personnage === 'Victor';
+
+  // Découper les longs textes en phrases pour les types pnj/narration
+  if (type === 'pnj' || type === 'victor' || type === 'narration') {
+    // Split sur les retours à la ligne ou les points de ponctuation forts
+    const phrases = dlg.texte
+      .split(/\n+/)
+      .flatMap(p => p.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ü])/))
+      .map(p => p.trim())
+      .filter(Boolean);
+
+    // Afficher seulement la phrase courante (sous-index dans le dialogue)
+    if (!G.phraseIndex) G.phraseIndex = 0;
+    const phrase = phrases[G.phraseIndex] || dlg.texte;
+
+    const bloc = document.createElement('div');
+    bloc.className = 'dialogue-bloc' + (isVictor ? ' victor' : '');
+    bloc.innerHTML = `<div class="dialogue-nom">${dlg.personnage}</div><div class="dialogue-texte">${phrase}</div>`;
+    zone.appendChild(bloc);
+
+    ctaZone.style.display = 'block';
+
+    if (G.phraseIndex < phrases.length - 1) {
+      btnContinuer.textContent = 'Continuer';
+      btnContinuer.onclick = () => {
+        G.phraseIndex++;
+        renderDialogue();
+      };
+    } else {
+      btnContinuer.textContent = 'Continuer';
+      btnContinuer.onclick = () => {
+        G.phraseIndex = 0;
+        G.dialogueIndex++;
+        renderDialogue();
+      };
+    }
+    return;
+  }
+
+  // Reset phraseIndex pour les autres types
+  G.phraseIndex = 0;
+
+  // Bloc texte standard
   const bloc = document.createElement('div');
   bloc.className = 'dialogue-bloc' + (isVictor ? ' victor' : '');
   bloc.innerHTML = `<div class="dialogue-nom">${dlg.personnage}</div><div class="dialogue-texte">${dlg.texte}</div>`;
   zone.appendChild(bloc);
 
-  if (type === 'pnj' || type === 'victor' || type === 'narration') {
-    ctaZone.style.display = 'block';
-    btnContinuer.textContent = 'Continuer';
-    btnContinuer.onclick = () => {
-      G.dialogueIndex++;
-      renderDialogue();
-    };
-  }
-
-  else if (type === 'qcm') {
+  if (type === 'qcm') {
     choixZone.style.display = 'flex';
     const options = dlg.meta.split('|');
     const bonne = options[options.length - 1];
@@ -1075,15 +1108,13 @@ function renderDialogue() {
       btn.textContent = opt;
       const lettre = opt.charAt(0);
       btn.onclick = () => {
+        G.phraseIndex = 0;
         if (lettre === bonne) {
           G.dialogueIndex++;
           renderDialogue();
         } else {
-          // Trouver la réponse incorrecte
           const mauvaise = G.dialoguesLieu.find((d, i) => i > G.dialogueIndex && d.type === 'reponse_incorrecte');
-          if (mauvaise) {
-            showDialogueTemp(mauvaise, () => renderDialogue());
-          }
+          if (mauvaise) showDialogueTemp(mauvaise, () => renderDialogue());
         }
       };
       choixZone.appendChild(btn);
@@ -1091,18 +1122,48 @@ function renderDialogue() {
   }
 
   else if (type === 'choix') {
-    choixZone.style.display = 'flex';
-    const options = dlg.meta.split('|');
-    options.forEach((opt, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'btn-choix';
-      btn.textContent = opt;
-      btn.onclick = () => {
-        G.dialogueIndex++;
-        renderDialogue();
-      };
-      choixZone.appendChild(btn);
-    });
+    // Mini-jeu choix montres : afficher les icônes
+    if (G.currentLieu && G.currentLieu.id === 'rolex') {
+      choixZone.style.display = 'flex';
+      choixZone.style.flexDirection = 'row';
+      choixZone.style.justifyContent = 'space-around';
+      choixZone.style.padding = '8px 16px';
+      const montres = [
+        { label: 'Daytona', icon: 'icons/daytona.png', type: 'reponse_daytona' },
+        { label: 'Milgauss', icon: 'icons/milgauss.png', type: 'reponse_milgauss' },
+        { label: 'GMT', icon: 'icons/GMT.png', type: 'reponse_gmt' },
+      ];
+      montres.forEach(m => {
+        const btn = document.createElement('button');
+        btn.style.cssText = 'background:var(--gris-clair);border:none;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;flex:1;margin:0 4px;';
+        btn.innerHTML = `<img src="${BASE_URL}${m.icon}" style="width:56px;height:56px;object-fit:contain;"><span style="font-family:var(--font-main);font-size:10px;font-weight:700;text-transform:uppercase;">${m.label}</span>`;
+        btn.onclick = () => {
+          G.phraseIndex = 0;
+          // Trouver la réponse correspondante
+          const rep = G.dialoguesLieu.find(d => d.type === m.type);
+          if (rep) {
+            ajouterObjet(rep.meta);
+            showDialogueSucces(rep, G.currentLieu);
+          }
+        };
+        choixZone.appendChild(btn);
+      });
+    } else {
+      choixZone.style.display = 'flex';
+      choixZone.style.flexDirection = 'column';
+      const options = dlg.meta.split('|');
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-choix';
+        btn.textContent = opt;
+        btn.onclick = () => {
+          G.phraseIndex = 0;
+          G.dialogueIndex++;
+          renderDialogue();
+        };
+        choixZone.appendChild(btn);
+      });
+    }
   }
 
   else if (type === 'fin_succes') {
@@ -1111,6 +1172,7 @@ function renderDialogue() {
     btnRetour.style.display = 'block';
     btnContinuer.style.display = 'none';
     btnRetour.textContent = 'Retour au hall';
+    btnRetour.onclick = () => { G.phraseIndex = 0; goHall(); };
   }
 
   else if (type === 'fin_succes_2') {
@@ -1119,6 +1181,7 @@ function renderDialogue() {
     btnRetour.style.display = 'block';
     btnContinuer.style.display = 'none';
     btnRetour.textContent = 'Retour au hall';
+    btnRetour.onclick = () => { G.phraseIndex = 0; goHall(); };
   }
 
   else if (type === 'fin_echec') {
@@ -1126,39 +1189,28 @@ function renderDialogue() {
     btnContinuer.style.display = 'none';
     btnRetour.style.display = 'block';
     btnRetour.textContent = 'Retour au hall';
+    btnRetour.onclick = () => { G.phraseIndex = 0; goHall(); };
   }
 
   else if (type === 'reponse_incorrecte') {
     ctaZone.style.display = 'block';
     btnContinuer.textContent = 'Réessayer';
     G.dialogueIndex++;
-    btnContinuer.onclick = () => renderDialogue();
+    btnContinuer.onclick = () => { G.phraseIndex = 0; renderDialogue(); };
   }
 
   else if (type === 'tunnel_pacman') {
-    // Lancer Pacman
+    G.phraseIndex = 0;
     const phrases = dlg.meta.split('|');
     startPacman(phrases, G.currentLieu);
     return;
   }
 
   else if (type === 'tunnel_tractions') {
+    G.phraseIndex = 0;
     const phrases = dlg.meta.split('|');
     startTractions(phrases, G.currentLieu);
     return;
-  }
-
-  // Gestion objet à donner
-  if (G.currentLieu && G.currentLieu.objet_a_donner && type === 'pnj' && G.dialogueIndex === G.dialoguesLieu.length - 1) {
-    // dernier pnj -> afficher donner
-  }
-
-  // Si Antoine : après son monologue, il faut donner un objet
-  if (G.currentLieu && G.currentLieu.id === 'exterieur' && type === 'pnj' && G.dialogueIndex === 0) {
-    G.dialogueIndex++;
-    ctaZone.style.display = 'block';
-    btnContinuer.textContent = 'Continuer';
-    btnContinuer.onclick = () => renderDialogue();
   }
 
   // Si dernier dialogue est une demande d'objet
@@ -1166,7 +1218,14 @@ function renderDialogue() {
   if (nextDlg && nextDlg.type === 'fin_succes' && G.currentLieu.objet_a_donner) {
     ctaZone.style.display = 'block';
     btnContinuer.textContent = 'Donner un objet';
-    btnContinuer.onclick = () => openDonner(G.currentLieu);
+    btnContinuer.onclick = () => { G.phraseIndex = 0; openDonner(G.currentLieu); };
+  }
+
+  // Antoine : demande d'objet après son monologue
+  if (G.currentLieu && G.currentLieu.id === 'exterieur' && type === 'pnj') {
+    ctaZone.style.display = 'block';
+    btnContinuer.textContent = 'Donner un objet';
+    btnContinuer.onclick = () => { G.phraseIndex = 0; openDonner(G.currentLieu); };
   }
 }
 
