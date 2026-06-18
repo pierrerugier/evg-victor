@@ -295,22 +295,26 @@ html, body {
 }
 #pac-gameover.open { display: flex; }
 
-/* ── TRACTIONS ── */
-#screen-tractions { background: #000; }
+.hall-pin.visited svg path { fill: #fff; }
+.hall-pin.visited svg circle { fill: #ccc; }
+
+/* ── TRACTIONS - phrases en bas au dessus du bouton ── */
+#screen-tractions { background: #000; flex-direction: column; }
+#trac-area { flex: 1; width: 100%; position: relative; overflow: hidden; }
+#trac-bg { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; object-fit: contain; }
+#trac-body { position: absolute; left: 50%; transform: translateX(-50%); width: 70%; object-fit: contain; transition: bottom 0.12s; }
+#trac-bar-wrap { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 10px; height: 150px; background: #333; }
+#trac-bar-fill { position: absolute; bottom: 0; left: 0; right: 0; background: var(--rose); height: 0%; transition: height 0.1s; }
 #trac-phrase-bar {
-  width: 100%; padding: 10px 14px;
-  background: rgba(0,0,0,0.8); flex-shrink: 0;
+  width: 100%; padding: 8px 14px;
+  background: rgba(0,0,0,0.85); flex-shrink: 0;
+  z-index: 5;
 }
 #trac-phrase-nom {
   font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--rose); margin-bottom: 3px;
 }
-#trac-phrase-txt { font-size: 13px; line-height: 1.4; color: #fff; min-height: 38px; }
-#trac-area { flex: 1; width: 100%; position: relative; overflow: hidden; }
-#trac-bg { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; object-fit: contain; }
-#trac-body { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 70%; object-fit: contain; transition: bottom 0.12s; }
-#trac-bar-wrap { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 10px; height: 150px; background: #333; }
-#trac-bar-fill { position: absolute; bottom: 0; left: 0; right: 0; background: var(--rose); height: 0%; transition: height 0.1s; }
+#trac-phrase-txt { font-size: 13px; line-height: 1.4; color: #fff; min-height: 36px; }
 #trac-tap { flex-shrink: 0; height: 80px; font-size: 20px; }
 
 /* ── VALISES (BAPTISTE) ── */
@@ -425,26 +429,25 @@ html, body {
     <button class="pac-btn" id="pac-down">▼</button>
     <button class="pac-btn" id="pac-right">▶</button>
   </div>
-  <div id="pac-gameover">
-    <div style="background:rgba(0,0,0,0.8);padding:12px;width:100%;margin-bottom:8px;">
-      <div class="dlg-nom">Pierre</div>
-      <div class="dlg-txt">Hé mec, t'endors pas, on est en pleine conversation !</div>
-    </div>
-    <button class="btn-cta" onclick="restartPacman()">Réessayer</button>
-    <button class="btn-sec" onclick="goHall()" style="margin-top:6px;">Quitter</button>
+  <div id="pac-gameover" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.5);z-index:20;align-items:center;justify-content:center;">
+    <button class="btn-cta" style="width:80%;" onclick="goHall()">← Quitter</button>
   </div>
+  <!-- Bouton quitter discret en haut -->
+  <button onclick="goHall()" style="position:absolute;top:0;right:0;z-index:20;background:rgba(0,0,0,0.6);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;">Quitter ✕</button>
 </div>
 
 <!-- TRACTIONS -->
 <div id="screen-tractions" class="screen">
-  <div id="trac-phrase-bar">
-    <div id="trac-phrase-nom">Kupi</div>
-    <div id="trac-phrase-txt"></div>
-  </div>
   <div id="trac-area">
     <img id="trac-bg" src="" alt="">
     <img id="trac-body" src="" alt="">
     <div id="trac-bar-wrap"><div id="trac-bar-fill"></div></div>
+    <!-- Bouton quitter en haut -->
+    <button onclick="goHall()" style="position:absolute;top:12px;left:12px;z-index:10;background:rgba(0,0,0,0.7);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;">← Hall</button>
+  </div>
+  <div id="trac-phrase-bar">
+    <div id="trac-phrase-nom">Kupi</div>
+    <div id="trac-phrase-txt"></div>
   </div>
   <button class="btn-cta" id="trac-tap">TAPOTE !</button>
 </div>
@@ -491,6 +494,7 @@ let G = null; // { config, objets, lieux, dialogues }
 
 // État jeu
 let inventaire = [];
+let lieuxVisites = new Set(); // lieux déjà visités
 let currentLieu = null;
 let dlgIndex = 0;
 let phraseIndex = 0;
@@ -588,7 +592,11 @@ function setupHall() {
       <path d="M14 0C6.268 0 0 6.268 0 14c0 9.625 14 22 14 22S28 23.625 28 14C28 6.268 21.732 0 14 0z" fill="var(--rose)"/>
       <circle cx="14" cy="14" r="6" fill="#000"/>
     </svg>`;
-    btn.onclick = () => entrerLieu(lieu.id);
+    btn.onclick = () => {
+      entrerLieu(lieu.id);
+    };
+    // Marquer comme visité si déjà fait
+    if (lieuxVisites.has(lieu.id)) btn.classList.add('visited');
     pins.appendChild(btn);
   });
 
@@ -697,6 +705,7 @@ function closeObjetPopup() {
 function entrerLieu(id) {
   const lieu = G.lieux.find(l => l.id === id);
   currentLieu = lieu;
+  lieuxVisites.add(id); // marquer comme visité
   dlgList = G.dialogues.filter(d => d.lieu_id === id).sort((a, b) => +a.ordre - +b.ordre);
   dlgIndex = 0;
   phraseIndex = 0;
@@ -726,12 +735,13 @@ function adjustDlgBottom() {
   const cta = document.getElementById('cta-zone');
   const dlg = document.getElementById('dlg-zone');
   const choix = document.getElementById('choix-zone');
-  const ctaH = cta.offsetHeight || 58;
-  const choixH = choix.style.display !== 'none' ? (choix.offsetHeight || 0) : 0;
-  // Choix juste au-dessus du CTA
-  choix.style.bottom = ctaH + 'px';
-  // Question au-dessus des choix
-  dlg.style.bottom = (ctaH + choixH) + 'px';
+  // Double RAF pour attendre le rendu complet
+  requestAnimationFrame(() => {
+    const ctaH = cta.offsetHeight || 58;
+    const choixH = (choix.style.display !== 'none') ? (choix.offsetHeight || 0) : 0;
+    choix.style.bottom = ctaH + 'px';
+    dlg.style.bottom = (ctaH + choixH) + 'px';
+  });
 }
 
 function renderDlg() {
@@ -1264,7 +1274,7 @@ function startPacman(phrases) {
   let vic = { col:7, row:8, dir:{dc:1,dr:0}, next:{dc:1,dr:0}, t:0 };
   let pier = { col:7, row:1, dir:{dc:0,dr:1}, t:0 };
 
-  const VSPEED = 0.03, PSPEED = 0.015;
+  const VSPEED = 0.03, PSPEED = 0.008; // Pierre encore plus lent
   let phraseIdx = 0, phraseTimer = 0;
   const PHRASE_MS = 4000;
   let lastTs = null;
@@ -1396,10 +1406,24 @@ function startPacman(phrases) {
       }
     }
 
-    // Collision
+    // Collision - Pierre réapparaît loin sans restart
     if (Math.abs(vic.col-pier.col)<1 && Math.abs(vic.row-pier.row)<1) {
-      pacRunning = false;
-      document.getElementById('pac-gameover').classList.add('open');
+      // Trouver un message de défaite depuis le Sheet
+      const gameOverDlg = dlgList.find(d => d.type === 'game_over_pacman');
+      const msg = gameOverDlg ? gameOverDlg.texte.split('|')[Math.floor(Math.random() * gameOverDlg.texte.split('|').length)] : 'Hé mec, t\'endors pas !';
+      document.getElementById('pac-phrase-txt').textContent = msg;
+
+      // Réinitialiser la position de Pierre loin de Victor
+      // Choisir un coin opposé à Victor
+      const corners = [{col:1,row:1},{col:13,row:1},{col:1,row:9},{col:13,row:9}];
+      const far = corners.sort((a,b) => {
+        const da = Math.abs(a.col-vic.col)+Math.abs(a.row-vic.row);
+        const db = Math.abs(b.col-vic.col)+Math.abs(b.row-vic.row);
+        return db-da; // plus loin en premier
+      })[0];
+      pier.col = far.col; pier.row = far.row; pier.t = 0;
+      // Pas de game over, le jeu continue !
+      pacRAF = requestAnimationFrame(loop);
       return;
     }
 
@@ -1434,7 +1458,13 @@ function startTractions(phrases) {
 
   showScreen('tractions');
   document.getElementById('trac-bg').src = BASE + 'ecrans/pullupbase.jpg';
-  document.getElementById('trac-body').src = BASE + 'ecrans/victor-bodypullup.png';
+  const tracBody = document.getElementById('trac-body');
+  tracBody.src = BASE + 'ecrans/victor-bodypullup.png';
+  // Appliquer les paramètres de position depuis la config
+  const bodyWidth = G.config.trac_body_width || '70';
+  const bodyInitBottom = parseInt(G.config.trac_body_bottom) || 0;
+  tracBody.style.width = bodyWidth + '%';
+  tracBody.style.bottom = bodyInitBottom + 'px';
 
   let phraseIdx = 0;
   let tapCount = 0;
