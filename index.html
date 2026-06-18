@@ -119,8 +119,14 @@
     z-index: 10;
   }
 
-  /* ── HALL ───────────────────────────────────────────────────── */
   #screen-hall { position: relative; }
+  #hall-btns {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+  }
+  #screen-hall { position: relative; }
+  /* ── HALL ───────────────────────────────────────────────────── */
   .hall-btn {
     position: absolute;
     width: 44px; height: 44px;
@@ -737,32 +743,6 @@
   <img id="fin-logo" src="" alt="Victor's">
 </div>
 
-<!-- ══ DIDACTICIEL HALL ════════════════════════════════════════════ -->
-<div id="tuto-overlay" style="
-  position:absolute;inset:0;z-index:40;
-  display:flex;flex-direction:column;
-  justify-content:flex-end;
-  background:rgba(0,0,0,0.45);
-">
-  <div style="padding:16px 16px 32px;">
-    <div id="tuto-bloc" style="
-      background:var(--rose);
-      padding:18px 16px 14px;
-      margin-bottom:12px;
-    ">
-      <div id="tuto-nom" style="
-        font-size:10px;font-weight:700;
-        letter-spacing:0.12em;text-transform:uppercase;
-        color:var(--noir);margin-bottom:6px;
-      ">Mission</div>
-      <div id="tuto-texte" style="
-        font-size:14px;line-height:1.55;
-        color:var(--noir);font-family:var(--font-main);
-      "></div>
-    </div>
-    <button class="btn-cta" id="tuto-btn" onclick="nextTuto()" style="background:var(--noir);color:var(--blanc);">Suivant</button>
-  </div>
-</div>
 <div id="inventaire-overlay">
   <div id="inventaire-inner">
     <img id="inventaire-bg-img" src="" alt="">
@@ -917,24 +897,35 @@ function setupHall() {
   const container = document.getElementById('hall-btns');
   container.innerHTML = '';
 
-  G.lieux.filter(l => l.id !== 'hall' && l.actif === 'true').forEach(lieu => {
+  G.lieux.filter(l => l.id !== 'hall' && String(l.actif).toLowerCase() === 'true').forEach(lieu => {
+    if (!lieu.pos_x || !lieu.pos_y) return;
+
     const btn = document.createElement('button');
     btn.className = 'hall-btn';
     btn.style.left = lieu.pos_x + '%';
     btn.style.top = lieu.pos_y + '%';
-    const nom = lieu.nom.length > 10 ? lieu.nom.substring(0,10) + '…' : lieu.nom;
-    btn.textContent = nom;
+    btn.style.position = 'absolute';
 
-    const accessible = peutAcceder(lieu);
-    if (!accessible) btn.classList.add('locked');
+    // Icône point de localisation
+    btn.innerHTML = `<svg width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 0C6.268 0 0 6.268 0 14c0 9.625 14 22 14 22S28 23.625 28 14C28 6.268 21.732 0 14 0z" fill="${peutAcceder(lieu) ? 'var(--rose)' : '#888'}"/>
+      <circle cx="14" cy="14" r="6" fill="${peutAcceder(lieu) ? '#000' : '#555'}"/>
+    </svg>`;
+
+    btn.style.background = 'none';
+    btn.style.border = 'none';
+    btn.style.width = '40px';
+    btn.style.height = '44px';
+    btn.style.padding = '0';
+    btn.style.cursor = peutAcceder(lieu) ? 'pointer' : 'default';
+    btn.style.transform = 'translate(-50%, -100%)';
 
     btn.onclick = () => {
-      if (accessible) entrerLieu(lieu.id);
+      if (peutAcceder(lieu)) entrerLieu(lieu.id);
     };
     container.appendChild(btn);
   });
 
-  // Inventaire grid
   setupInventaireGrid();
 }
 
