@@ -151,9 +151,9 @@ html, body {
 }
 #loading-bar-wrap {
   position: absolute;
-  bottom: 28%;
+  bottom: 22%;
   left: 0; right: 0;
-  height: 28px;
+  height: 48px;
   z-index: 10;
 }
 #loading-bar-bg {
@@ -170,7 +170,6 @@ html, body {
   background-position: right center;
   background-color: transparent;
   transition: width 0.1s linear;
-  /* L'avion efface la barre en la couvrant avec le fond */
   z-index: 2;
 }
 #loading-intro {
@@ -558,8 +557,13 @@ async function init() {
     new Promise(r => setTimeout(r, duree))
   ]);
 
-  // Afficher bouton Jouer
-  document.getElementById('btn-jouer').style.display = 'block';
+  // Afficher bouton Jouer — ne pas aller au hall automatiquement
+  const btnJouer = document.getElementById('btn-jouer');
+  btnJouer.style.display = 'block';
+  btnJouer.onclick = () => {
+    goHall();
+    showTuto();
+  };
 
   // Setup inventaire icons
   document.querySelectorAll('.inv-icon-img').forEach(el => el.src = BASE + 'icons/inventaire-icon.png');
@@ -1418,10 +1422,7 @@ function showFin() {
 // ══════════════════════════════════════════════════════════
 // LANCEMENT
 // ══════════════════════════════════════════════════════════
-init().then(() => {
-  goHall();
-  showTuto();
-}).catch(err => {
+init().catch(err => {
   document.body.innerHTML = `<div style="color:#fff;padding:32px;font-family:sans-serif;">Erreur : ${err.message}</div>`;
 });
 </script>
