@@ -512,83 +512,13 @@ async function init() {
     document.documentElement.style.setProperty('--font', `'${G.config.font_family}', sans-serif`);
   }
 
-  // Setup loading
+  // Loading simplifié : juste le fond Victor + préchargement en silence
   document.getElementById('loading-cover').style.backgroundImage = `url(${BASE}ecrans/Victors-laoding.jpg)`;
-  document.getElementById('loading-intro').textContent = 'Victor, bienvenue aux portes de ton EVG. Avant de pouvoir embarquer, une mission t\'attend : retrouver toutes les affaires indispensables à ton voyage. Explore l\'aéroport, relève les défis. Bonne chance !';
 
-  // Preload images de la barre d'abord
-  const imgBarre = new Image();
-  const imgAvion = new Image();
-  imgBarre.src = BASE + 'icons/chargement.png';
-  imgAvion.src = BASE + 'icons/avion.png';
-  await Promise.all([
-    new Promise(r => { imgBarre.onload = r; imgBarre.onerror = r; }),
-    new Promise(r => { imgAvion.onload = r; imgAvion.onerror = r; }),
-  ]);
+  // Précharger tout en silence
+  await preload(collectImages());
 
-  // Canvas animation
-  const canvas = document.getElementById('loading-canvas');
-  const ctx = canvas.getContext('2d');
-  const app = document.getElementById('app');
-  const CW = app.offsetWidth;
-  const CH = app.offsetHeight;
-  canvas.width = CW;
-  canvas.height = CH;
-
-  // Charger aussi l'image de fond pour la redessiner derrière
-  const imgBg = new Image();
-  imgBg.src = BASE + 'ecrans/Victors-laoding.jpg';
-  await new Promise(r => { imgBg.onload = r; imgBg.onerror = r; });
-
-  // Dimensions de la barre : pleine largeur, hauteur proportionnelle
-  const barH = Math.round(CW * imgBarre.naturalHeight / imgBarre.naturalWidth);
-  const barY = Math.round(CH * 0.62); // 62% = environ 38% depuis le bas, au-dessus du texte
-  const avionSize = barH * 1.4;
-
-  const duree = parseInt(G.config.duree_chargement) || 4000;
-  const start = Date.now();
-
-  function drawLoading() {
-    ctx.clearRect(0, 0, CW, CH);
-    const elapsed = Date.now() - start;
-    const pct = Math.min(1, elapsed / duree);
-    // Position du front de l'avion
-    const frontX = pct * (CW + avionSize);
-
-    // 1. Dessiner la barre complète
-    ctx.drawImage(imgBarre, 0, barY, CW, barH);
-
-    // 2. Redessiner l'image de fond sur la zone déjà passée (efface la barre)
-    const erasedW = Math.max(0, frontX - avionSize * 0.6);
-    if (erasedW > 0) {
-      ctx.drawImage(imgBg, 
-        0, barY / CH * imgBg.naturalHeight,  // source x, y
-        erasedW / CW * imgBg.naturalWidth, barH / CH * imgBg.naturalHeight, // source w, h
-        0, barY, erasedW, barH  // dest
-      );
-    }
-
-    // 3. Dessiner l'avion au front
-    if (frontX - avionSize < CW) {
-      const ax = frontX - avionSize;
-      const ay = barY + barH/2 - avionSize/2;
-      ctx.drawImage(imgAvion, ax, ay, avionSize, avionSize);
-    }
-
-    if (pct < 1) {
-      requestAnimationFrame(drawLoading);
-    }
-  }
-  requestAnimationFrame(drawLoading);
-
-  // Précharger toutes les images pendant l'animation
-  const dureePromise = new Promise(r => setTimeout(r, duree));
-  const preloadPromise = preload(collectImages());
-
-  await Promise.all([dureePromise, preloadPromise]);
-
-  // Effacer le canvas et montrer le bouton
-  ctx.clearRect(0, 0, CW, CH);
+  // Afficher le bouton Jouer
   document.getElementById('btn-jouer').style.display = 'block';
   document.getElementById('btn-jouer').onclick = () => { goHall(); showTuto(); };
 
@@ -602,9 +532,9 @@ function collectImages() {
   const urls = [];
   (G.lieux || []).forEach(l => l.ecran && urls.push(BASE + l.ecran));
   (G.objets || []).forEach(o => o.icon && urls.push(BASE + o.icon));
-  ['icons/inventaire.png','icons/inventaire-icon.png','icons/chargement.png','icons/avion.png',
+  ['icons/inventaire.png','icons/inventaire-icon.png',
    'ecrans/Victors-laoding.jpg','ecrans/pullupbase.jpg','ecrans/victor-bodypullup.png',
-   'ecrans/montreschoix.jpg'].forEach(p => urls.push(BASE + p));
+   'ecrans/montreschoix.jpg','ecrans/Oscar.jpg','ecrans/toilette-50K.jpg','ecrans/toilette-shortbernardini.jpg'].forEach(p => urls.push(BASE + p));
   return urls;
 }
 
@@ -816,12 +746,14 @@ function renderDlg() {
   if (['pnj','victor','narration'].includes(type)) {
     // Split sur les points de fin de phrase suivis d'une majuscule
     // On garde les phrases courtes (max ~120 chars) pour la lisibilité
-    let phrases = dlg.texte
-      .split(/\n+/)
-      .join(' ')
-      .split(/(?<=[.!?…])\s+(?=[A-ZÀ-ÙA-Z«0-9])/)
-      .map(p => p.trim())
-      .filter(p => p.length > 0);
+    let phrases = dlg.texte.split(/\n+/).map(p => p.trim()).filter(p => p.length > 0);
+    // Si une seule phrase après split sur \n, on découpe aussi sur ponctuation forte
+    if (phrases.length <= 1) {
+      phrases = dlg.texte
+        .split(/(?<=[.!?…])\s+(?=[A-ZÀ-ÙA-Z«0-9])/)
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+    }
 
     if (phrases.length === 0) phrases = [dlg.texte];
 
@@ -1163,42 +1095,55 @@ function ouvrirCabine(idx, contenu, lieu) {
   const btn = document.getElementById('cabine-ramasser');
   const retour = document.getElementById('cabine-retour');
 
+  // Afficher d'abord le dialogue, puis le bouton ramasser après confirmation
+  function showDialogue(nomTxt, texte, btnLabel, onRamasser, showRetour) {
+    nom.textContent = nomTxt;
+    // Split le texte en phrases pour les afficher une par une
+    const phrases = texte.split(/\n+/).map(p => p.trim()).filter(Boolean);
+    let pi = 0;
+    txt.textContent = phrases[pi] || texte;
+    btn.textContent = 'Continuer';
+    btn.style.background = 'rgba(255,255,255,0.15)';
+    btn.style.color = '#fff';
+    retour.style.display = showRetour ? 'block' : 'none';
+
+    btn.onclick = () => {
+      pi++;
+      if (pi < phrases.length) {
+        txt.textContent = phrases[pi];
+      } else {
+        // Toutes les phrases affichées → montrer bouton ramasser
+        btn.textContent = btnLabel;
+        btn.style.background = 'var(--rose)';
+        btn.style.color = 'var(--noir)';
+        btn.onclick = onRamasser;
+      }
+    };
+    dlg.style.display = 'block';
+  }
+
   if (contenu === 'oscar') {
     document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/Oscar.jpg)`;
     oscarVisites++;
     const dlgKey = oscarVisites === 1 ? 'fin_succes' : 'fin_succes_2';
     const d = G.dialogues.find(d => d.lieu_id === 'toilettes' && d.type === dlgKey);
-    nom.textContent = 'Oscar';
-    txt.textContent = d ? d.texte : '';
-    btn.textContent = 'Prendre le meuj';
-    btn.onclick = () => {
+    showDialogue('Oscar', d ? d.texte : '', 'Prendre le meuj', () => {
       ajouterObjet('meuj');
       retourCabines();
-    };
-    retour.style.display = 'none';
+    }, false);
   } else if (contenu === '50k') {
     document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/toilette-50K.jpg)`;
-    nom.textContent = '💰';
-    txt.textContent = 'Une mallette contenant 50 000€ en cash. Inattendu.';
-    btn.textContent = 'Prendre la mallette';
-    btn.onclick = () => {
+    showDialogue('💰', 'Une mallette contenant 50 000€ en cash. Inattendu.', 'Prendre la mallette', () => {
       if (!inventaire.includes('50k')) ajouterObjet('50k');
       retourCabines();
-    };
-    retour.style.display = 'block';
+    }, true);
   } else if (contenu === 'short') {
     document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/toilette-shortbernardini.jpg)`;
-    nom.textContent = '😬';
-    txt.textContent = "Le short d'Olivier Bernardini. Il vaut mieux ne pas savoir.";
-    btn.textContent = 'Ramasser quand même';
-    btn.onclick = () => {
+    showDialogue('😬', "Le short d'Olivier Bernardini. Il vaut mieux ne pas savoir.", 'Ramasser quand même', () => {
       if (!inventaire.includes('shortbernardini')) ajouterObjet('shortbernardini');
       retourCabines();
-    };
-    retour.style.display = 'block';
+    }, true);
   }
-
-  dlg.style.display = 'block';
 }
 
 // ══════════════════════════════════════════════════════════
