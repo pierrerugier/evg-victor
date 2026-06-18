@@ -141,61 +141,29 @@ html, body {
 }
 
 /* ── ÉCRAN CHARGEMENT ── */
-#screen-loading {
-  background: #000;
-  align-items: center; justify-content: flex-end;
-}
+#screen-loading { background: #000; }
 #loading-cover {
   position: absolute; inset: 0;
-  background-size: cover; background-position: center;
+  background-size: cover; background-position: center top;
 }
-#loading-bar-wrap {
-  position: absolute;
-  bottom: 18%;
-  left: 0; right: 0;
-  height: 84px; /* ratio de chargement.png : 1054x206 → 431 * 206/1054 ≈ 84px */
-  z-index: 10;
-}
-#loading-bar-bg {
+#loading-canvas {
   position: absolute; inset: 0;
-  background-size: 100% auto;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-#loading-plane {
-  position: absolute; top: 0; left: 0;
-  height: 100%; width: 0%;
-  /* L'avion masque la barre avec la couleur de fond de l'image de chargement */
-  background-color: #c9877a; /* couleur approximative du bas de Victors-laoding.jpg */
-  background-image: none; /* on ne met pas l'avion comme bg-image, on utilise un ::after */
-  transition: width 0.1s linear;
-  z-index: 2;
-  overflow: visible;
-}
-/* L'icône avion est positionnée à droite du masque */
-#loading-plane::after {
-  content: '';
-  position: absolute;
-  right: -42px; top: 50%;
-  transform: translateY(-50%);
-  width: 84px; height: 84px;
-  background-image: var(--plane-img);
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
+  width: 100%; height: 100%;
+  z-index: 10; pointer-events: none;
 }
 #loading-intro {
-  position: relative; z-index: 10;
-  padding: 0 24px 40px;
+  position: absolute;
+  bottom: 22%; left: 0; right: 0;
+  z-index: 5; padding: 0 20px;
   text-align: center; color: #fff;
   font-size: 13px; line-height: 1.6;
   text-shadow: 0 1px 6px rgba(0,0,0,0.9);
 }
 #btn-jouer {
   display: none;
-  position: relative; z-index: 10;
-  margin: 0 24px 48px;
-  width: calc(100% - 48px);
+  position: absolute;
+  bottom: 5%; left: 5%; width: 90%;
+  z-index: 20;
 }
 
 /* ── HALL ── */
@@ -368,12 +336,9 @@ html, body {
 <!-- LOADING -->
 <div id="screen-loading" class="screen active">
   <div id="loading-cover"></div>
-  <div id="loading-bar-wrap">
-    <div id="loading-bar-bg"></div>
-    <div id="loading-plane"></div>
-  </div>
+  <canvas id="loading-canvas"></canvas>
   <div id="loading-intro"></div>
-  <button class="btn-cta" id="btn-jouer" onclick="goHall()">Jouer</button>
+  <button class="btn-cta" id="btn-jouer">Jouer</button>
 </div>
 
 <!-- HALL -->
@@ -539,53 +504,71 @@ async function init() {
   }
 
   // Setup loading
-  const cover = document.getElementById('loading-cover');
-  cover.style.backgroundImage = `url(${BASE}ecrans/Victors-laoding.jpg)`;
-
-  const barBg = document.getElementById('loading-bar-bg');
-  barBg.style.backgroundImage = `url(${BASE}icons/chargement.png)`;
-  barBg.style.backgroundSize = '100% auto';
-
-  // Calculer la hauteur correcte une fois l'image chargée
-  const chargImg = new Image();
-  chargImg.onload = () => {
-    const wrap = document.getElementById('loading-bar-wrap');
-    const appW = document.getElementById('app').offsetWidth;
-    const ratio = chargImg.naturalHeight / chargImg.naturalWidth;
-    const h = Math.round(appW * ratio);
-    wrap.style.height = h + 'px';
-  };
-  chargImg.src = BASE + 'icons/chargement.png';
-
-  // L'avion via CSS variable pour le ::after
-  document.documentElement.style.setProperty('--plane-img', `url(${BASE}icons/avion.png)`);
-  // Couleur de masque : lire la couleur moyenne du bas de l'image de fond
-  // On utilise une valeur approximative (couleur peau/beige du bas de Victors-laoding.jpg)
-  document.getElementById('loading-plane').style.backgroundColor = '#d4a07a';
-
+  document.getElementById('loading-cover').style.backgroundImage = `url(${BASE}ecrans/Victors-laoding.jpg)`;
   document.getElementById('loading-intro').textContent = 'Victor, bienvenue aux portes de ton EVG. Avant de pouvoir embarquer, une mission t\'attend : retrouver toutes les affaires indispensables à ton voyage. Explore l\'aéroport, relève les défis. Bonne chance !';
 
-  // Preload + barre de chargement
-  const duree = parseInt(G.config.duree_chargement) || 4000;
-  const start = Date.now();
-  const bar = setInterval(() => {
-    const pct = Math.min(100, ((Date.now() - start) / duree) * 100);
-    document.getElementById('loading-plane').style.width = pct + '%';
-    if (pct >= 100) clearInterval(bar);
-  }, 50);
-
+  // Preload images de la barre d'abord
+  const imgBarre = new Image();
+  const imgAvion = new Image();
+  imgBarre.src = BASE + 'icons/chargement.png';
+  imgAvion.src = BASE + 'icons/avion.png';
   await Promise.all([
-    preload(collectImages()),
-    new Promise(r => setTimeout(r, duree))
+    new Promise(r => { imgBarre.onload = r; imgBarre.onerror = r; }),
+    new Promise(r => { imgAvion.onload = r; imgAvion.onerror = r; }),
   ]);
 
-  // Afficher bouton Jouer — ne pas aller au hall automatiquement
-  const btnJouer = document.getElementById('btn-jouer');
-  btnJouer.style.display = 'block';
-  btnJouer.onclick = () => {
-    goHall();
-    showTuto();
-  };
+  // Canvas animation
+  const canvas = document.getElementById('loading-canvas');
+  const ctx = canvas.getContext('2d');
+  const app = document.getElementById('app');
+  const CW = app.offsetWidth;
+  const CH = app.offsetHeight;
+  canvas.width = CW;
+  canvas.height = CH;
+
+  // Dimensions de la barre : pleine largeur, hauteur proportionnelle
+  const barH = Math.round(CW * imgBarre.naturalHeight / imgBarre.naturalWidth);
+  const barY = Math.round(CH * 0.78); // 78% de la hauteur = environ 30% depuis le bas
+  const avionSize = barH * 1.2;
+
+  const duree = parseInt(G.config.duree_chargement) || 4000;
+  const start = Date.now();
+
+  function drawLoading() {
+    ctx.clearRect(0, 0, CW, CH);
+    const elapsed = Date.now() - start;
+    const pct = Math.min(1, elapsed / duree);
+    const planeX = pct * (CW + avionSize); // l'avion sort complètement du cadre
+
+    // 1. Dessiner la barre complète
+    ctx.drawImage(imgBarre, 0, barY, CW, barH);
+
+    // 2. Effacer la partie gauche déjà "passée" par l'avion (masque transparent)
+    ctx.clearRect(0, barY, planeX - avionSize * 0.5, barH);
+
+    // 3. Dessiner l'avion à la position courante (centré sur le front)
+    const ax = planeX - avionSize;
+    const ay = barY + barH/2 - avionSize/2;
+    if (ax < CW) { // ne dessiner que si dans le cadre
+      ctx.drawImage(imgAvion, ax, ay, avionSize, avionSize);
+    }
+
+    if (pct < 1) {
+      requestAnimationFrame(drawLoading);
+    }
+  }
+  requestAnimationFrame(drawLoading);
+
+  // Précharger toutes les images pendant l'animation
+  const dureePromise = new Promise(r => setTimeout(r, duree));
+  const preloadPromise = preload(collectImages());
+
+  await Promise.all([dureePromise, preloadPromise]);
+
+  // Effacer le canvas et montrer le bouton
+  ctx.clearRect(0, 0, CW, CH);
+  document.getElementById('btn-jouer').style.display = 'block';
+  document.getElementById('btn-jouer').onclick = () => { goHall(); showTuto(); };
 
   // Setup inventaire icons
   document.querySelectorAll('.inv-icon-img').forEach(el => el.src = BASE + 'icons/inventaire-icon.png');
