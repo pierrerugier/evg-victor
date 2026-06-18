@@ -67,8 +67,8 @@ html, body {
 /* INVENTAIRE ICON */
 .inv-btn {
   position: absolute;
-  top: 12px; right: 12px;
-  width: 48px; height: 48px;
+  top: 10px; right: 10px;
+  width: 64px; height: 64px;
   z-index: 50;
   background: none; border: none;
   cursor: pointer; padding: 0;
@@ -78,17 +78,18 @@ html, body {
 /* SCENE */
 #screen-scene { position: relative; }
 
-/* DIALOGUE */
+/* DIALOGUE - toujours collé en bas */
 #dlg-zone {
   position: absolute;
   bottom: 58px; left: 0; right: 0;
   z-index: 30;
-  padding: 10px 14px 6px;
-  display: flex; flex-direction: column; gap: 8px;
+  padding: 10px 14px 0px;
+  display: flex; flex-direction: column; gap: 0;
 }
 .dlg-bloc {
   background: var(--dlg-bg);
   padding: 10px 12px;
+  margin-bottom: 4px;
 }
 .dlg-nom {
   font-size: 10px; font-weight: 700;
@@ -105,8 +106,8 @@ html, body {
   position: absolute;
   bottom: 58px; left: 0; right: 0;
   z-index: 30;
-  padding: 0 14px 6px;
-  display: none; flex-direction: column; gap: 5px;
+  padding: 0 14px 4px;
+  display: none; flex-direction: column; gap: 4px;
 }
 .btn-choix {
   background: rgba(0,0,0,0.72);
@@ -123,7 +124,7 @@ html, body {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   z-index: 30;
-  padding: 6px 14px 14px;
+  padding: 4px 14px 14px;
   display: none; flex-direction: column; gap: 6px;
 }
 
@@ -195,7 +196,7 @@ html, body {
 #inv-bg { width: 100%; height: 100%; object-fit: cover; object-position: center; }
 #inv-grid {
   position: absolute;
-  top: 20%; left: 12%; width: 76%; height: 63%;
+  top: 20%; left: 16%; width: 68%; height: 63%;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(5, 1fr);
@@ -1140,7 +1141,10 @@ function ouvrirCabine(idx, contenu, lieu) {
   // Afficher d'abord le dialogue, puis le bouton ramasser après confirmation
   function showDialogue(nomTxt, texte, btnLabel, onRamasser, showRetour) {
     nom.textContent = nomTxt;
-    const phrases = texte.split(/\n+/).map(p => p.trim()).filter(Boolean);
+    // Split sur sauts de ligne si présents, sinon sur ponctuation forte
+    const phrases = texte.includes('\n')
+      ? texte.split(/\n+/).map(p => p.trim()).filter(Boolean)
+      : texte.split(/(?<=[.!?…])\s+(?=[A-ZÀ-Ù0-9])/).map(p => p.trim()).filter(Boolean);
     let pi = 0;
     txt.textContent = phrases[pi] || texte;
     btn.textContent = pi < phrases.length - 1 ? 'Continuer' : btnLabel;
@@ -1257,7 +1261,7 @@ function startPacman(phrases) {
   let vic = { col:7, row:8, dir:{dc:1,dr:0}, next:{dc:1,dr:0}, t:0 };
   let pier = { col:7, row:1, dir:{dc:0,dr:1}, t:0 };
 
-  const VSPEED = 0.06, PSPEED = 0.03;
+  const VSPEED = 0.03, PSPEED = 0.015;
   let phraseIdx = 0, phraseTimer = 0;
   const PHRASE_MS = 4000;
   let lastTs = null;
@@ -1360,10 +1364,10 @@ function startPacman(phrases) {
       if (phraseIdx < phrases.length) {
         document.getElementById('pac-phrase-txt').textContent = phrases[phraseIdx];
       } else {
-        // Succès
+        // Toutes les phrases affichées → succès
         pacRunning = false;
         const succes = dlgList.find(d => d.type === 'fin_succes');
-        if (succes) { ajouterObjet(succes.meta); showSuccesFromPacman(succes); }
+        if (succes) showSuccesFromPacman(succes);
         return;
       }
     }
