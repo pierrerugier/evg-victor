@@ -638,9 +638,9 @@
     position:absolute;inset:0;z-index:40;
     display:flex;flex-direction:column;
     justify-content:flex-end;
-    background:rgba(0,0,0,0.45);
+    pointer-events:none;
   ">
-    <div style="padding:16px 16px 32px;">
+    <div style="padding:16px 16px 32px;pointer-events:all;">
       <div id="tuto-bloc" style="
         background:var(--rose);
         padding:18px 16px 14px;
@@ -1727,7 +1727,8 @@ function renderTuto() {
 function nextTuto() {
   tutoIndex++;
   if (tutoIndex >= TUTO_MESSAGES.length) {
-    document.getElementById('tuto-overlay').style.display = 'none';
+    const overlay = document.getElementById('tuto-overlay');
+    overlay.style.display = 'none';
   } else {
     renderTuto();
   }
