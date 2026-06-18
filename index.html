@@ -153,10 +153,10 @@ html, body {
 }
 #loading-intro {
   position: absolute;
-  bottom: 22%; left: 0; right: 0;
+  bottom: 14%; left: 0; right: 0;
   z-index: 5; padding: 0 20px;
   text-align: center; color: #fff;
-  font-size: 13px; line-height: 1.6;
+  font-size: 12px; line-height: 1.5;
   text-shadow: 0 1px 6px rgba(0,0,0,0.9);
 }
 #btn-jouer {
@@ -526,10 +526,15 @@ async function init() {
   canvas.width = CW;
   canvas.height = CH;
 
+  // Charger aussi l'image de fond pour la redessiner derrière
+  const imgBg = new Image();
+  imgBg.src = BASE + 'ecrans/Victors-laoding.jpg';
+  await new Promise(r => { imgBg.onload = r; imgBg.onerror = r; });
+
   // Dimensions de la barre : pleine largeur, hauteur proportionnelle
   const barH = Math.round(CW * imgBarre.naturalHeight / imgBarre.naturalWidth);
-  const barY = Math.round(CH * 0.78); // 78% de la hauteur = environ 30% depuis le bas
-  const avionSize = barH * 1.2;
+  const barY = Math.round(CH * 0.62); // 62% = environ 38% depuis le bas, au-dessus du texte
+  const avionSize = barH * 1.4;
 
   const duree = parseInt(G.config.duree_chargement) || 4000;
   const start = Date.now();
@@ -538,18 +543,26 @@ async function init() {
     ctx.clearRect(0, 0, CW, CH);
     const elapsed = Date.now() - start;
     const pct = Math.min(1, elapsed / duree);
-    const planeX = pct * (CW + avionSize); // l'avion sort complètement du cadre
+    // Position du front de l'avion
+    const frontX = pct * (CW + avionSize);
 
     // 1. Dessiner la barre complète
     ctx.drawImage(imgBarre, 0, barY, CW, barH);
 
-    // 2. Effacer la partie gauche déjà "passée" par l'avion (masque transparent)
-    ctx.clearRect(0, barY, planeX - avionSize * 0.5, barH);
+    // 2. Redessiner l'image de fond sur la zone déjà passée (efface la barre)
+    const erasedW = Math.max(0, frontX - avionSize * 0.6);
+    if (erasedW > 0) {
+      ctx.drawImage(imgBg, 
+        0, barY / CH * imgBg.naturalHeight,  // source x, y
+        erasedW / CW * imgBg.naturalWidth, barH / CH * imgBg.naturalHeight, // source w, h
+        0, barY, erasedW, barH  // dest
+      );
+    }
 
-    // 3. Dessiner l'avion à la position courante (centré sur le front)
-    const ax = planeX - avionSize;
-    const ay = barY + barH/2 - avionSize/2;
-    if (ax < CW) { // ne dessiner que si dans le cadre
+    // 3. Dessiner l'avion au front
+    if (frontX - avionSize < CW) {
+      const ax = frontX - avionSize;
+      const ay = barY + barH/2 - avionSize/2;
       ctx.drawImage(imgAvion, ax, ay, avionSize, avionSize);
     }
 
