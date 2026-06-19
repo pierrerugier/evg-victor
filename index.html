@@ -107,13 +107,7 @@ html, body {
   color: var(--narration-color, #FFDE00);
   font-style: italic;
 }
-/* Curseur clignotant effet machine à écrire */
-.typewriter-cursor::after {
-  content: '▋';
-  animation: blink 0.7s infinite;
-  opacity: 1;
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+/* plus de curseur clignotant */
 
 /* CHOIX */
 #choix-zone {
@@ -621,25 +615,24 @@ let typewriterTimeout = null;
 
 function typewrite(el, text, speed, onDone) {
   if (typewriterTimeout) clearTimeout(typewriterTimeout);
-  el.classList.add('typewriter-cursor');
-  let i = 0;
   el.textContent = '';
+  let i = 0;
+  const len = text.length;
   function step() {
-    if (i <= text.length) {
-      el.textContent = text.slice(0, i);
+    if (i < len) {
+      el.textContent = text.slice(0, i + 1);
       i++;
-      typewriterTimeout = setTimeout(step, speed || 22);
+      typewriterTimeout = setTimeout(step, speed);
     } else {
-      el.classList.remove('typewriter-cursor');
       if (onDone) onDone();
     }
   }
+  if (len === 0) { if (onDone) onDone(); return; }
   step();
 }
 
 function typewriteBloc(txtEl, text, onDone) {
-  // Vitesse depuis config, défaut 22ms par caractère
-  const speed = parseInt(G?.config?.typewriter_speed) || 22;
+  const speed = parseInt(G?.config?.typewriter_speed) || 18;
   typewrite(txtEl, text, speed, onDone);
 }
 let TUTO = []; // chargé depuis le Sheet onglet 'tuto'
@@ -758,8 +751,8 @@ function startHallAnim() {
     });
   }
 
-  // Démarrer après une pause initiale
-  hallAnimTimer = setTimeout(showNext, dureePause);
+  // Démarrer après 5s (pour laisser le temps après le tuto)
+  hallAnimTimer = setTimeout(showNext, 5000);
 }
 
 // ══════════════════════════════════════════════════════════
