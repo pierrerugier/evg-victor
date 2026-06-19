@@ -105,7 +105,6 @@ html, body {
 }
 .dlg-bloc.narration .dlg-txt {
   color: var(--narration-color, #FFDE00);
-  font-style: italic;
 }
 /* plus de curseur clignotant */
 
@@ -282,7 +281,6 @@ html, body {
   background: rgba(0,0,0,0.88);
   padding: 14px 16px;
   pointer-events: none;
-  display: none;
 }
 #pac-phrase-nom {
   font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
@@ -292,9 +290,13 @@ html, body {
 #pac-canvas { flex: 1; width: 100%; display: block; }
 /* Animation hall */
 #hall-bubble {
-  position: absolute; bottom: 18%; left: 8%; right: 8%;
-  z-index: 20; background: rgba(0,0,0,0.78);
-  padding: 12px 14px; display: none; pointer-events: none;
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 20;
+  background: rgba(0,0,0,0.78);
+  padding: 10px 14px 14px;
+  display: none;
+  pointer-events: none;
 }
 #hall-bubble-nom { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--rose); margin-bottom: 4px; }
 #hall-bubble-txt { font-size: 14px; line-height: 1.5; color: #fff; }
@@ -1041,9 +1043,9 @@ function renderDlg() {
   else if (type === 'choix' && currentLieu && currentLieu.id === 'rolex') {
     document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}ecrans/montreschoix.jpg)`;
     const montres = [
-      { label:'Daytona',        type:'reponse_daytona',  objetId:'montreDaytona',  icon:'icons/daytona.png',  left:'5%',  top:'52%', w:'30%', h:'30%' },
-      { label:'Milgauss',       type:'reponse_milgauss', objetId:'montreMilgauss', icon:'icons/milgauss.png', left:'36%', top:'50%', w:'28%', h:'32%' },
-      { label:'GMT-Master II',  type:'reponse_gmt',      objetId:'montreGMT',      icon:'icons/GMT.png',      left:'64%', top:'52%', w:'31%', h:'30%' },
+      { label:'Daytona',        type:'reponse_daytona',  objetId:'montre', icon:'icons/daytona.png',  nom:'Rolex Daytona',       left:'5%',  top:'52%', w:'30%', h:'30%' },
+      { label:'Milgauss',       type:'reponse_milgauss', objetId:'montre', icon:'icons/milgauss.png', nom:'Rolex Milgauss',      left:'36%', top:'50%', w:'28%', h:'32%' },
+      { label:'GMT-Master II',  type:'reponse_gmt',      objetId:'montre', icon:'icons/GMT.png',      nom:'Rolex GMT-Master II', left:'64%', top:'52%', w:'31%', h:'30%' },
     ];
     montres.forEach(m => {
       const z = document.createElement('div');
@@ -1056,13 +1058,13 @@ function renderDlg() {
       z.onclick = () => {
         document.querySelectorAll('.montre-zone').forEach(el => el.remove());
         const rep = dlgList.find(d => d.type === m.type);
-        // Mettre à jour l'objet montre dans G.objets selon le modèle choisi
-        const objMontre = G.objets.find(o => o.id === m.objetId);
-        if (objMontre) {
-          objMontre.nom = m.label;
-          objMontre.icon = m.icon;
-        }
-        if (rep) { ajouterObjet(m.objetId); showSucces(rep); }
+        // Mettre à jour l'objet montre dans G.objets
+        const objMontre = G.objets.find(o => o.id === 'montre');
+        if (objMontre) { objMontre.nom = m.nom; objMontre.icon = m.icon; }
+        // Retirer l'ancienne montre si déjà en inventaire (remplacer)
+        const idx = inventaire.indexOf('montre');
+        if (idx !== -1) inventaire.splice(idx, 1);
+        if (rep) { ajouterObjet('montre'); showSucces(rep); }
       };
       document.getElementById('screen-scene').appendChild(z);
     });
@@ -1180,27 +1182,33 @@ function handleDonner(objetId) {
   const attendu = currentLieu.objet_a_donner;
 
   if (currentLieu.id === 'exterieur') {
-    const nbMeujs = inventaire.filter(i => i === 'meuj').length;
-    if (objetId === 'meuj' && nbMeujs >= 1) {
+    if (objetId === 'meuj') {
       inventaire.splice(inventaire.indexOf('meuj'), 1);
-      const succes = dlgList.find(d => d.type === 'fin_succes');
-      if (succes) showSucces(succes); // objet donné au clic retour via showSucces
-    } else if (objetId === 'meuj') {
-      showTempDlg({personnage:'Antoine', texte:"Gros, il est pour toi celui-là, mais chaud d'un petit pour moi aussi."}, renderDlg);
+      // Chercher le fin_succes avec meta photolaura
+      const succes = dlgList.find(d => d.type === 'fin_succes' && d.meta === 'photolaura')
+                  || dlgList.find(d => d.type === 'fin_succes');
+      if (succes) showSucces(succes);
     } else {
-      showTempDlg({personnage:'Antoine', texte:"Qu'est-ce que tu veux que je foute avec ça ?"}, renderDlg);
+      const mauvais = dlgList.find(d => d.type === 'reponse_incorrecte')
+                   || {personnage:'Antoine', texte:"Qu'est-ce que tu veux que je foute avec ça ?"};
+      // Après le message, rouvrir l'inventaire pour réessayer
+      showTempDlg(mauvais, () => { openInv(); }, 3000);
     }
     return;
   }
 
   if (currentLieu.id === 'dutyfree_charles') {
-    if (objetId === 'montreMilgauss') {
-      inventaire.splice(inventaire.indexOf('montreMilgauss'), 1);
-      const succes = dlgList.find(d => d.type === 'fin_succes');
-      if (succes) showSucces(succes);
-    } else if (['montreDaytona','montreGMT'].includes(objetId)) {
-      // Mauvaise montre
-      showTempDlg({personnage:'Charles', texte:"Non non non, je veux la Milgauss ! Celle avec le cadran violet. T'as pas celle-là ?"}, () => { openInv(); }, 3500);
+    if (objetId === 'montre') {
+      // Vérifier que c'est bien la Milgauss
+      const objMontre = G.objets.find(o => o.id === 'montre');
+      const isMilgauss = objMontre && objMontre.nom && objMontre.nom.toLowerCase().includes('milgauss');
+      if (isMilgauss) {
+        inventaire.splice(inventaire.indexOf('montre'), 1);
+        const succes = dlgList.find(d => d.type === 'fin_succes');
+        if (succes) showSucces(succes);
+      } else {
+        showTempDlg({personnage:'Charles', texte:"Non non non, je veux la Milgauss ! Celle avec le cadran violet. T'as pas celle-là ?"}, () => { openInv(); }, 3500);
+      }
     } else {
       const mauvais = dlgList.find(d => d.type === 'reponse_incorrecte');
       showTempDlg(mauvais || {personnage:'Charles', texte:"T'as pas un truc qui brille ?"}, () => { openInv(); }, 3000);
@@ -1296,7 +1304,6 @@ let cabinesOuvertes = [];
 
 function showCabines(lieu) {
   if (!peutAcceder(lieu)) {
-    // Afficher la phrase de refus sur l'écran de la scène (pas les cabines)
     document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
     showScreen('scene');
     const echec = dlgList.find(d => d.type === 'fin_echec');
@@ -1312,14 +1319,11 @@ function showCabines(lieu) {
   const overlay = document.getElementById('cabines-overlay');
   overlay.innerHTML = '';
 
-  // Zones cliquables sur restroom-choice.jpg
-  // Gauche=50K, Milieu=Short, Droite=Oscar
   const portes = [
     { contenu:'50k',   left:'2%',  top:'12%', w:'29%', h:'62%' },
     { contenu:'short', left:'33%', top:'18%', w:'29%', h:'58%' },
     { contenu:'oscar', left:'63%', top:'18%', w:'35%', h:'58%' },
   ];
-
   portes.forEach((p, idx) => {
     const z = document.createElement('div');
     z.style.cssText = `position:absolute;left:${p.left};top:${p.top};width:${p.w};height:${p.h};cursor:pointer;z-index:10;`;
@@ -1328,6 +1332,26 @@ function showCabines(lieu) {
     z.onclick = () => { if (!cabinesOuvertes.includes(idx)) ouvrirCabine(idx, p.contenu, lieu); };
     overlay.appendChild(z);
   });
+
+  // Phrase d'arrivée de Victor (type 'pnj' dans dialogues toilettes)
+  const arrivedlg = G.dialogues.find(d => d.lieu_id === 'toilettes' && d.type === 'pnj');
+  if (arrivedlg) {
+    const dlg = document.getElementById('cabine-dlg');
+    const nom = document.getElementById('cabine-nom');
+    const txt = document.getElementById('cabine-txt');
+    const btn = document.getElementById('cabine-ramasser');
+    nom.textContent = 'Victor';
+    txt.textContent = '';
+    btn.style.display = 'none';
+    document.getElementById('cabine-retour').style.display = 'none';
+    dlg.style.display = 'block';
+    typewriteBloc(txt, arrivedlg.texte, () => {
+      setTimeout(() => {
+        dlg.style.display = 'none';
+        btn.style.display = '';
+      }, 2500);
+    });
+  }
 }
 
 function retourCabines() {
@@ -1724,7 +1748,10 @@ function startTractions(phrases) {
     bodyBottom = Math.min(100, bodyBottom + 4); // moins de montée par tap
     update();
 
-    if (tapCount >= TAPS && bodyBottom >= 70) {
+    if (tapCount >= TAPS) {
+      // Vérifier que la barre est suffisamment remplie (>= 80%)
+      const pct = (bodyBottom - bodyInitBottom) / Math.max(1, 100 - bodyInitBottom) * 100;
+      if (pct < 80) return; // continue à tapoter
       clearInterval(decayTimer);
       clearTimeout(phraseTimer);
       const btn = document.getElementById('trac-tap');
