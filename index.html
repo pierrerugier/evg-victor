@@ -91,6 +91,9 @@ html, body {
   padding: 10px 12px;
   margin-bottom: 4px;
 }
+.dlg-bloc.narration {
+  background: var(--narration-bg, rgba(180,140,0,0.85));
+}
 .dlg-nom {
   font-size: 10px; font-weight: 700;
   letter-spacing: 0.14em; text-transform: uppercase;
@@ -99,6 +102,10 @@ html, body {
 .dlg-txt {
   font-size: 14px; line-height: 1.5;
   color: var(--dlg-color);
+}
+.dlg-bloc.narration .dlg-txt {
+  color: #fff;
+  font-style: italic;
 }
 
 /* CHOIX */
@@ -509,8 +516,12 @@ async function init() {
   G = await res.json();
   BASE = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
 
+  if (G.config.couleur_narration) {
+    document.documentElement.style.setProperty('--narration-bg', G.config.couleur_narration);
+  }
+
   // Charger le tuto depuis le Sheet
-  TUTO = (G.tuto || []).map(t => t.texte).filter(Boolean);
+  TUTO = (G.tuto || []).sort((a,b) => +a.ordre - +b.ordre).map(t => t.texte).filter(Boolean);
   if (TUTO.length === 0) TUTO = ["Bienvenue dans le jeu !", "Explore l'aéroport.", "Bonne chance !"];
 
   // Appliquer couleurs config
@@ -699,9 +710,40 @@ function closeObjetPopup() {
   }
 }
 
-// ══════════════════════════════════════════════════════════
-// ENTRER DANS UN LIEU
-// ══════════════════════════════════════════════════════════
+// Créer un bloc dialogue — si le texte commence par [ c'est une narration
+function createDlgBloc(personnage, texte) {
+  const isNarr = texte.trim().startsWith('[') && texte.includes(']');
+  const texteClean = isNarr
+    ? texte.trim().replace(/^\[/, '').replace(/\]$/, '').trim()
+    : texte;
+  const bloc = document.createElement('div');
+  bloc.className = 'dlg-bloc' + (isNarr ? ' narration' : '');
+  if (isNarr) {
+    bloc.innerHTML = `<div class="dlg-txt">${texteClean}</div>`;
+  } else {
+    bloc.innerHTML = `<div class="dlg-nom">${personnage}</div><div class="dlg-txt">${texteClean}</div>`;
+  }
+  return { bloc, isNarr, texteClean };
+}
+
+// Split un texte en phrases, en respectant les [narrations] comme unités atomiques
+function splitPhrases(texte) {
+  // D'abord séparer sur |
+  const parts = texte.split('|').map(p => p.trim()).filter(Boolean);
+  // Ensuite pour chaque part non-narration, découper sur saut de ligne puis ponctuation
+  const result = [];
+  for (const part of parts) {
+    if (part.startsWith('[')) {
+      result.push(part); // narration = bloc atomique
+    } else if (part.includes('\n')) {
+      result.push(...part.split(/\n+/).map(p => p.trim()).filter(Boolean));
+    } else {
+      const sub = part.split(/(?<=[.!?…])\s+(?=[A-ZÀ-Ù0-9])/).map(p => p.trim()).filter(Boolean);
+      result.push(...(sub.length > 0 ? sub : [part]));
+    }
+  }
+  return result;
+}
 function entrerLieu(id) {
   const lieu = G.lieux.find(l => l.id === id);
   currentLieu = lieu;
@@ -764,32 +806,15 @@ function renderDlg() {
   document.querySelectorAll('.montre-zone').forEach(el => el.remove());
 
   const type = dlg.type;
-  const isVictor = dlg.personnage === 'Victor';
 
   // Types à afficher phrase par phrase
   if (['pnj','victor','narration'].includes(type)) {
-    // Split sur les points de fin de phrase suivis d'une majuscule
-    // On garde les phrases courtes (max ~120 chars) pour la lisibilité
-    let phrases = dlg.texte.split(/\n+/).map(p => p.trim()).filter(p => p.length > 0);
-    // Si une seule phrase après split sur \n, on découpe aussi sur ponctuation forte
-    if (phrases.length <= 1) {
-      phrases = dlg.texte
-        .split(/(?<=[.!?…])\s+(?=[A-ZÀ-ÙA-Z«0-9])/)
-        .map(p => p.trim())
-        .filter(p => p.length > 0);
-    }
-
-    if (phrases.length === 0) phrases = [dlg.texte];
-
-    // Clamp phraseIndex
+    const phrases = splitPhrases(dlg.texte);
     if (phraseIndex >= phrases.length) phraseIndex = phrases.length - 1;
-    const phrase = phrases[phraseIndex];
+    const phrase = phrases[phraseIndex] || dlg.texte;
 
-    // Un seul bloc, toujours vidé avant
     dlgZone.innerHTML = '';
-    const bloc = document.createElement('div');
-    bloc.className = 'dlg-bloc';
-    bloc.innerHTML = `<div class="dlg-nom">${dlg.personnage}</div><div class="dlg-txt">${phrase}</div>`;
+    const { bloc } = createDlgBloc(dlg.personnage, phrase);
     dlgZone.appendChild(bloc);
 
     ctaZone.style.display = 'flex';
@@ -945,10 +970,8 @@ function showTempDlg(dlg, cb, duree = 3000) {
   const dlgZone = document.getElementById('dlg-zone');
   dlgZone.innerHTML = '';
   document.getElementById('choix-zone').style.display = 'none';
-  const bloc = document.createElement('div');
-  bloc.className = 'dlg-bloc';
+  const { bloc } = createDlgBloc(dlg.personnage, dlg.texte);
   bloc.style.borderLeft = '3px solid var(--rose)';
-  bloc.innerHTML = `<div class="dlg-nom">${dlg.personnage}</div><div class="dlg-txt">${dlg.texte}</div>`;
   dlgZone.appendChild(bloc);
   requestAnimationFrame(adjustDlgBottom);
   setTimeout(() => cb(), duree);
@@ -957,10 +980,8 @@ function showTempDlg(dlg, cb, duree = 3000) {
 function showSucces(dlg) {
   const dlgZone = document.getElementById('dlg-zone');
   dlgZone.innerHTML = '';
-  const bloc = document.createElement('div');
-  bloc.className = 'dlg-bloc';
-  bloc.innerHTML = `<div class="dlg-nom">${dlg.personnage}</div><div class="dlg-txt">${dlg.texte}</div>`;
-  dlgZone.appendChild(bloc);
+  const { bloc: sbloc } = createDlgBloc(dlg.personnage, dlg.texte);
+  dlgZone.appendChild(sbloc);
   const ctaZone = document.getElementById('cta-zone');
   ctaZone.style.display = 'flex';
   document.getElementById('btn-continuer').style.display = 'none';
