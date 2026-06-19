@@ -1505,22 +1505,28 @@ function startPacman(phrases) {
   document.getElementById('pac-phrase-txt').textContent = phrases[0];
   document.getElementById('pac-gameover').classList.remove('open');
 
-  const COLS = 15, ROWS = 11;
-  const CW = Math.floor(W / COLS);
-  const CH = Math.floor(H / ROWS);
+  const COLS = 15, ROWS = 13;
+  // Cellule carrée, grille centrée
+  const CELL = Math.min(Math.floor(W / COLS), Math.floor(H / ROWS));
+  const CW = CELL, CH = CELL;
+  const gridW = CELL * COLS, gridH = CELL * ROWS;
+  const offX = Math.floor((W - gridW) / 2);
+  const offY = Math.floor((H - gridH) / 2);
 
-  // Labyrinthe inspiré de la maquette : couloir périphérique + obstacles centraux
-  // 1=mur, 0=couloir
+  // Labyrinthe fidèle à la maquette : cadre + couloir périphérique + paires de blocs verticaux symétriques
+  // 1=mur, 0=couloir (avec point)
   const maze = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,1,1,0,1,0,1,0,1,0,1,1,0,1],
-    [1,0,1,1,0,1,0,1,0,1,0,1,1,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,1,0,1,1,0,0,0,1,1,0,1,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,1,1,0,1,0,1,0,1,0,1,1,0,1],
-    [1,0,1,1,0,1,0,1,0,1,0,1,1,0,1],
+    [1,0,1,1,0,1,1,0,1,1,0,1,1,0,1],
+    [1,0,1,1,0,1,1,0,1,1,0,1,1,0,1],
+    [1,0,1,1,0,0,0,0,0,0,0,1,1,0,1],
+    [1,0,0,0,0,1,1,0,1,1,0,0,0,0,1],
+    [1,0,1,1,0,0,0,0,0,0,0,1,1,0,1],
+    [1,0,1,1,0,1,1,0,1,1,0,1,1,0,1],
+    [1,0,0,0,0,1,1,0,1,1,0,0,0,0,1],
+    [1,0,1,1,0,0,0,0,0,0,0,1,1,0,1],
+    [1,0,1,1,0,1,1,0,1,1,0,1,1,0,1],
     [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   ];
@@ -1531,11 +1537,11 @@ function startPacman(phrases) {
     return maze[r][c] !== 1;
   }
 
-  // Pacman démarre en bas, Pierre en haut
-  let vic = { col:7, row:9, dir:{dc:0,dr:0}, next:{dc:0,dr:0}, t:0 };
+  // Victor en bas, Pierre en haut
+  let vic = { col:7, row:11, dir:{dc:0,dr:0}, next:{dc:0,dr:0}, t:0 };
   let pier = { col:7, row:1, dir:{dc:0,dr:1}, t:0 };
 
-  const VSPEED = 0.04, PSPEED = 0.012; // ralenti
+  const VSPEED = 0.045, PSPEED = 0.014;
   let phraseIdx = 0, phraseTimer = 0;
   const PHRASE_MS = 4000;
   let lastTs = null;
@@ -1581,37 +1587,40 @@ function startPacman(phrases) {
   }
 
   function draw() {
-    ctx.fillStyle = '#1a1a2e';
+    // Fond noir comme la maquette
+    ctx.fillStyle = '#0a0a1a';
     ctx.fillRect(0,0,W,H);
 
     for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) {
-      const x=c*CW, y=r*CH;
+      const x = offX + c*CW, y = offY + r*CH;
       if (maze[r][c]===1) {
-        ctx.fillStyle='#2a2a7e';
-        ctx.fillRect(x+1,y+1,CW-2,CH-2);
-        ctx.strokeStyle='#5555cc';
-        ctx.lineWidth=1;
-        ctx.strokeRect(x+1,y+1,CW-2,CH-2);
-      } else if (maze[r][c]===2) {
-        ctx.fillStyle='var(--rose)';
+        // Mur bleu façon brique
+        ctx.fillStyle='#3b3b8f';
+        ctx.fillRect(x+1.5,y+1.5,CW-3,CH-3);
+        ctx.strokeStyle='#6a6ad0';
+        ctx.lineWidth=1.5;
+        ctx.strokeRect(x+1.5,y+1.5,CW-3,CH-3);
+      } else {
+        // Couloir : petit point
+        ctx.fillStyle='#4a4a7a';
         ctx.beginPath();
-        ctx.arc(x+CW/2, y+CH/2, 3, 0, Math.PI*2);
+        ctx.arc(x+CW/2, y+CH/2, 2.5, 0, Math.PI*2);
         ctx.fill();
       }
     }
 
     // Victor (pacman)
-    const vx=(vic.col+0.5)*CW, vy=(vic.row+0.5)*CH;
-    const ang = vic.dir.dc===1?0:vic.dir.dc===-1?Math.PI:vic.dir.dr===1?Math.PI/2:-Math.PI/2;
+    const vx=offX+(vic.col+0.5)*CW, vy=offY+(vic.row+0.5)*CH;
+    const ang = vic.dir.dc===1?0:vic.dir.dc===-1?Math.PI:vic.dir.dr===1?Math.PI/2:vic.dir.dr===-1?-Math.PI/2:0;
     ctx.fillStyle='#FFD700';
     ctx.beginPath();
     ctx.moveTo(vx,vy);
-    ctx.arc(vx,vy,CW*0.4,ang+0.25,ang+Math.PI*2-0.25);
+    ctx.arc(vx,vy,CW*0.42,ang+0.3,ang+Math.PI*2-0.3);
     ctx.closePath();
     ctx.fill();
 
     // Pierre (fantôme rose)
-    const px=(pier.col+0.5)*CW, py=(pier.row+0.5)*CH;
+    const px=offX+(pier.col+0.5)*CW, py=offY+(pier.row+0.5)*CH;
     const pr=CW*0.42;
     ctx.fillStyle='#FF6EC7';
     ctx.beginPath();
@@ -1641,7 +1650,7 @@ function startPacman(phrases) {
       phraseTimer = 0;
       phraseIdx++;
       if (phraseIdx < phrases.length) {
-        document.getElementById('pac-phrase-txt').textContent = phrases[phraseIdx];
+        typewriteBloc(document.getElementById('pac-phrase-txt'), phrases[phraseIdx], null);
       } else {
         // Toutes les phrases affichées → succès
         pacRunning = false;
@@ -1681,7 +1690,7 @@ function startPacman(phrases) {
 
       // Réinitialiser la position de Pierre loin de Victor
       // Choisir un coin opposé à Victor
-      const corners = [{col:1,row:1},{col:13,row:1},{col:1,row:9},{col:13,row:9}];
+      const corners = [{col:1,row:1},{col:13,row:1},{col:1,row:11},{col:13,row:11}];
       const far = corners.sort((a,b) => {
         const da = Math.abs(a.col-vic.col)+Math.abs(a.row-vic.row);
         const db = Math.abs(b.col-vic.col)+Math.abs(b.row-vic.row);
