@@ -259,10 +259,10 @@ html, body {
 /* ── TUTO ── */
 #tuto-zone {
   position: absolute; bottom: 0; left: 0; right: 0;
-  z-index: 40; padding: 14px 14px 20px;
+  z-index: 40; padding: 14px 14px 14px;
 }
 #tuto-bloc {
-  background: var(--rose); padding: 16px 14px 12px; margin-bottom: 10px;
+  background: var(--rose); padding: 14px 14px 12px; margin-bottom: 10px;
 }
 #tuto-nom {
   font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
@@ -275,11 +275,11 @@ html, body {
 #screen-pacman { background: #1a1a2e; }
 #pac-phrase-bar {
   position: absolute;
-  top: 50%; left: 5%; right: 5%;
+  top: 50%; left: 14px; right: 14px;
   transform: translateY(-50%);
   z-index: 15;
-  background: rgba(0,0,0,0.88);
-  padding: 14px 16px;
+  background: var(--dlg-bg);
+  padding: 10px 12px;
   pointer-events: none;
 }
 #pac-phrase-nom {
@@ -288,13 +288,13 @@ html, body {
 }
 #pac-phrase-txt { font-size: 14px; line-height: 1.5; color: #fff; min-height: 44px; }
 #pac-canvas { flex: 1; width: 100%; display: block; }
-/* Animation hall */
+/* Bulle flottante hall (animation Victor) - même DA partout */
 #hall-bubble {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
+  bottom: 24px; left: 14px; right: 14px;
   z-index: 20;
-  background: rgba(0,0,0,0.78);
-  padding: 10px 14px 14px;
+  background: var(--dlg-bg);
+  padding: 10px 12px;
   display: none;
   pointer-events: none;
 }
@@ -330,15 +330,17 @@ html, body {
 #trac-bar-wrap { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 10px; height: 150px; background: #333; }
 #trac-bar-fill { position: absolute; bottom: 0; left: 0; right: 0; background: var(--rose); height: 0%; transition: height 0.1s; }
 #trac-phrase-bar {
-  width: 100%; padding: 8px 14px;
-  background: rgba(0,0,0,0.85); flex-shrink: 0;
+  position: absolute;
+  bottom: calc(80px + 16px); left: 14px; right: 14px;
   z-index: 5;
+  background: var(--dlg-bg);
+  padding: 10px 12px;
 }
 #trac-phrase-nom {
   font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--rose); margin-bottom: 3px;
+  text-transform: uppercase; color: var(--rose); margin-bottom: 4px;
 }
-#trac-phrase-txt { font-size: 13px; line-height: 1.4; color: #fff; min-height: 36px; }
+#trac-phrase-txt { font-size: 14px; line-height: 1.5; color: #fff; min-height: 38px; }
 #trac-tap { flex-shrink: 0; height: 80px; font-size: 20px; }
 
 /* ── VALISES (BAPTISTE) ── */
@@ -1340,14 +1342,17 @@ function showCabines(lieu) {
     const nom = document.getElementById('cabine-nom');
     const txt = document.getElementById('cabine-txt');
     const btn = document.getElementById('cabine-ramasser');
+    const retour = document.getElementById('cabine-retour');
     nom.textContent = 'Victor';
     txt.textContent = '';
     btn.style.display = 'none';
-    document.getElementById('cabine-retour').style.display = 'none';
+    retour.style.display = 'none';
+    dlg.style.pointerEvents = 'none'; // ne pas bloquer les clics sur les portes
     dlg.style.display = 'block';
     typewriteBloc(txt, arrivedlg.texte, () => {
       setTimeout(() => {
         dlg.style.display = 'none';
+        dlg.style.pointerEvents = ''; // restaurer
         btn.style.display = '';
       }, 2500);
     });
@@ -1366,6 +1371,11 @@ function ouvrirCabine(idx, contenu, lieu) {
   const txt = document.getElementById('cabine-txt');
   const btn = document.getElementById('cabine-ramasser');
   const retour = document.getElementById('cabine-retour');
+  // Réinitialiser
+  dlg.style.pointerEvents = '';
+  btn.style.display = '';
+  btn.disabled = false;
+  btn.style.opacity = '1';
 
   // Afficher d'abord le dialogue, puis le bouton ramasser après confirmation
   function showDialogue(nomTxt, texte, btnLabel, onRamasser, showRetour) {
@@ -1499,18 +1509,19 @@ function startPacman(phrases) {
   const CW = Math.floor(W / COLS);
   const CH = Math.floor(H / ROWS);
 
-  // Labyrinthe : 1=mur, 0=couloir, 2=point
+  // Labyrinthe inspiré de la maquette : couloir périphérique + obstacles centraux
+  // 1=mur, 0=couloir
   const maze = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,2,2,2,2,2,1,2,1,2,2,2,2,2,1],
-    [1,2,1,1,2,2,1,2,1,2,2,1,1,2,1],
-    [1,2,1,1,2,2,2,2,2,2,2,1,1,2,1],
-    [1,2,2,2,2,1,0,0,0,1,2,2,2,2,1],
-    [1,1,1,2,2,2,2,2,2,2,2,2,1,1,1],
-    [1,2,2,2,2,1,0,0,0,1,2,2,2,2,1],
-    [1,2,1,1,2,2,2,2,2,2,2,1,1,2,1],
-    [1,2,1,2,2,2,2,2,2,2,2,2,1,2,1],
-    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,0,1,0,1,0,1,0,1,1,0,1],
+    [1,0,1,1,0,1,0,1,0,1,0,1,1,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,0,1,1,0,0,0,1,1,0,1,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,1,1,0,1,0,1,0,1,0,1,1,0,1],
+    [1,0,1,1,0,1,0,1,0,1,0,1,1,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   ];
   const mazeOriginal = maze.map(r => [...r]);
@@ -1520,15 +1531,21 @@ function startPacman(phrases) {
     return maze[r][c] !== 1;
   }
 
-  let vic = { col:7, row:8, dir:{dc:1,dr:0}, next:{dc:1,dr:0}, t:0 };
+  // Pacman démarre en bas, Pierre en haut
+  let vic = { col:7, row:9, dir:{dc:0,dr:0}, next:{dc:0,dr:0}, t:0 };
   let pier = { col:7, row:1, dir:{dc:0,dr:1}, t:0 };
 
-  const VSPEED = 0.03, PSPEED = 0.008; // Pierre encore plus lent
+  const VSPEED = 0.04, PSPEED = 0.012; // ralenti
   let phraseIdx = 0, phraseTimer = 0;
   const PHRASE_MS = 4000;
   let lastTs = null;
 
   pacRunning = true;
+
+  // Afficher la première phrase
+  document.getElementById('pac-phrase-bar').style.display = 'block';
+  const pacPhraseTxt = document.getElementById('pac-phrase-txt');
+  typewriteBloc(pacPhraseTxt, phrases[0], null);
 
   // Contrôles boutons
   document.getElementById('pac-up').onclick = () => vic.next = {dc:0,dr:-1};
@@ -1709,7 +1726,7 @@ function startTractions(phrases) {
 
   let phraseIdx = 0;
   let tapCount = 0;
-  const TAPS = 40; // plus dur
+  const TAPS = 30;
   let bodyBottom = bodyInitBottom;
   let decayTimer = null;
   let phraseTimer = null;
@@ -1718,40 +1735,44 @@ function startTractions(phrases) {
   const phraseInterval = (parseFloat(G.config.trac_phrase_interval) || 3) * 1000;
 
   const phraseTxtEl = document.getElementById('trac-phrase-txt');
-  typewriteBloc(phraseTxtEl, phrases[0] || '', null);
 
-  // Timer indépendant pour les phrases de Kupi
+  // Phrases en boucle aléatoire
+  let lastIdx = -1;
+  function pickRandomPhrase() {
+    let idx;
+    do { idx = Math.floor(Math.random() * phrases.length); } while (phrases.length > 1 && idx === lastIdx);
+    lastIdx = idx;
+    return phrases[idx];
+  }
+  typewriteBloc(phraseTxtEl, pickRandomPhrase(), null);
+
   function nextPhrase() {
-    phraseIdx++;
-    if (phraseIdx < phrases.length) {
-      typewriteBloc(phraseTxtEl, phrases[phraseIdx], null);
-      phraseTimer = setTimeout(nextPhrase, phraseInterval);
-    }
+    typewriteBloc(phraseTxtEl, pickRandomPhrase(), null);
+    phraseTimer = setTimeout(nextPhrase, phraseInterval);
   }
   phraseTimer = setTimeout(nextPhrase, phraseInterval);
 
   if (decayTimer) clearInterval(decayTimer);
   decayTimer = setInterval(() => {
-    bodyBottom = Math.max(bodyInitBottom, bodyBottom - 2);
+    bodyBottom = Math.max(bodyInitBottom, bodyBottom - 1.2);
     update();
   }, 80);
 
   function update() {
     tracBody.style.bottom = bodyBottom + 'px';
     document.getElementById('trac-bar-fill').style.height =
-      ((bodyBottom - bodyInitBottom) / (100 - bodyInitBottom) * 100) + '%';
+      ((bodyBottom - bodyInitBottom) / Math.max(1, 100 - bodyInitBottom) * 100) + '%';
   }
 
   function onTap(e) {
     if (e) e.preventDefault();
     tapCount++;
-    bodyBottom = Math.min(100, bodyBottom + 4); // moins de montée par tap
+    bodyBottom = Math.min(100, bodyBottom + 5); // remonte de 5 par tap
     update();
 
-    if (tapCount >= TAPS) {
-      // Vérifier que la barre est suffisamment remplie (>= 80%)
-      const pct = (bodyBottom - bodyInitBottom) / Math.max(1, 100 - bodyInitBottom) * 100;
-      if (pct < 80) return; // continue à tapoter
+    // Fin de jeu : barre pleine OU >=80% avec assez de taps
+    const pct = (bodyBottom - bodyInitBottom) / Math.max(1, 100 - bodyInitBottom) * 100;
+    if (tapCount >= TAPS && pct >= 80) {
       clearInterval(decayTimer);
       clearTimeout(phraseTimer);
       const btn = document.getElementById('trac-tap');
