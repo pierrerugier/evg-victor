@@ -599,6 +599,8 @@ function goHall() {
   stopSound();
   setupHall();
   showScreen('hall');
+  // Relancer l'animation si le tuto est déjà terminé
+  if (tutoDone) startHallAnim();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -663,7 +665,7 @@ function setupHall() {
   });
 
   setupInvGrid();
-  startHallAnim();
+  // Ne pas démarrer l'animation ici - elle démarre après le tuto
 }
 
 function lieuEstComplete(lieu) {
@@ -704,6 +706,8 @@ function nextTuto() {
   if (tutoIndex >= TUTO.length) {
     document.getElementById('tuto-zone').style.display = 'none';
     tutoDone = true;
+    // Démarrer l'animation du hall 5 secondes après la fin du tuto
+    hallAnimTimer = setTimeout(startHallAnim, 5000);
   } else {
     renderTuto();
   }
@@ -753,8 +757,8 @@ function startHallAnim() {
     });
   }
 
-  // Démarrer 5s après la fin du tuto
-  hallAnimTimer = setTimeout(showNext, 5000);
+  // Démarrer immédiatement (le délai de 5s est géré par l'appelant)
+  showNext();
 }
 
 // ══════════════════════════════════════════════════════════
