@@ -92,7 +92,7 @@ html, body {
   margin-bottom: 4px;
 }
 .dlg-bloc.narration {
-  background: var(--narration-bg, rgba(180,140,0,0.85));
+  background: var(--dlg-bg); /* même fond noir que les autres */
 }
 .dlg-nom {
   font-size: 10px; font-weight: 700;
@@ -104,9 +104,16 @@ html, body {
   color: var(--dlg-color);
 }
 .dlg-bloc.narration .dlg-txt {
-  color: #fff;
+  color: var(--narration-color, #FFDE00);
   font-style: italic;
 }
+/* Curseur clignotant effet machine à écrire */
+.typewriter-cursor::after {
+  content: '▋';
+  animation: blink 0.7s infinite;
+  opacity: 1;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
 /* CHOIX */
 #choix-zone {
@@ -274,15 +281,29 @@ html, body {
 /* ── PACMAN ── */
 #screen-pacman { background: #1a1a2e; }
 #pac-phrase-bar {
-  width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.8);
-  flex-shrink: 0; z-index: 5;
+  position: absolute;
+  top: 50%; left: 5%; right: 5%;
+  transform: translateY(-50%);
+  z-index: 15;
+  background: rgba(0,0,0,0.88);
+  padding: 14px 16px;
+  pointer-events: none;
+  display: none;
 }
 #pac-phrase-nom {
   font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--rose); margin-bottom: 3px;
+  text-transform: uppercase; color: var(--rose); margin-bottom: 6px;
 }
-#pac-phrase-txt { font-size: 13px; line-height: 1.4; color: #fff; min-height: 38px; }
+#pac-phrase-txt { font-size: 14px; line-height: 1.5; color: #fff; min-height: 44px; }
 #pac-canvas { flex: 1; width: 100%; display: block; }
+/* Animation hall */
+#hall-bubble {
+  position: absolute; bottom: 18%; left: 8%; right: 8%;
+  z-index: 20; background: rgba(0,0,0,0.78);
+  padding: 12px 14px; display: none; pointer-events: none;
+}
+#hall-bubble-nom { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--rose); margin-bottom: 4px; }
+#hall-bubble-txt { font-size: 14px; line-height: 1.5; color: #fff; }
 #pac-controls {
   display: grid; grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
@@ -366,6 +387,10 @@ html, body {
   <button class="inv-btn" onclick="openInv()"><img id="inv-icon" src="" alt=""></button>
   <button id="btn-retour-titre" onclick="goLoading()">← Titre</button>
   <div id="hall-pins"></div>
+  <div id="hall-bubble">
+    <div id="hall-bubble-nom">Victor</div>
+    <div id="hall-bubble-txt"></div>
+  </div>
   <!-- TUTO -->
   <div id="tuto-zone" style="display:none;">
     <div id="tuto-bloc">
@@ -517,7 +542,8 @@ async function init() {
   BASE = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
 
   if (G.config.couleur_narration) {
-    document.documentElement.style.setProperty('--narration-bg', G.config.couleur_narration);
+    // couleur_narration = couleur du texte de narration (pas le fond)
+    document.documentElement.style.setProperty('--narration-color', G.config.couleur_narration);
   }
 
   // Charger le tuto depuis le Sheet
@@ -576,6 +602,7 @@ function showScreen(id) {
 function goLoading() { showScreen('loading'); }
 
 function goHall() {
+  stopSound();
   setupHall();
   showScreen('hall');
 }
@@ -584,6 +611,37 @@ function goHall() {
 // HALL
 // ══════════════════════════════════════════════════════════
 let tutoIndex = 0;
+let tutoDone = false; // pins bloqués jusqu'à fin du tuto
+let hallAnimTimer = null;
+
+// ══════════════════════════════════════════════════════════
+// EFFET MACHINE À ÉCRIRE
+// ══════════════════════════════════════════════════════════
+let typewriterTimeout = null;
+
+function typewrite(el, text, speed, onDone) {
+  if (typewriterTimeout) clearTimeout(typewriterTimeout);
+  el.classList.add('typewriter-cursor');
+  let i = 0;
+  el.textContent = '';
+  function step() {
+    if (i <= text.length) {
+      el.textContent = text.slice(0, i);
+      i++;
+      typewriterTimeout = setTimeout(step, speed || 22);
+    } else {
+      el.classList.remove('typewriter-cursor');
+      if (onDone) onDone();
+    }
+  }
+  step();
+}
+
+function typewriteBloc(txtEl, text, onDone) {
+  // Vitesse depuis config, défaut 22ms par caractère
+  const speed = parseInt(G?.config?.typewriter_speed) || 22;
+  typewrite(txtEl, text, speed, onDone);
+}
 let TUTO = []; // chargé depuis le Sheet onglet 'tuto'
 
 function setupHall() {
@@ -595,22 +653,24 @@ function setupHall() {
 
   G.lieux.filter(l => l.id !== 'hall' && String(l.actif).toLowerCase() === 'true').forEach(lieu => {
     if (!lieu.pos_x && lieu.pos_x !== 0) return;
+    const done = lieuEstComplete(lieu);
     const btn = document.createElement('button');
-    btn.className = 'hall-pin'; // toujours rose
+    btn.className = 'hall-pin' + (done ? ' visited' : '');
     btn.style.left = lieu.pos_x + '%';
     btn.style.top = lieu.pos_y + '%';
     btn.innerHTML = `<svg width="32" height="42" viewBox="0 0 28 36" fill="none">
-      <path d="M14 0C6.268 0 0 6.268 0 14c0 9.625 14 22 14 22S28 23.625 28 14C28 6.268 21.732 0 14 0z" fill="var(--rose)"/>
-      <circle cx="14" cy="14" r="6" fill="#000"/>
+      <path d="M14 0C6.268 0 0 6.268 0 14c0 9.625 14 22 14 22S28 23.625 28 14C28 6.268 21.732 0 14 0z" fill="${done ? '#fff' : 'var(--rose)'}"/>
+      <circle cx="14" cy="14" r="6" fill="${done ? '#ccc' : '#000'}"/>
     </svg>`;
     btn.onclick = () => {
+      if (!tutoDone) return; // pins bloqués pendant le tuto
       entrerLieu(lieu.id);
     };
-    if (lieuEstComplete(lieu)) btn.classList.add('visited');
     pins.appendChild(btn);
   });
 
   setupInvGrid();
+  startHallAnim();
 }
 
 function lieuEstComplete(lieu) {
@@ -628,20 +688,78 @@ function peutAcceder(lieu) {
 // TUTO
 function showTuto() {
   tutoIndex = 0;
+  tutoDone = false;
   renderTuto();
   document.getElementById('tuto-zone').style.display = 'block';
 }
 function renderTuto() {
-  document.getElementById('tuto-txt').textContent = TUTO[tutoIndex];
-  document.getElementById('tuto-btn').textContent = tutoIndex === TUTO.length - 1 ? "C'est parti !" : 'Suivant';
+  const txt = TUTO[tutoIndex];
+  const txtEl = document.getElementById('tuto-txt');
+  const btn = document.getElementById('tuto-btn');
+  btn.disabled = true; // bloquer pendant l'écriture
+  btn.style.opacity = '0.4';
+  txtEl.textContent = '';
+  typewriteBloc(txtEl, txt, () => {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  });
+  btn.textContent = tutoIndex === TUTO.length - 1 ? "C'est parti !" : 'Suivant';
 }
 function nextTuto() {
+  if (document.getElementById('tuto-btn').disabled) return;
   tutoIndex++;
   if (tutoIndex >= TUTO.length) {
     document.getElementById('tuto-zone').style.display = 'none';
+    tutoDone = true;
   } else {
     renderTuto();
   }
+}
+
+// ══════════════════════════════════════════════════════════
+// ANIMATION HALL (phrases de Victor en random)
+// ══════════════════════════════════════════════════════════
+function startHallAnim() {
+  if (hallAnimTimer) { clearTimeout(hallAnimTimer); hallAnimTimer = null; }
+  const bubble = document.getElementById('hall-bubble');
+  const txtEl = document.getElementById('hall-bubble-txt');
+  if (!bubble || !txtEl) return;
+
+  // Récupérer les phrases depuis les dialogues de lieu_id 'Hall' type 'animation hall'
+  const animDlg = G.dialogues.find(d =>
+    d.lieu_id && d.lieu_id.toLowerCase() === 'hall' && d.type && d.type.toLowerCase() === 'animation hall'
+  );
+  if (!animDlg) return;
+
+  const phrases = animDlg.texte.split('|').map(p => p.trim()).filter(Boolean);
+  if (phrases.length === 0) return;
+
+  const dureeAffichage = (parseFloat(G.config.time_duration_animation) || 4) * 1000;
+  const dureePause = (parseFloat(G.config.pause_duration_animation) || 3) * 1000;
+
+  let lastIdx = -1;
+
+  function showNext() {
+    // Choisir une phrase random différente de la dernière
+    let idx;
+    do { idx = Math.floor(Math.random() * phrases.length); } while (phrases.length > 1 && idx === lastIdx);
+    lastIdx = idx;
+
+    bubble.style.display = 'block';
+    txtEl.textContent = '';
+    typewriteBloc(txtEl, phrases[idx], () => {
+      // Après affichage, masquer et attendre
+      hallAnimTimer = setTimeout(() => {
+        bubble.style.display = 'none';
+        hallAnimTimer = setTimeout(() => {
+          if (document.querySelector('#screen-hall.active')) showNext();
+        }, dureePause);
+      }, dureeAffichage);
+    });
+  }
+
+  // Démarrer après une pause initiale
+  hallAnimTimer = setTimeout(showNext, dureePause);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -749,13 +867,36 @@ function splitPhrases(texte) {
   }
   return result;
 }
+// ══════════════════════════════════════════════════════════
+// SONS
+// ══════════════════════════════════════════════════════════
+let currentSound = null;
+
+function playSound(path) {
+  if (!path) return;
+  if (currentSound) { currentSound.pause(); currentSound.currentTime = 0; }
+  currentSound = new Audio(BASE + path);
+  currentSound.play().catch(() => {});
+}
+
+function stopSound() {
+  if (currentSound) { currentSound.pause(); currentSound.currentTime = 0; currentSound = null; }
+}
+
+function playSonSucces() {
+  if (currentLieu && currentLieu.son_succes) playSound(currentLieu.son_succes);
+}
+
 function entrerLieu(id) {
   const lieu = G.lieux.find(l => l.id === id);
   currentLieu = lieu;
-  lieuxVisites.add(id); // marquer comme visité
+  lieuxVisites.add(id);
   dlgList = G.dialogues.filter(d => d.lieu_id === id).sort((a, b) => +a.ordre - +b.ordre);
   dlgIndex = 0;
   phraseIndex = 0;
+
+  // Jouer le son d'entrée
+  if (lieu.son_entree) playSound(lieu.son_entree);
 
   if (id === 'toilettes') { showCabines(lieu); return; }
   if (id === 'enregistrement') { showValises(lieu); return; }
@@ -763,8 +904,6 @@ function entrerLieu(id) {
   document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('scene');
 
-  // Pour Kupi/securite : toujours lancer le dialogue normal (le mini-jeu vérifie lui-même les objets)
-  // Pour les autres : si prérequis manquants, aller à fin_echec
   if (id !== 'securite' && !peutAcceder(lieu)) {
     const echec = dlgList.find(d => d.type === 'fin_echec');
     if (echec) dlgIndex = dlgList.indexOf(echec);
@@ -817,28 +956,38 @@ function renderDlg() {
     const phrase = phrases[phraseIndex] || dlg.texte;
 
     dlgZone.innerHTML = '';
-    const { bloc } = createDlgBloc(dlg.personnage, phrase);
+    const { bloc, isNarr } = createDlgBloc(dlg.personnage, phrase);
+    // On ajoute le bloc mais avec texte vide — la machine à écrire le remplira
+    const txtEl = bloc.querySelector('.dlg-txt');
+    txtEl.textContent = '';
     dlgZone.appendChild(bloc);
 
     ctaZone.style.display = 'flex';
+    // Bloquer le bouton pendant l'écriture
+    btnContinuer.disabled = true;
+    btnContinuer.style.opacity = '0.4';
     requestAnimationFrame(adjustDlgBottom);
 
     const isLast = phraseIndex >= phrases.length - 1;
-
-    // Si lieu attend un objet et qu'on est sur la dernière phrase du dernier dialogue pnj
     const isPnjDlg = type === 'pnj' || type === 'victor' || type === 'narration';
     const nextDlgType = dlgList[dlgIndex + 1]?.type;
     const noMorePnjAfter = !nextDlgType || ['fin_succes','fin_echec','reponse_incorrecte','qcm','choix','tunnel_pacman','tunnel_tractions'].includes(nextDlgType);
 
+    // Lancer la machine à écrire
+    typewriteBloc(txtEl, isNarr ? phrase.replace(/^\[|\]$/g,'').trim() : phrase, () => {
+      btnContinuer.disabled = false;
+      btnContinuer.style.opacity = '1';
+    });
+
     if (isLast && currentLieu.objet_a_donner && isPnjDlg && noMorePnjAfter) {
       btnContinuer.textContent = 'Ouvrir l\'inventaire →';
-      btnContinuer.onclick = () => { phraseIndex = 0; openInv(); };
+      btnContinuer.onclick = () => { if (!btnContinuer.disabled) { phraseIndex = 0; openInv(); } };
     } else {
       btnContinuer.textContent = 'Continuer';
       if (!isLast) {
-        btnContinuer.onclick = () => { phraseIndex++; renderDlg(); };
+        btnContinuer.onclick = () => { if (!btnContinuer.disabled) { phraseIndex++; renderDlg(); } };
       } else {
-        btnContinuer.onclick = () => { phraseIndex = 0; dlgIndex++; renderDlg(); };
+        btnContinuer.onclick = () => { if (!btnContinuer.disabled) { phraseIndex = 0; dlgIndex++; renderDlg(); } };
       }
     }
     return;
@@ -893,9 +1042,9 @@ function renderDlg() {
   else if (type === 'choix' && currentLieu && currentLieu.id === 'rolex') {
     document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}ecrans/montreschoix.jpg)`;
     const montres = [
-      { label:'Daytona',  type:'reponse_daytona',  objetId:'montre', icon:'icons/daytona.png',  left:'5%',  top:'52%', w:'30%', h:'30%' },
-      { label:'Milgauss', type:'reponse_milgauss', objetId:'montre', icon:'icons/milgauss.png', left:'36%', top:'50%', w:'28%', h:'32%' },
-      { label:'GMT',      type:'reponse_gmt',      objetId:'montre', icon:'icons/GMT.png',      left:'64%', top:'52%', w:'31%', h:'30%' },
+      { label:'Daytona',        type:'reponse_daytona',  objetId:'montreDaytona',  icon:'icons/daytona.png',  left:'5%',  top:'52%', w:'30%', h:'30%' },
+      { label:'Milgauss',       type:'reponse_milgauss', objetId:'montreMilgauss', icon:'icons/milgauss.png', left:'36%', top:'50%', w:'28%', h:'32%' },
+      { label:'GMT-Master II',  type:'reponse_gmt',      objetId:'montreGMT',      icon:'icons/GMT.png',      left:'64%', top:'52%', w:'31%', h:'30%' },
     ];
     montres.forEach(m => {
       const z = document.createElement('div');
@@ -908,11 +1057,13 @@ function renderDlg() {
       z.onclick = () => {
         document.querySelectorAll('.montre-zone').forEach(el => el.remove());
         const rep = dlgList.find(d => d.type === m.type);
-        // Stocker la montre avec son icône spécifique dans l'inventaire
-        // On utilise l'id 'montre' mais on met à jour l'icône dans G.objets
-        const objMontre = G.objets.find(o => o.id === 'montre');
-        if (objMontre) objMontre.icon = m.icon;
-        if (rep) { ajouterObjet('montre'); showSucces(rep); }
+        // Mettre à jour l'objet montre dans G.objets selon le modèle choisi
+        const objMontre = G.objets.find(o => o.id === m.objetId);
+        if (objMontre) {
+          objMontre.nom = m.label;
+          objMontre.icon = m.icon;
+        }
+        if (rep) { ajouterObjet(m.objetId); showSucces(rep); }
       };
       document.getElementById('screen-scene').appendChild(z);
     });
@@ -958,7 +1109,6 @@ function renderDlg() {
   }
 
   else if (type === 'tunnel_pacman') {
-    // Les phrases sont dans dlg.texte séparées par |
     const phrases = dlg.texte.split('|').map(p => p.trim()).filter(Boolean);
     startPacman(phrases.length > 0 ? phrases : ['...']);
   }
@@ -966,6 +1116,12 @@ function renderDlg() {
   else if (type === 'tunnel_tractions') {
     const phrases = dlg.texte.split('|').map(p => p.trim()).filter(Boolean);
     startTractions(phrases.length > 0 ? phrases : ['...']);
+  }
+
+  else {
+    // Type inconnu — ignorer et passer au suivant
+    dlgIndex++;
+    renderDlg();
   }
 }
 
@@ -992,8 +1148,11 @@ function showSucces(dlg) {
   const btnHall = document.getElementById('btn-hall-scene');
   btnHall.style.display = 'block';
   btnHall.textContent = 'Retour au hall';
+  // Jouer le son de succès du lieu
+  if (currentLieu && currentLieu.son_succes) playSound(currentLieu.son_succes);
   btnHall.onclick = () => {
     if (dlg.meta) ajouterObjet(dlg.meta);
+    stopSound();
     goHall();
   };
   requestAnimationFrame(adjustDlgBottom);
@@ -1036,15 +1195,16 @@ function handleDonner(objetId) {
   }
 
   if (currentLieu.id === 'dutyfree_charles') {
-    if (objetId === 'montre') {
-      inventaire.splice(inventaire.indexOf('montre'), 1);
+    if (objetId === 'montreMilgauss') {
+      inventaire.splice(inventaire.indexOf('montreMilgauss'), 1);
       const succes = dlgList.find(d => d.type === 'fin_succes');
-      if (succes) showSucces(succes); // billet donné au clic retour via showSucces
+      if (succes) showSucces(succes);
+    } else if (['montreDaytona','montreGMT'].includes(objetId)) {
+      // Mauvaise montre
+      showTempDlg({personnage:'Charles', texte:"Non non non, je veux la Milgauss ! Celle avec le cadran violet. T'as pas celle-là ?"}, () => { openInv(); }, 3500);
     } else {
       const mauvais = dlgList.find(d => d.type === 'reponse_incorrecte');
-      showTempDlg(mauvais || {personnage:'Charles', texte:"T'as pas un truc qui brille ?"}, () => {
-        openInv();
-      }, 3000);
+      showTempDlg(mauvais || {personnage:'Charles', texte:"T'as pas un truc qui brille ?"}, () => { openInv(); }, 3000);
     }
     return;
   }
@@ -1064,6 +1224,7 @@ function handleDonner(objetId) {
 // ══════════════════════════════════════════════════════════
 let baptisteTunnelIdx = 0;
 let baptisteTunnelPhrases = [];
+let baptisteClicks = 0;
 
 function showValises(lieu) {
   if (!peutAcceder(lieu)) { entrerLieuEchec(lieu); return; }
@@ -1071,13 +1232,15 @@ function showValises(lieu) {
   showScreen('valises');
 
   baptisteTunnelIdx = 0;
+  baptisteClicks = 0;
   baptisteTunnelPhrases = G.dialogues.filter(d => d.lieu_id === 'enregistrement' && d.type === 'tunnel')
     .sort((a,b) => +a.ordre - +b.ordre);
 
   const tunnel = document.getElementById('baptiste-tunnel');
   const intro = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'pnj');
   if (intro) {
-    document.getElementById('baptiste-txt').textContent = intro.texte;
+    const txtEl = document.getElementById('baptiste-txt');
+    typewriteBloc(txtEl, intro.texte, null);
     tunnel.style.display = 'block';
   }
   document.getElementById('baptiste-ok-btn').style.display = 'none';
@@ -1085,14 +1248,12 @@ function showValises(lieu) {
   const overlay = document.getElementById('valises-overlay');
   overlay.innerHTML = '';
 
-  // 4 valises : zones cliquables sur l'image Baptiste
-  // Baptiste.jpg 1080x1920 - les valises sont dans le bas de l'image
-  // Zones approximatives à ajuster
+  // 4 zones cliquables sur l'image Baptiste - toutes déclenchent choisirValise
   const valises = [
     { left:'5%',  top:'55%', w:'20%', h:'25%' },
     { left:'27%', top:'57%', w:'20%', h:'23%' },
     { left:'52%', top:'55%', w:'20%', h:'25%' },
-    { left:'74%', top:'53%', w:'22%', h:'27%' }, // la bonne
+    { left:'74%', top:'53%', w:'22%', h:'27%' },
   ];
 
   valises.forEach((v, idx) => {
@@ -1106,18 +1267,24 @@ function showValises(lieu) {
 }
 
 function choisirValise(idx) {
-  if (idx === 3) {
-    // Bonne valise
+  baptisteClicks++;
+  const txtEl = document.getElementById('baptiste-txt');
+
+  if (baptisteClicks >= 4) {
+    // 4ème clic = toujours la bonne valise
     const succes = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'fin_succes');
     if (succes) {
-      ajouterObjet(succes.meta);
-      document.getElementById('baptiste-txt').textContent = succes.texte;
-      document.getElementById('baptiste-ok-btn').style.display = 'block';
+      if (succes.meta) ajouterObjet(succes.meta);
+      typewriteBloc(txtEl, succes.texte, () => {
+        document.getElementById('baptiste-ok-btn').style.display = 'block';
+      });
     }
+    // Désactiver toutes les zones
+    document.querySelectorAll('#valises-overlay div').forEach(z => z.onclick = null);
   } else {
-    // Mauvaise : afficher phrase tunnel
+    // Mauvaise valise : phrase de tunnel suivante
     if (baptisteTunnelIdx < baptisteTunnelPhrases.length) {
-      document.getElementById('baptiste-txt').textContent = baptisteTunnelPhrases[baptisteTunnelIdx].texte;
+      typewriteBloc(txtEl, baptisteTunnelPhrases[baptisteTunnelIdx].texte, null);
       baptisteTunnelIdx++;
     }
   }
@@ -1206,21 +1373,54 @@ function ouvrirCabine(idx, contenu, lieu) {
   if (contenu === 'oscar') {
     document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/Oscar.jpg)`;
     oscarVisites++;
-    const dlgKey = oscarVisites === 1 ? 'fin_succes' : 'fin_succes_2';
-    const d = G.dialogues.find(d => d.lieu_id === 'toilettes' && d.type === dlgKey);
-    showDialogue('Oscar', d ? d.texte : '', 'Prendre le meuj', () => {
-      ajouterObjet('meuj');
-      retourCabines();
-    }, false);
+    // Récupérer les dialogues d'Oscar dans l'ordre
+    const oscarDlgs = G.dialogues.filter(d => d.lieu_id === 'toilettes' && d.type === (oscarVisites === 1 ? 'fin_succes' : 'fin_succes_2'))
+      .sort((a,b) => +a.ordre - +b.ordre);
+
+    if (oscarVisites === 1) {
+      // Premier meuj : afficher dlgs 1-3, donner objet, puis dlg 4
+      const textes = oscarDlgs.slice(0, 4).map(d => d.texte).filter(Boolean);
+      let pi = 0;
+      nom.textContent = 'Oscar';
+      function showOscarPhrase() {
+        if (pi >= textes.length) { retourCabines(); return; }
+        const txtEl = txt;
+        btn.disabled = true; btn.style.opacity = '0.4';
+        typewriteBloc(txtEl, textes[pi], () => { btn.disabled = false; btn.style.opacity = '1'; });
+
+        if (pi === 2) {
+          // Après dlg 3 : donner l'objet quand on clique
+          btn.textContent = 'Prendre le meuj';
+          btn.onclick = () => { ajouterObjet('meuj'); pi++; showOscarPhrase(); };
+        } else if (pi === textes.length - 1) {
+          btn.textContent = 'Fermer la porte';
+          btn.onclick = () => { pi++; showOscarPhrase(); };
+        } else {
+          btn.textContent = 'Continuer';
+          btn.onclick = () => { pi++; showOscarPhrase(); };
+        }
+      }
+      btn.style.background = 'var(--rose)'; btn.style.color = 'var(--noir)';
+      retour.style.display = 'none';
+      dlg.style.display = 'block';
+      showOscarPhrase();
+    } else {
+      // Deuxième visite
+      const d = oscarDlgs[0];
+      showDialogue('Oscar', d ? d.texte : '', 'Prendre le meuj', () => {
+        ajouterObjet('meuj');
+        retourCabines();
+      }, false);
+    }
   } else if (contenu === '50k') {
     document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/toilette-50K.jpg)`;
-    showDialogue('💰', 'Une mallette contenant 50 000€ en cash. Inattendu.', 'Prendre la mallette', () => {
+    showDialogue('Toilettes', 'Une mallette contenant 50 000€ en cash. Inattendu.', 'Prendre la mallette', () => {
       if (!inventaire.includes('50k')) ajouterObjet('50k');
       retourCabines();
     }, true);
   } else if (contenu === 'short') {
     document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/toilette-shortbernardini.jpg)`;
-    showDialogue('😬', "Le short d'Olivier Bernardini. Il vaut mieux ne pas savoir.", 'Ramasser quand même', () => {
+    showDialogue('Toilettes', "Le short d'Olivier Bernardini. Il vaut mieux ne pas savoir.", 'Ramasser quand même', () => {
       if (!inventaire.includes('shortbernardini')) ajouterObjet('shortbernardini');
       retourCabines();
     }, true);
@@ -1486,15 +1686,30 @@ function startTractions(phrases) {
 
   let phraseIdx = 0;
   let tapCount = 0;
-  const TAPS = 30;
+  const TAPS = 40; // plus dur
   let bodyBottom = bodyInitBottom;
   let decayTimer = null;
+  let phraseTimer = null;
 
-  document.getElementById('trac-phrase-txt').textContent = phrases[0] || '';
+  // Timing des phrases depuis config (défaut 3s)
+  const phraseInterval = (parseFloat(G.config.trac_phrase_interval) || 3) * 1000;
+
+  const phraseTxtEl = document.getElementById('trac-phrase-txt');
+  typewriteBloc(phraseTxtEl, phrases[0] || '', null);
+
+  // Timer indépendant pour les phrases de Kupi
+  function nextPhrase() {
+    phraseIdx++;
+    if (phraseIdx < phrases.length) {
+      typewriteBloc(phraseTxtEl, phrases[phraseIdx], null);
+      phraseTimer = setTimeout(nextPhrase, phraseInterval);
+    }
+  }
+  phraseTimer = setTimeout(nextPhrase, phraseInterval);
 
   if (decayTimer) clearInterval(decayTimer);
   decayTimer = setInterval(() => {
-    bodyBottom = Math.max(bodyInitBottom, bodyBottom - 1.5);
+    bodyBottom = Math.max(bodyInitBottom, bodyBottom - 2);
     update();
   }, 80);
 
@@ -1507,28 +1722,21 @@ function startTractions(phrases) {
   function onTap(e) {
     if (e) e.preventDefault();
     tapCount++;
-    bodyBottom = Math.min(100, bodyBottom + 7);
+    bodyBottom = Math.min(100, bodyBottom + 4); // moins de montée par tap
     update();
-
-    const newIdx = Math.min(phrases.length-1, Math.floor(tapCount / Math.max(1, Math.floor(TAPS/phrases.length))));
-    if (newIdx !== phraseIdx) {
-      phraseIdx = newIdx;
-      document.getElementById('trac-phrase-txt').textContent = phrases[phraseIdx];
-    }
 
     if (tapCount >= TAPS && bodyBottom >= 70) {
       clearInterval(decayTimer);
+      clearTimeout(phraseTimer);
       const btn = document.getElementById('trac-tap');
       btn.onclick = null; btn.ontouchstart = null;
       setTimeout(() => {
-        // Vérifier les objets requis
         const requis = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];
         const asTout = requis.every(r => inventaire.includes(r));
         if (asTout) {
           const succes = dlgList.find(d => d.type === 'fin_succes');
           if (succes) showSuccesKupi(succes);
         } else {
-          // Afficher fin_echec
           document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
           showScreen('scene');
           const echec = dlgList.find(d => d.type === 'fin_echec');
