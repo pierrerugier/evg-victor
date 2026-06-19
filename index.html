@@ -763,13 +763,11 @@ function entrerLieu(id) {
   document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('scene');
 
-  // Si les prérequis ne sont pas remplis, aller directement à fin_echec
-  if (!peutAcceder(lieu)) {
+  // Pour Kupi/securite : toujours lancer le dialogue normal (le mini-jeu vérifie lui-même les objets)
+  // Pour les autres : si prérequis manquants, aller à fin_echec
+  if (id !== 'securite' && !peutAcceder(lieu)) {
     const echec = dlgList.find(d => d.type === 'fin_echec');
-    if (echec) {
-      // Positionner dlgIndex sur fin_echec
-      dlgIndex = dlgList.indexOf(echec);
-    }
+    if (echec) dlgIndex = dlgList.indexOf(echec);
   }
 
   renderDlg();
