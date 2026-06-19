@@ -606,12 +606,17 @@ function setupHall() {
     btn.onclick = () => {
       entrerLieu(lieu.id);
     };
-    // Marquer comme visité si déjà fait
-    if (lieuxVisites.has(lieu.id)) btn.classList.add('visited');
+    if (lieuEstComplete(lieu)) btn.classList.add('visited');
     pins.appendChild(btn);
   });
 
   setupInvGrid();
+}
+
+function lieuEstComplete(lieu) {
+  if (!lieu.objet_donne) return lieuxVisites.has(lieu.id);
+  if (lieu.id === 'toilettes') return oscarVisites >= 2;
+  return inventaire.includes(lieu.objet_donne);
 }
 
 function peutAcceder(lieu) {
@@ -1472,18 +1477,10 @@ function restartPacman() {
 // TRACTIONS (KUPI)
 // ══════════════════════════════════════════════════════════
 function startTractions(phrases) {
-  const requis = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];
-  if (!requis.every(r => inventaire.includes(r))) {
-    const echec = dlgList.find(d => d.type === 'fin_echec');
-    if (echec) { showScreen('scene'); showSucces(echec); }
-    return;
-  }
-
   showScreen('tractions');
   document.getElementById('trac-bg').src = BASE + 'ecrans/pullupbase.jpg';
   const tracBody = document.getElementById('trac-body');
   tracBody.src = BASE + 'ecrans/victor-bodypullup.png';
-  // Appliquer les paramètres de position depuis la config
   const bodyWidth = G.config.trac_body_width || '70';
   const bodyInitBottom = parseInt(G.config.trac_body_bottom) || 0;
   tracBody.style.width = bodyWidth + '%';
@@ -1492,20 +1489,21 @@ function startTractions(phrases) {
   let phraseIdx = 0;
   let tapCount = 0;
   const TAPS = 30;
-  let bodyBottom = 0;
+  let bodyBottom = bodyInitBottom;
   let decayTimer = null;
 
-  document.getElementById('trac-phrase-txt').textContent = phrases[0];
+  document.getElementById('trac-phrase-txt').textContent = phrases[0] || '';
 
   if (decayTimer) clearInterval(decayTimer);
   decayTimer = setInterval(() => {
-    bodyBottom = Math.max(0, bodyBottom - 1.5);
+    bodyBottom = Math.max(bodyInitBottom, bodyBottom - 1.5);
     update();
   }, 80);
 
   function update() {
-    document.getElementById('trac-body').style.bottom = bodyBottom + 'px';
-    document.getElementById('trac-bar-fill').style.height = bodyBottom + '%';
+    tracBody.style.bottom = bodyBottom + 'px';
+    document.getElementById('trac-bar-fill').style.height =
+      ((bodyBottom - bodyInitBottom) / (100 - bodyInitBottom) * 100) + '%';
   }
 
   function onTap(e) {
@@ -1524,13 +1522,47 @@ function startTractions(phrases) {
       clearInterval(decayTimer);
       const btn = document.getElementById('trac-tap');
       btn.onclick = null; btn.ontouchstart = null;
-      setTimeout(showFin, 500);
+      setTimeout(() => {
+        // Vérifier les objets requis
+        const requis = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];
+        const asTout = requis.every(r => inventaire.includes(r));
+        if (asTout) {
+          const succes = dlgList.find(d => d.type === 'fin_succes');
+          if (succes) showSuccesKupi(succes);
+        } else {
+          // Afficher fin_echec
+          document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
+          showScreen('scene');
+          const echec = dlgList.find(d => d.type === 'fin_echec');
+          if (echec) {
+            dlgZoneEl().innerHTML = '';
+            const { bloc } = createDlgBloc(echec.personnage, echec.texte);
+            dlgZoneEl().appendChild(bloc);
+            const cta = document.getElementById('cta-zone');
+            cta.style.display = 'flex';
+            document.getElementById('btn-continuer').style.display = 'none';
+            const btnHall = document.getElementById('btn-hall-scene');
+            btnHall.style.display = 'block';
+            btnHall.textContent = 'Retour au hall';
+            btnHall.onclick = goHall;
+            requestAnimationFrame(adjustDlgBottom);
+          }
+        }
+      }, 500);
     }
   }
 
   const btn = document.getElementById('trac-tap');
   btn.onclick = onTap;
   btn.ontouchstart = onTap;
+}
+
+function dlgZoneEl() { return document.getElementById('dlg-zone'); }
+
+function showSuccesKupi(succes) {
+  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
+  showScreen('scene');
+  showSucces(succes);
 }
 
 // ══════════════════════════════════════════════════════════
