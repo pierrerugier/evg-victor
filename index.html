@@ -299,7 +299,17 @@ html, body {
 
 /* ── PACMAN ── */
 #screen-pacman { background: #1a1a2e; }
-#pac-canvas { width: 100%; display: block; }
+/* Zone de jeu : prend l'espace dispo et centre le canvas verticalement */
+#pac-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+#pac-canvas { display: block; }
 /* Barre de phrases de Pierre : collée juste sous le bloc jeu (canvas) */
 #pac-phrase-bar {
   flex-shrink: 0;
@@ -470,7 +480,9 @@ html, body {
 
 <!-- PACMAN : bloc jeu en haut, phrases de Pierre collées juste dessous -->
 <div id="screen-pacman" class="screen">
-  <canvas id="pac-canvas"></canvas>
+  <div id="pac-stage">
+    <canvas id="pac-canvas"></canvas>
+  </div>
   <div id="pac-phrase-bar">
     <div id="pac-phrase-nom">Pierre</div>
     <div id="pac-phrase-txt"></div>
@@ -508,6 +520,7 @@ html, body {
 
 <!-- FIN -->
 <div id="screen-fin" class="screen">
+  <button id="btn-retour-titre-fin" onclick="goLoading()" style="position:absolute;top:14px;left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;">← Titre</button>
   <img id="fin-img" src="" alt="">
 </div>
 
@@ -1213,7 +1226,8 @@ function showTempDlg(dlg, cb, duree = 3000) {
   setTimeout(() => cb(), duree);
 }
 
-function showSucces(dlg) {
+function showSucces(dlg, opts) {
+  opts = opts || {};
   const dlgZone = document.getElementById('dlg-zone');
   const choixZone = document.getElementById('choix-zone');
   dlgZone.innerHTML = '';
@@ -1229,14 +1243,24 @@ function showSucces(dlg) {
   document.getElementById('btn-continuer').style.display = 'none';
   const btnHall = document.getElementById('btn-hall-scene');
   btnHall.style.display = 'block';
-  btnHall.textContent = 'Retour au hall';
   // Jouer le son de succès du lieu
   if (currentLieu && currentLieu.son_succes) playSound(currentLieu.son_succes);
-  btnHall.onclick = () => {
-    if (dlg.meta) ajouterObjet(dlg.meta);
-    stopSound();
-    goHall();
-  };
+  if (opts.onFin) {
+    // Fin de mission : le bouton enchaîne sur l'écran de fin
+    btnHall.textContent = 'Continuer';
+    btnHall.onclick = () => {
+      if (dlg.meta) ajouterObjet(dlg.meta);
+      stopSound();
+      opts.onFin();
+    };
+  } else {
+    btnHall.textContent = 'Retour au hall';
+    btnHall.onclick = () => {
+      if (dlg.meta) ajouterObjet(dlg.meta);
+      stopSound();
+      goHall();
+    };
+  }
   if (txtEl) typewriteBloc(txtEl, dlg.texte, () => requestAnimationFrame(adjustDlgBottom));
   requestAnimationFrame(adjustDlgBottom);
 }
@@ -1585,28 +1609,39 @@ function startPacman(phrases) {
   pacRunning = false;
   if (pacRAF) cancelAnimationFrame(pacRAF);
 
+  // Attendre 2 frames que #pac-stage ait ses dimensions réelles après l'affichage
+  requestAnimationFrame(() => requestAnimationFrame(() => startPacmanInner(phrases)));
+}
+
+function startPacmanInner(phrases) {
   const canvas = document.getElementById('pac-canvas');
   const ctx = canvas.getContext('2d');
-  // Le canvas occupe l'espace au-dessus de la barre de phrases + contrôles.
-  // On le dimensionne après un RAF pour avoir les bonnes dimensions de layout.
-  function sizeCanvas() {
-    const W = canvas.offsetWidth;
-    const H = canvas.offsetHeight;
-    canvas.width = W; canvas.height = H;
-    return { W, H };
-  }
-  let { W, H } = sizeCanvas();
+  const stage = document.getElementById('pac-stage');
+
+  const COLS = 15, ROWS = 13;
+  // La cellule se base sur la largeur dispo (avec une petite marge latérale),
+  // bornée par la hauteur dispo pour ne jamais déborder. La grille remplit
+  // ainsi la largeur comme sur la maquette, et le canvas est centré
+  // verticalement par le flex de #pac-stage.
+  const availW = stage.clientWidth;
+  const availH = stage.clientHeight;
+  const sideMargin = 16; // marge gauche/droite
+  const cellFromW = Math.floor((availW - sideMargin * 2) / COLS);
+  const cellFromH = Math.floor((availH - 16) / ROWS);
+  const CELL = Math.max(10, Math.min(cellFromW, cellFromH));
+  const CW = CELL, CH = CELL;
+  const gridW = CELL * COLS, gridH = CELL * ROWS;
+
+  // Le canvas fait exactement la taille de la grille → pas de marge interne,
+  // tout l'espace vide est géré par le centrage flex du stage.
+  canvas.width = gridW; canvas.height = gridH;
+  canvas.style.width = gridW + 'px';
+  canvas.style.height = gridH + 'px';
+  const W = gridW, H = gridH;
+  const offX = 0, offY = 0;
 
   document.getElementById('pac-phrase-txt').textContent = phrases[0];
   document.getElementById('pac-gameover').classList.remove('open');
-
-  const COLS = 15, ROWS = 13;
-  // Cellule carrée, grille centrée
-  const CELL = Math.max(8, Math.min(Math.floor(W / COLS), Math.floor(H / ROWS)));
-  const CW = CELL, CH = CELL;
-  const gridW = CELL * COLS, gridH = CELL * ROWS;
-  const offX = Math.floor((W - gridW) / 2);
-  const offY = Math.floor((H - gridH) / 2);
 
   // Labyrinthe : cadre + couloir périphérique + paires de blocs verticaux symétriques
   const maze = [
@@ -1897,7 +1932,9 @@ function finTractions() {
       const succes = dlgList.find(d => d.type === 'fin_succes');
       document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
       showScreen('scene');
-      if (succes) showSucces(succes);
+      // Mission terminée : après le dialogue de Kupi, on va à l'écran de fin
+      if (succes) showSucces(succes, { onFin: showFin });
+      else showFin();
     } else {
       document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
       showScreen('scene');
@@ -1934,7 +1971,11 @@ function dlgZoneEl() { return document.getElementById('dlg-zone'); }
 function showFin() {
   showScreen('fin');
   const img = document.getElementById('fin-img');
-  img.src = BASE + 'ecrans/Victors-laoding.jpg';
+  // Image de fin renseignée dans l'onglet config (clé 'ecran_fin'),
+  // ex. ecrans/fin-faro.jpg. Fallback sur l'écran de chargement.
+  const ecranFin = (G.config && G.config.ecran_fin) ? G.config.ecran_fin : 'ecrans/Victors-laoding.jpg';
+  img.classList.remove('show');
+  img.src = BASE + ecranFin;
   setTimeout(() => img.classList.add('show'), 100);
 }
 
