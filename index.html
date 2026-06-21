@@ -256,6 +256,32 @@ html, body {
   margin-top: 28px; width: 70%;
 }
 
+/* ── POPUP NARRATION CENTRAL (mini-jeux réussis) ── */
+#popup-narration {
+  position: absolute; inset: 0; z-index: 210;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.85);
+  padding: 28px;
+}
+#popup-narration.open { display: flex; }
+#popup-narration-bloc {
+  background: rgba(0,0,0,0.6);
+  border: 2px solid var(--narration-color, #FFDE00);
+  padding: 24px 22px;
+  max-width: 90%;
+  animation: popIn 0.4s ease forwards;
+}
+#popup-narration-txt {
+  font-size: 17px; line-height: 1.5;
+  color: var(--narration-color, #FFDE00);
+  text-align: center; font-weight: 600;
+  min-height: 26px;
+}
+#popup-narration-ok {
+  margin-top: 28px; width: 70%;
+}
+
 /* ── TUTO ── */
 #tuto-zone {
   position: absolute; bottom: 0; left: 0; right: 0;
@@ -273,21 +299,19 @@ html, body {
 
 /* ── PACMAN ── */
 #screen-pacman { background: #1a1a2e; }
+#pac-canvas { width: 100%; display: block; }
+/* Barre de phrases de Pierre : collée juste sous le bloc jeu (canvas) */
 #pac-phrase-bar {
-  position: absolute;
-  top: 50%; left: 5%; right: 5%;
-  transform: translateY(-50%);
+  flex-shrink: 0;
   z-index: 15;
   background: rgba(0,0,0,0.92);
-  padding: 16px 18px;
-  pointer-events: none;
+  padding: 12px 16px;
 }
 #pac-phrase-nom {
   font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--rose); margin-bottom: 6px;
 }
 #pac-phrase-txt { font-size: 14px; line-height: 1.5; color: #fff; min-height: 44px; }
-#pac-canvas { flex: 1; width: 100%; display: block; }
 /* Bulle flottante hall (animation Victor) - même DA partout */
 #hall-bubble {
   position: absolute;
@@ -444,13 +468,13 @@ html, body {
   </div>
 </div>
 
-<!-- PACMAN -->
+<!-- PACMAN : bloc jeu en haut, phrases de Pierre collées juste dessous -->
 <div id="screen-pacman" class="screen">
+  <canvas id="pac-canvas"></canvas>
   <div id="pac-phrase-bar">
     <div id="pac-phrase-nom">Pierre</div>
     <div id="pac-phrase-txt"></div>
   </div>
-  <canvas id="pac-canvas"></canvas>
   <div id="pac-controls">
     <div></div>
     <button class="pac-btn" id="pac-up">▲</button>
@@ -504,6 +528,14 @@ html, body {
   <button class="btn-cta" id="objet-popup-ok" onclick="closeObjetPopup()">OK</button>
 </div>
 
+<!-- POPUP NARRATION CENTRAL (réussite mini-jeux) -->
+<div id="popup-narration">
+  <div id="popup-narration-bloc">
+    <div id="popup-narration-txt"></div>
+  </div>
+  <button class="btn-cta" id="popup-narration-ok">OK</button>
+</div>
+
 <!-- DONNER OVERLAY -->
 <div id="donner-overlay" style="position:absolute;inset:0;z-index:70;display:none;flex-direction:column;align-items:center;justify-content:flex-end;background:rgba(0,0,0,0.6);">
   <div style="width:100%;background:#fff;padding:18px 14px 28px;">
@@ -522,6 +554,9 @@ const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzze8-guvyUP7j04Mg_RW
 let BASE = '';
 let G = null; // { config, objets, lieux, dialogues }
 
+// Liste unique des objets requis (source de vérité unique)
+const OBJETS_FINAUX = ['tshirt','valise','meuj','passeport','montre','billet','putter','photolaura'];
+
 // État jeu
 let inventaire = [];
 let lieuxVisites = new Set(); // lieux déjà visités
@@ -538,6 +573,12 @@ async function init() {
   const res = await fetch(SHEET_URL + '?v=' + Date.now());
   G = await res.json();
   BASE = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
+
+  // Slot inventaire générique "montre" : on l'injecte s'il n'existe pas
+  // dans le Sheet, pour que la montre choisie chez Rolex s'affiche.
+  if (!G.objets.find(o => o.id === 'montre')) {
+    G.objets.push({ id:'montre', nom:'Rolex', icon:'icons/milgauss.png' });
+  }
 
   if (G.config.couleur_narration) {
     // couleur_narration = couleur du texte de narration (pas le fond)
@@ -768,8 +809,6 @@ function startHallAnim() {
 // ══════════════════════════════════════════════════════════
 // INVENTAIRE
 // ══════════════════════════════════════════════════════════
-const OBJETS_FINAUX = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];
-
 function openInv() {
   setupInvGrid();
   document.getElementById('inv-overlay').classList.add('open');
@@ -828,12 +867,40 @@ function showObjetPopup(id) {
   document.getElementById('objet-popup').classList.add('open');
 }
 
+// Callback optionnel après fermeture complète de la file de popups objet
+let objetPopupOnEmpty = null;
+
 function closeObjetPopup() {
   document.getElementById('objet-popup').classList.remove('open');
   objetPopupQueue.shift();
   if (objetPopupQueue.length > 0) {
     setTimeout(showNextObjetPopup, 200);
+  } else if (objetPopupOnEmpty) {
+    const cb = objetPopupOnEmpty;
+    objetPopupOnEmpty = null;
+    setTimeout(cb, 150);
   }
+}
+
+// ══════════════════════════════════════════════════════════
+// POPUP NARRATION CENTRAL (réussite mini-jeux : pacman, tractions)
+// ══════════════════════════════════════════════════════════
+function showPopupNarration(texte, onOk) {
+  const overlay = document.getElementById('popup-narration');
+  const txtEl = document.getElementById('popup-narration-txt');
+  const okBtn = document.getElementById('popup-narration-ok');
+  overlay.classList.add('open');
+  okBtn.disabled = true;
+  okBtn.style.opacity = '0.4';
+  typewriteBloc(txtEl, texte, () => {
+    okBtn.disabled = false;
+    okBtn.style.opacity = '1';
+  });
+  okBtn.onclick = () => {
+    if (okBtn.disabled) return;
+    overlay.classList.remove('open');
+    if (onOk) onOk();
+  };
 }
 
 // Créer un bloc dialogue — si le texte commence par [ c'est une narration
@@ -1045,9 +1112,9 @@ function renderDlg() {
   else if (type === 'choix' && currentLieu && currentLieu.id === 'rolex') {
     document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}ecrans/montreschoix.jpg)`;
     const montres = [
-      { label:'Daytona',        type:'reponse_daytona',  objetId:'montre', icon:'icons/daytona.png',  nom:'Rolex Daytona',       left:'5%',  top:'52%', w:'30%', h:'30%' },
-      { label:'Milgauss',       type:'reponse_milgauss', objetId:'montre', icon:'icons/milgauss.png', nom:'Rolex Milgauss',      left:'36%', top:'50%', w:'28%', h:'32%' },
-      { label:'GMT-Master II',  type:'reponse_gmt',      objetId:'montre', icon:'icons/GMT.png',      nom:'Rolex GMT-Master II', left:'64%', top:'52%', w:'31%', h:'30%' },
+      { label:'Daytona',        type:'reponse_daytona',  icon:'icons/daytona.png',  nom:'Rolex Daytona',       left:'5%',  top:'52%', w:'30%', h:'30%' },
+      { label:'Milgauss',       type:'reponse_milgauss', icon:'icons/milgauss.png', nom:'Rolex Milgauss',      left:'36%', top:'50%', w:'28%', h:'32%' },
+      { label:'GMT-Master II',  type:'reponse_gmt',      icon:'icons/GMT.png',      nom:'Rolex GMT-Master II', left:'64%', top:'52%', w:'31%', h:'30%' },
     ];
     montres.forEach(m => {
       const z = document.createElement('div');
@@ -1059,14 +1126,20 @@ function renderDlg() {
       z.onmouseleave = () => z.style.borderColor = 'transparent';
       z.onclick = () => {
         document.querySelectorAll('.montre-zone').forEach(el => el.remove());
+        // Récupérer la ligne de félicitations correspondante (44/45/46)
         const rep = dlgList.find(d => d.type === m.type);
-        // Mettre à jour l'objet montre dans G.objets
+        // Mettre à jour le slot générique "montre" avec le bon modèle (nom + icon)
         const objMontre = G.objets.find(o => o.id === 'montre');
         if (objMontre) { objMontre.nom = m.nom; objMontre.icon = m.icon; }
-        // Retirer l'ancienne montre si déjà en inventaire (remplacer)
+        // Remplacer si déjà en inventaire
         const idx = inventaire.indexOf('montre');
         if (idx !== -1) inventaire.splice(idx, 1);
-        if (rep) { ajouterObjet('montre'); showSucces(rep); }
+        // 1) Animation popup objet → 2) au clic OK : dialogue du vendeur qui félicite
+        objetPopupOnEmpty = () => {
+          if (rep) showSucces(rep);
+          else goHall();
+        };
+        ajouterObjet('montre');
       };
       document.getElementById('screen-scene').appendChild(z);
     });
@@ -1100,6 +1173,7 @@ function renderDlg() {
       if (dlg.meta) ajouterObjet(dlg.meta);
       goHall();
     };
+    requestAnimationFrame(adjustDlgBottom);
   }
 
   else if (type === 'fin_echec') {
@@ -1122,7 +1196,7 @@ function renderDlg() {
   }
 
   else {
-    // Type inconnu — ignorer et passer au suivant
+    // Type inconnu (ex. popup_succes, game_over_pacman, reponse_*) — ignorer et passer au suivant
     dlgIndex++;
     renderDlg();
   }
@@ -1141,13 +1215,18 @@ function showTempDlg(dlg, cb, duree = 3000) {
 
 function showSucces(dlg) {
   const dlgZone = document.getElementById('dlg-zone');
+  const choixZone = document.getElementById('choix-zone');
   dlgZone.innerHTML = '';
+  choixZone.innerHTML = '';
+  choixZone.style.display = 'none';
   const { bloc: sbloc } = createDlgBloc(dlg.personnage, dlg.texte);
+  // texte vide → machine à écrire
+  const txtEl = sbloc.querySelector('.dlg-txt');
+  if (txtEl) txtEl.textContent = '';
   dlgZone.appendChild(sbloc);
   const ctaZone = document.getElementById('cta-zone');
   ctaZone.style.display = 'flex';
   document.getElementById('btn-continuer').style.display = 'none';
-  document.getElementById('choix-zone').style.display = 'none';
   const btnHall = document.getElementById('btn-hall-scene');
   btnHall.style.display = 'block';
   btnHall.textContent = 'Retour au hall';
@@ -1158,6 +1237,7 @@ function showSucces(dlg) {
     stopSound();
     goHall();
   };
+  if (txtEl) typewriteBloc(txtEl, dlg.texte, () => requestAnimationFrame(adjustDlgBottom));
   requestAnimationFrame(adjustDlgBottom);
 }
 
@@ -1303,6 +1383,7 @@ function choisirValise(idx) {
 // CABINES (OSCAR)
 // ══════════════════════════════════════════════════════════
 let cabinesOuvertes = [];
+let cabinesPortesActives = false; // bloque les clics tant que la phrase d'arrivée est affichée
 
 function showCabines(lieu) {
   if (!peutAcceder(lieu)) {
@@ -1316,6 +1397,7 @@ function showCabines(lieu) {
   document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('cabines');
   cabinesOuvertes = [];
+  cabinesPortesActives = false; // portes verrouillées au départ
   document.getElementById('cabine-dlg').style.display = 'none';
 
   const overlay = document.getElementById('cabines-overlay');
@@ -1329,9 +1411,12 @@ function showCabines(lieu) {
   portes.forEach((p, idx) => {
     const z = document.createElement('div');
     z.style.cssText = `position:absolute;left:${p.left};top:${p.top};width:${p.w};height:${p.h};cursor:pointer;z-index:10;`;
-    z.ontouchstart = () => z.style.background = 'rgba(255,110,199,0.15)';
+    z.ontouchstart = () => { if (cabinesPortesActives) z.style.background = 'rgba(255,110,199,0.15)'; };
     z.ontouchend = () => z.style.background = 'transparent';
-    z.onclick = () => { if (!cabinesOuvertes.includes(idx)) ouvrirCabine(idx, p.contenu, lieu); };
+    z.onclick = () => {
+      if (!cabinesPortesActives) return; // bloqué tant que Victor parle
+      if (!cabinesOuvertes.includes(idx)) ouvrirCabine(idx, p.contenu, lieu);
+    };
     overlay.appendChild(z);
   });
 
@@ -1347,15 +1432,19 @@ function showCabines(lieu) {
     txt.textContent = '';
     btn.style.display = 'none';
     retour.style.display = 'none';
-    dlg.style.pointerEvents = 'none'; // ne pas bloquer les clics sur les portes
+    dlg.style.pointerEvents = 'none';
     dlg.style.display = 'block';
     typewriteBloc(txt, arrivedlg.texte, () => {
       setTimeout(() => {
         dlg.style.display = 'none';
-        dlg.style.pointerEvents = ''; // restaurer
+        dlg.style.pointerEvents = '';
         btn.style.display = '';
+        cabinesPortesActives = true; // déverrouiller les portes seulement maintenant
       }, 2500);
     });
+  } else {
+    // Pas de phrase d'arrivée → portes actives directement
+    cabinesPortesActives = true;
   }
 }
 
@@ -1424,13 +1513,13 @@ function ouvrirCabine(idx, contenu, lieu) {
         if (pi === 2) {
           // Après dlg 3 : donner l'objet quand on clique
           btn.textContent = 'Prendre le meuj';
-          btn.onclick = () => { ajouterObjet('meuj'); pi++; showOscarPhrase(); };
+          btn.onclick = () => { if (btn.disabled) return; ajouterObjet('meuj'); pi++; showOscarPhrase(); };
         } else if (pi === textes.length - 1) {
           btn.textContent = 'Fermer la porte';
-          btn.onclick = () => { pi++; showOscarPhrase(); };
+          btn.onclick = () => { if (btn.disabled) return; pi++; showOscarPhrase(); };
         } else {
           btn.textContent = 'Continuer';
-          btn.onclick = () => { pi++; showOscarPhrase(); };
+          btn.onclick = () => { if (btn.disabled) return; pi++; showOscarPhrase(); };
         }
       }
       btn.style.background = 'var(--rose)'; btn.style.color = 'var(--noir)';
@@ -1498,23 +1587,28 @@ function startPacman(phrases) {
 
   const canvas = document.getElementById('pac-canvas');
   const ctx = canvas.getContext('2d');
-  const W = canvas.offsetWidth;
-  const H = canvas.offsetHeight;
-  canvas.width = W; canvas.height = H;
+  // Le canvas occupe l'espace au-dessus de la barre de phrases + contrôles.
+  // On le dimensionne après un RAF pour avoir les bonnes dimensions de layout.
+  function sizeCanvas() {
+    const W = canvas.offsetWidth;
+    const H = canvas.offsetHeight;
+    canvas.width = W; canvas.height = H;
+    return { W, H };
+  }
+  let { W, H } = sizeCanvas();
 
   document.getElementById('pac-phrase-txt').textContent = phrases[0];
   document.getElementById('pac-gameover').classList.remove('open');
 
   const COLS = 15, ROWS = 13;
   // Cellule carrée, grille centrée
-  const CELL = Math.min(Math.floor(W / COLS), Math.floor(H / ROWS));
+  const CELL = Math.max(8, Math.min(Math.floor(W / COLS), Math.floor(H / ROWS)));
   const CW = CELL, CH = CELL;
   const gridW = CELL * COLS, gridH = CELL * ROWS;
   const offX = Math.floor((W - gridW) / 2);
   const offY = Math.floor((H - gridH) / 2);
 
-  // Labyrinthe fidèle à la maquette : cadre + couloir périphérique + paires de blocs verticaux symétriques
-  // 1=mur, 0=couloir (avec point)
+  // Labyrinthe : cadre + couloir périphérique + paires de blocs verticaux symétriques
   const maze = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -1530,7 +1624,6 @@ function startPacman(phrases) {
     [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   ];
-  const mazeOriginal = maze.map(r => [...r]);
 
   function canMove(c, r) {
     if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
@@ -1587,21 +1680,18 @@ function startPacman(phrases) {
   }
 
   function draw() {
-    // Fond noir comme la maquette
     ctx.fillStyle = '#0a0a1a';
     ctx.fillRect(0,0,W,H);
 
     for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) {
       const x = offX + c*CW, y = offY + r*CH;
       if (maze[r][c]===1) {
-        // Mur bleu façon brique
         ctx.fillStyle='#3b3b8f';
         ctx.fillRect(x+1.5,y+1.5,CW-3,CH-3);
         ctx.strokeStyle='#6a6ad0';
         ctx.lineWidth=1.5;
         ctx.strokeRect(x+1.5,y+1.5,CW-3,CH-3);
       } else {
-        // Couloir : petit point
         ctx.fillStyle='#4a4a7a';
         ctx.beginPath();
         ctx.arc(x+CW/2, y+CH/2, 2.5, 0, Math.PI*2);
@@ -1654,8 +1744,7 @@ function startPacman(phrases) {
       } else {
         // Toutes les phrases affichées → succès
         pacRunning = false;
-        const succes = dlgList.find(d => d.type === 'fin_succes');
-        if (succes) showSuccesFromPacman(succes);
+        finPacmanSucces();
         return;
       }
     }
@@ -1667,7 +1756,6 @@ function startPacman(phrases) {
       if (canMove(vic.col+vic.next.dc, vic.row+vic.next.dr)) vic.dir = {...vic.next};
       if (canMove(vic.col+vic.dir.dc, vic.row+vic.dir.dr)) {
         vic.col += vic.dir.dc; vic.row += vic.dir.dr;
-        if (maze[vic.row][vic.col]===2) maze[vic.row][vic.col]=0;
       }
     }
 
@@ -1683,21 +1771,17 @@ function startPacman(phrases) {
 
     // Collision - Pierre réapparaît loin sans restart
     if (Math.abs(vic.col-pier.col)<1 && Math.abs(vic.row-pier.row)<1) {
-      // Trouver un message de défaite depuis le Sheet
       const gameOverDlg = dlgList.find(d => d.type === 'game_over_pacman');
       const msg = gameOverDlg ? gameOverDlg.texte.split('|')[Math.floor(Math.random() * gameOverDlg.texte.split('|').length)] : 'Hé mec, t\'endors pas !';
       document.getElementById('pac-phrase-txt').textContent = msg;
 
-      // Réinitialiser la position de Pierre loin de Victor
-      // Choisir un coin opposé à Victor
       const corners = [{col:1,row:1},{col:13,row:1},{col:1,row:11},{col:13,row:11}];
       const far = corners.sort((a,b) => {
         const da = Math.abs(a.col-vic.col)+Math.abs(a.row-vic.row);
         const db = Math.abs(b.col-vic.col)+Math.abs(b.row-vic.row);
-        return db-da; // plus loin en premier
+        return db-da;
       })[0];
       pier.col = far.col; pier.row = far.row; pier.t = 0;
-      // Pas de game over, le jeu continue !
       pacRAF = requestAnimationFrame(loop);
       return;
     }
@@ -1709,10 +1793,21 @@ function startPacman(phrases) {
   pacRAF = requestAnimationFrame(loop);
 }
 
-function showSuccesFromPacman(succes) {
-  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
-  showScreen('scene');
-  showSucces(succes);
+// Réussite pacman : popup central narration (ligne Sheet popup_succes), puis fin_succes
+function finPacmanSucces() {
+  const popup = dlgList.find(d => d.type === 'popup_succes');
+  const succes = dlgList.find(d => d.type === 'fin_succes');
+  const goToSucces = () => {
+    document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
+    showScreen('scene');
+    if (succes) showSucces(succes);
+    else goHall();
+  };
+  if (popup) {
+    showPopupNarration(popup.texte, goToSucces);
+  } else {
+    goToSucces();
+  }
 }
 
 function restartPacman() {
@@ -1733,16 +1828,13 @@ function startTractions(phrases) {
   tracBody.style.width = bodyWidth + '%';
   tracBody.style.bottom = bodyInitBottom + 'px';
 
-  let phraseIdx = 0;
   let tapCount = 0;
   const TAPS = 30;
   let bodyBottom = bodyInitBottom;
   let decayTimer = null;
   let phraseTimer = null;
 
-  // Timing des phrases depuis config (défaut 3s)
   const phraseInterval = (parseFloat(G.config.trac_phrase_interval) || 3) * 1000;
-
   const phraseTxtEl = document.getElementById('trac-phrase-txt');
 
   // Phrases en boucle aléatoire
@@ -1779,38 +1871,13 @@ function startTractions(phrases) {
     bodyBottom = Math.min(100, bodyBottom + 5); // remonte de 5 par tap
     update();
 
-    // Fin de jeu : barre pleine OU >=80% avec assez de taps
     const pct = (bodyBottom - bodyInitBottom) / Math.max(1, 100 - bodyInitBottom) * 100;
     if (tapCount >= TAPS && pct >= 80) {
       clearInterval(decayTimer);
       clearTimeout(phraseTimer);
       const btn = document.getElementById('trac-tap');
       btn.onclick = null; btn.ontouchstart = null;
-      setTimeout(() => {
-        const requis = ['tshirt','valise','meuj','passeport','billet','putter','photolaura'];
-        const asTout = requis.every(r => inventaire.includes(r));
-        if (asTout) {
-          const succes = dlgList.find(d => d.type === 'fin_succes');
-          if (succes) showSuccesKupi(succes);
-        } else {
-          document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
-          showScreen('scene');
-          const echec = dlgList.find(d => d.type === 'fin_echec');
-          if (echec) {
-            dlgZoneEl().innerHTML = '';
-            const { bloc } = createDlgBloc(echec.personnage, echec.texte);
-            dlgZoneEl().appendChild(bloc);
-            const cta = document.getElementById('cta-zone');
-            cta.style.display = 'flex';
-            document.getElementById('btn-continuer').style.display = 'none';
-            const btnHall = document.getElementById('btn-hall-scene');
-            btnHall.style.display = 'block';
-            btnHall.textContent = 'Retour au hall';
-            btnHall.onclick = goHall;
-            requestAnimationFrame(adjustDlgBottom);
-          }
-        }
-      }, 500);
+      setTimeout(() => finTractions(), 500);
     }
   }
 
@@ -1819,13 +1886,47 @@ function startTractions(phrases) {
   btn.ontouchstart = onTap;
 }
 
-function dlgZoneEl() { return document.getElementById('dlg-zone'); }
+// Fin tractions : popup central (ligne Sheet popup_succes) AVANT retour écran Kupi
+function finTractions() {
+  const requis = OBJETS_FINAUX;
+  const asTout = requis.every(r => inventaire.includes(r));
+  const popup = dlgList.find(d => d.type === 'popup_succes');
 
-function showSuccesKupi(succes) {
-  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
-  showScreen('scene');
-  showSucces(succes);
+  const afterPopup = () => {
+    if (asTout) {
+      const succes = dlgList.find(d => d.type === 'fin_succes');
+      document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
+      showScreen('scene');
+      if (succes) showSucces(succes);
+    } else {
+      document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
+      showScreen('scene');
+      const echec = dlgList.find(d => d.type === 'fin_echec');
+      if (echec) {
+        dlgZoneEl().innerHTML = '';
+        const { bloc } = createDlgBloc(echec.personnage, echec.texte);
+        dlgZoneEl().appendChild(bloc);
+        const cta = document.getElementById('cta-zone');
+        cta.style.display = 'flex';
+        document.getElementById('btn-continuer').style.display = 'none';
+        const btnHall = document.getElementById('btn-hall-scene');
+        btnHall.style.display = 'block';
+        btnHall.textContent = 'Retour au hall';
+        btnHall.onclick = goHall;
+        requestAnimationFrame(adjustDlgBottom);
+      }
+    }
+  };
+
+  // Le popup "Well done gros, t'es là." s'affiche dans tous les cas après l'effort
+  if (popup) {
+    showPopupNarration(popup.texte, afterPopup);
+  } else {
+    afterPopup();
+  }
 }
+
+function dlgZoneEl() { return document.getElementById('dlg-zone'); }
 
 // ══════════════════════════════════════════════════════════
 // FIN
