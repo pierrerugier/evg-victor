@@ -1113,6 +1113,15 @@ function renderDlg() {
     const isPnjDlg = type === 'pnj' || type === 'victor' || type === 'narration';
     const nextDlgType = dlgList[dlgIndex + 1]?.type;
     const noMorePnjAfter = !nextDlgType || ['fin_succes','fin_echec','reponse_incorrecte','qcm','choix','tunnel_pacman','tunnel_tractions'].includes(nextDlgType);
+    // Un mini-jeu (pacman/tractions) suit-il ? Si oui, on ne propose pas l'inventaire.
+    const miniJeuSuit = nextDlgType === 'tunnel_pacman' || nextDlgType === 'tunnel_tractions';
+    // L'inventaire ne se propose que si le lieu attend vraiment un objet ET qu'aucun mini-jeu ne suit.
+    const attendObjet = currentLieu.objet_a_donner
+      && currentLieu.objet_a_donner !== 'pacman'
+      && currentLieu.objet_a_donner !== 'tractions'
+      && currentLieu.objet_a_donner !== 'cabines'
+      && currentLieu.objet_a_donner !== 'qcm'
+      && currentLieu.objet_a_donner !== 'choix';
 
     // Lancer la machine à écrire
     typewriteBloc(txtEl, isNarr ? phrase.replace(/^\[|\]$/g,'').trim() : phrase, () => {
@@ -1120,7 +1129,7 @@ function renderDlg() {
       btnContinuer.style.opacity = '1';
     });
 
-    if (isLast && currentLieu.objet_a_donner && isPnjDlg && noMorePnjAfter) {
+    if (isLast && attendObjet && isPnjDlg && noMorePnjAfter && !miniJeuSuit) {
       btnContinuer.textContent = 'Ouvrir l\'inventaire →';
       btnContinuer.onclick = () => { if (!btnContinuer.disabled) { phraseIndex = 0; openInv(); } };
     } else {
