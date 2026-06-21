@@ -1027,6 +1027,12 @@ function startBgMusic() {
   bgMusic = new Audio(BASE + path);
   bgMusic.loop = true;
   bgMusic.volume = parseFloat(G.config && G.config.musique_fond_volume) || 0.5;
+  // Ceinture-bretelles : si l'attribut loop ne se réamorce pas (cas fréquent
+  // sur iOS/Safari où la piste s'arrête à la fin), on relance manuellement.
+  bgMusic.addEventListener('ended', () => {
+    bgMusic.currentTime = 0;
+    bgMusic.play().catch(() => {});
+  });
   bgMusic.play().then(() => { bgMusicStarted = true; }).catch(() => {
     // Si le navigateur bloque l'autoplay, on retentera au prochain clic.
     bgMusicStarted = false;
@@ -1448,6 +1454,7 @@ function handleDonner(objetId) {
 let baptisteTunnelIdx = 0;
 let baptisteTunnelPhrases = [];
 let baptisteClicks = 0;
+let baptisteEcrit = false; // bloque les clics pendant qu'un message s'écrit
 
 function showValises(lieu) {
   if (!peutAcceder(lieu)) { entrerLieuEchec(lieu); return; }
@@ -1456,6 +1463,7 @@ function showValises(lieu) {
 
   baptisteTunnelIdx = 0;
   baptisteClicks = 0;
+  baptisteEcrit = true; // bloqué le temps que l'intro s'écrive
   baptisteTunnelPhrases = G.dialogues.filter(d => d.lieu_id === 'enregistrement' && d.type === 'tunnel')
     .sort((a,b) => +a.ordre - +b.ordre);
 
@@ -1463,8 +1471,10 @@ function showValises(lieu) {
   const intro = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'pnj');
   if (intro) {
     const txtEl = document.getElementById('baptiste-txt');
-    typewriteBloc(txtEl, intro.texte, null);
+    typewriteBloc(txtEl, intro.texte, () => { baptisteEcrit = false; });
     tunnel.style.display = 'block';
+  } else {
+    baptisteEcrit = false;
   }
   document.getElementById('baptiste-ok-btn').style.display = 'none';
 
@@ -1481,36 +1491,53 @@ function showValises(lieu) {
 
   valises.forEach((v, idx) => {
     const zone = document.createElement('div');
+    zone.className = 'valise-zone';
+    zone.dataset.idx = idx;
+    zone.dataset.essayee = 'false';
     zone.style.cssText = `position:absolute;left:${v.left};top:${v.top};width:${v.w};height:${v.h};cursor:pointer;z-index:10;-webkit-tap-highlight-color:rgba(255,110,199,0.2);`;
-    zone.ontouchstart = () => zone.style.background = 'rgba(255,110,199,0.2)';
+    zone.ontouchstart = () => { if (zone.dataset.essayee === 'false' && !baptisteEcrit) zone.style.background = 'rgba(255,110,199,0.2)'; };
     zone.ontouchend = () => zone.style.background = 'transparent';
-    zone.onclick = () => choisirValise(idx);
+    zone.onclick = () => choisirValise(zone);
     overlay.appendChild(zone);
   });
 }
 
-function choisirValise(idx) {
-  baptisteClicks++;
-  const txtEl = document.getElementById('baptiste-txt');
+function choisirValise(zone) {
+  // Bloqué pendant l'écriture d'un message, ou si la valise a déjà été essayée
+  if (baptisteEcrit) return;
+  if (zone.dataset.essayee === 'true') return;
 
-  if (baptisteClicks >= 4) {
-    // 4ème clic = toujours la bonne valise
+  // Marquer cette valise comme essayée (non recliquable, visuellement neutralisée)
+  zone.dataset.essayee = 'true';
+  zone.style.cursor = 'default';
+  zone.style.background = 'transparent';
+
+  const txtEl = document.getElementById('baptiste-txt');
+  const zones = Array.from(document.querySelectorAll('#valises-overlay .valise-zone'));
+  const restantes = zones.filter(z => z.dataset.essayee === 'false');
+
+  // S'il ne reste plus aucune valise non essayée → c'était la dernière = la bonne
+  if (restantes.length === 0) {
     const succes = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'fin_succes');
     if (succes) {
       if (succes.meta) ajouterObjet(succes.meta);
       if (currentLieu) playSonLieu(currentLieu); // son du personnage à la réussite
+      baptisteEcrit = true;
       typewriteBloc(txtEl, succes.texte, () => {
+        baptisteEcrit = false;
         document.getElementById('baptiste-ok-btn').style.display = 'block';
       });
     }
-    // Désactiver toutes les zones
-    document.querySelectorAll('#valises-overlay div').forEach(z => z.onclick = null);
+    // Plus aucune zone cliquable
+    zones.forEach(z => z.onclick = null);
   } else {
-    // Mauvaise valise : phrase de tunnel suivante
-    if (baptisteTunnelIdx < baptisteTunnelPhrases.length) {
-      typewriteBloc(txtEl, baptisteTunnelPhrases[baptisteTunnelIdx].texte, null);
-      baptisteTunnelIdx++;
-    }
+    // Mauvaise valise : phrase de tunnel suivante, clics bloqués pendant l'écriture
+    const phrase = baptisteTunnelPhrases[baptisteTunnelIdx % Math.max(1, baptisteTunnelPhrases.length)];
+    baptisteTunnelIdx++;
+    baptisteEcrit = true;
+    typewriteBloc(txtEl, phrase ? phrase.texte : '...', () => {
+      baptisteEcrit = false;
+    });
   }
 }
 
