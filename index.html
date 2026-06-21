@@ -1008,8 +1008,20 @@ function stopSound() {
   if (currentSound) { currentSound.pause(); currentSound.currentTime = 0; currentSound = null; }
 }
 
+// Son unique par lieu : colonne 'son' du Sheet (un mp3 par personnage),
+// joué à l'arrivée ET à la réussite. Replis sur les anciennes colonnes.
+function sonDuLieu(lieu) {
+  if (!lieu) return null;
+  return lieu.son || lieu.son_entree || lieu.son_succes || null;
+}
+
+function playSonLieu(lieu) {
+  const s = sonDuLieu(lieu);
+  if (s) playSound(s);
+}
+
 function playSonSucces() {
-  if (currentLieu && currentLieu.son_succes) playSound(currentLieu.son_succes);
+  if (currentLieu) playSonLieu(currentLieu);
 }
 
 function entrerLieu(id) {
@@ -1020,8 +1032,8 @@ function entrerLieu(id) {
   dlgIndex = 0;
   phraseIndex = 0;
 
-  // Jouer le son d'entrée
-  if (lieu.son_entree) playSound(lieu.son_entree);
+  // Jouer le son du personnage à l'arrivée
+  playSonLieu(lieu);
 
   if (id === 'toilettes') { showCabines(lieu); return; }
   if (id === 'enregistrement') { showValises(lieu); return; }
@@ -1294,8 +1306,8 @@ function showSucces(dlg, opts) {
   btnHall.disabled = false;
   btnHall.style.opacity = '1';
   if (echecCountdownTimer) { clearInterval(echecCountdownTimer); echecCountdownTimer = null; }
-  // Jouer le son de succès du lieu
-  if (currentLieu && currentLieu.son_succes) playSound(currentLieu.son_succes);
+  // Jouer le son du personnage à la réussite
+  if (currentLieu) playSonLieu(currentLieu);
   if (opts.onFin) {
     // Fin de mission : le bouton enchaîne sur l'écran de fin
     btnHall.textContent = 'Continuer';
@@ -1439,6 +1451,7 @@ function choisirValise(idx) {
     const succes = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'fin_succes');
     if (succes) {
       if (succes.meta) ajouterObjet(succes.meta);
+      if (currentLieu) playSonLieu(currentLieu); // son du personnage à la réussite
       typewriteBloc(txtEl, succes.texte, () => {
         document.getElementById('baptiste-ok-btn').style.display = 'block';
       });
@@ -1588,7 +1601,7 @@ function ouvrirCabine(idx, contenu, lieu) {
         if (pi === 2) {
           // Après dlg 3 : donner l'objet quand on clique
           btn.textContent = 'Prendre le meuj';
-          btn.onclick = () => { if (btn.disabled) return; ajouterObjet('meuj'); pi++; showOscarPhrase(); };
+          btn.onclick = () => { if (btn.disabled) return; ajouterObjet('meuj'); if (currentLieu) playSonLieu(currentLieu); pi++; showOscarPhrase(); };
         } else if (pi === textes.length - 1) {
           btn.textContent = 'Fermer la porte';
           btn.onclick = () => { if (btn.disabled) return; pi++; showOscarPhrase(); };
@@ -1606,6 +1619,7 @@ function ouvrirCabine(idx, contenu, lieu) {
       const d = oscarDlgs[0];
       showDialogue('Oscar', d ? d.texte : '', 'Prendre le meuj', () => {
         ajouterObjet('meuj');
+        if (currentLieu) playSonLieu(currentLieu);
         retourCabines();
       }, false);
     }
