@@ -266,20 +266,18 @@ html, body {
 }
 #popup-narration.open { display: flex; }
 #popup-narration-bloc {
-  background: rgba(0,0,0,0.6);
-  border: 2px solid var(--narration-color, #FFDE00);
-  padding: 24px 22px;
-  max-width: 90%;
+  background: var(--dlg-bg);
+  padding: 10px 12px;
+  max-width: 90%; width: 100%;
   animation: popIn 0.4s ease forwards;
 }
 #popup-narration-txt {
-  font-size: 17px; line-height: 1.5;
+  font-size: 14px; line-height: 1.5;
   color: var(--narration-color, #FFDE00);
-  text-align: center; font-weight: 600;
-  min-height: 26px;
+  min-height: 21px;
 }
 #popup-narration-ok {
-  margin-top: 28px; width: 70%;
+  margin-top: 16px; width: 90%; max-width: 90%;
 }
 
 /* ── TUTO ── */
@@ -578,6 +576,7 @@ let dlgIndex = 0;
 let phraseIndex = 0;
 let dlgList = [];
 let oscarVisites = 0;
+let milgaussAchetee = false; // vrai dès que la Milgauss est choisie chez Rolex
 
 // ══════════════════════════════════════════════════════════
 // INIT
@@ -729,6 +728,9 @@ function setupHall() {
 function lieuEstComplete(lieu) {
   if (!lieu.objet_donne) return lieuxVisites.has(lieu.id);
   if (lieu.id === 'toilettes') return oscarVisites >= 2;
+  // Rolex : le pin passe blanc dès que la Milgauss a été achetée,
+  // et le reste même après l'avoir donnée à Charles.
+  if (lieu.id === 'rolex') return milgaussAchetee;
   return inventaire.includes(lieu.objet_donne);
 }
 
@@ -1144,6 +1146,8 @@ function renderDlg() {
         // Mettre à jour le slot générique "montre" avec le bon modèle (nom + icon)
         const objMontre = G.objets.find(o => o.id === 'montre');
         if (objMontre) { objMontre.nom = m.nom; objMontre.icon = m.icon; }
+        // Mémoriser si la Milgauss (la bonne montre) a été choisie
+        milgaussAchetee = m.nom.toLowerCase().includes('milgauss');
         // Remplacer si déjà en inventaire
         const idx = inventaire.indexOf('montre');
         if (idx !== -1) inventaire.splice(idx, 1);
@@ -1863,11 +1867,17 @@ function startTractions(phrases) {
   tracBody.style.width = bodyWidth + '%';
   tracBody.style.bottom = bodyInitBottom + 'px';
 
-  let tapCount = 0;
-  const TAPS = 30;
+  // Amplitude max de montée du PNG en px (réglable depuis le Sheet).
+  // bodyBottom évolue entre bodyInitBottom et bodyInitBottom + amplitude.
+  const amplitude = parseInt(G.config.trac_amplitude) || 120;
+  const gainParTap = parseFloat(G.config.trac_gain_tap) || (amplitude / 24);
+  const decayParTick = parseFloat(G.config.trac_decay) || (amplitude / 80);
+  const bodyMax = bodyInitBottom + amplitude;
+
   let bodyBottom = bodyInitBottom;
   let decayTimer = null;
   let phraseTimer = null;
+  let gagne = false;
 
   const phraseInterval = (parseFloat(G.config.trac_phrase_interval) || 3) * 1000;
   const phraseTxtEl = document.getElementById('trac-phrase-txt');
@@ -1890,24 +1900,25 @@ function startTractions(phrases) {
 
   if (decayTimer) clearInterval(decayTimer);
   decayTimer = setInterval(() => {
-    bodyBottom = Math.max(bodyInitBottom, bodyBottom - 1.2);
+    bodyBottom = Math.max(bodyInitBottom, bodyBottom - decayParTick);
     update();
   }, 80);
 
   function update() {
     tracBody.style.bottom = bodyBottom + 'px';
-    document.getElementById('trac-bar-fill').style.height =
-      ((bodyBottom - bodyInitBottom) / Math.max(1, 100 - bodyInitBottom) * 100) + '%';
+    const pct = (bodyBottom - bodyInitBottom) / amplitude * 100;
+    document.getElementById('trac-bar-fill').style.height = Math.min(100, pct) + '%';
   }
 
   function onTap(e) {
     if (e) e.preventDefault();
-    tapCount++;
-    bodyBottom = Math.min(100, bodyBottom + 5); // remonte de 5 par tap
+    if (gagne) return;
+    bodyBottom = Math.min(bodyMax, bodyBottom + gainParTap); // remonte d'un cran par tap
     update();
 
-    const pct = (bodyBottom - bodyInitBottom) / Math.max(1, 100 - bodyInitBottom) * 100;
-    if (tapCount >= TAPS && pct >= 80) {
+    // Victoire uniquement quand la jauge est réellement pleine
+    if (bodyBottom >= bodyMax) {
+      gagne = true;
       clearInterval(decayTimer);
       clearTimeout(phraseTimer);
       const btn = document.getElementById('trac-tap');
