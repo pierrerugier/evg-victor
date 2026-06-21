@@ -628,8 +628,8 @@ async function init() {
   // Filet de sécurité : si le navigateur a bloqué l'autoplay, relancer la
   // musique de fond au tout premier clic/tap utilisateur, où qu'il soit.
   const retryBg = () => {
-    if (!bgMusicStarted) startBgMusic();
-    if (bgMusicStarted) {
+    if (!bgMusicStarted && !bgMusic) startBgMusic();
+    if (bgMusicStarted || bgMusic) {
       document.removeEventListener('click', retryBg);
       document.removeEventListener('touchstart', retryBg);
     }
@@ -662,7 +662,15 @@ function showScreen(id) {
   document.getElementById('screen-' + id).classList.add('active');
 }
 
-function goLoading() { showScreen('loading'); }
+function goLoading() { stopHallAnim(); showScreen('loading'); }
+
+// Arrête l'animation des phrases de Victor sur le hall et masque la bulle.
+// Évite qu'un timer en cours fasse réapparaître une bulle par-dessus le tuto.
+function stopHallAnim() {
+  if (hallAnimTimer) { clearTimeout(hallAnimTimer); hallAnimTimer = null; }
+  const bubble = document.getElementById('hall-bubble');
+  if (bubble) bubble.style.display = 'none';
+}
 
 function goHall() {
   stopSound();
@@ -754,6 +762,7 @@ function peutAcceder(lieu) {
 
 // TUTO
 function showTuto() {
+  stopHallAnim(); // pas de bulle Victor qui traîne par-dessus le tuto
   tutoIndex = 0;
   tutoDone = false;
   renderTuto();
@@ -1017,13 +1026,16 @@ let bgMusicStarted = false;
 // Démarre la musique de fond globale (une seule fois), en boucle.
 // La clé : config.musique_fond, sinon repli sur le son du lieu 'hall'.
 function startBgMusic() {
-  if (bgMusicStarted) return;
+  // Garde synchrone : si une instance existe déjà OU si un démarrage est en
+  // cours, on ne recrée rien (évite la double couche audio décalée).
+  if (bgMusicStarted || bgMusic) return;
   let path = (G.config && G.config.musique_fond) ? G.config.musique_fond : null;
   if (!path) {
     const hall = G.lieux.find(l => l.id === 'hall');
     path = hall ? (hall.son || hall.son_entree || null) : null;
   }
   if (!path) return;
+  // On crée l'instance tout de suite : bgMusic non-null verrouille les appels suivants.
   bgMusic = new Audio(BASE + path);
   bgMusic.loop = true;
   bgMusic.volume = parseFloat(G.config && G.config.musique_fond_volume) || 0.5;
@@ -1034,8 +1046,9 @@ function startBgMusic() {
     bgMusic.play().catch(() => {});
   });
   bgMusic.play().then(() => { bgMusicStarted = true; }).catch(() => {
-    // Si le navigateur bloque l'autoplay, on retentera au prochain clic.
+    // Autoplay bloqué : on libère l'instance pour pouvoir retenter au prochain clic.
     bgMusicStarted = false;
+    if (bgMusic) { bgMusic.pause(); bgMusic = null; }
   });
 }
 
