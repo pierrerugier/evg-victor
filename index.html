@@ -691,7 +691,7 @@ function typewrite(el, text, speed, onDone) {
 }
 
 function typewriteBloc(txtEl, text, onDone) {
-  const speed = parseInt(G?.config?.typewriter_speed) || 18;
+  const speed = parseInt(G?.config?.typewriter_speed) || 10;
   typewrite(txtEl, text, speed, onDone);
 }
 let TUTO = []; // chargé depuis le Sheet onglet 'tuto'
@@ -1932,45 +1932,52 @@ function startTractions(phrases) {
   btn.ontouchstart = onTap;
 }
 
-// Fin tractions : popup central (ligne Sheet popup_succes) AVANT retour écran Kupi
+// Fin tractions : si tous les objets sont là → popup félicitation puis fin.
+// Sinon → message d'échec de Kupi directement (pas de "bravo" incohérent).
 function finTractions() {
   const requis = OBJETS_FINAUX;
   const asTout = requis.every(r => inventaire.includes(r));
   const popup = dlgList.find(d => d.type === 'popup_succes');
 
-  const afterPopup = () => {
-    if (asTout) {
-      const succes = dlgList.find(d => d.type === 'fin_succes');
-      document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
-      showScreen('scene');
-      // Mission terminée : après le dialogue de Kupi, on va à l'écran de fin
-      if (succes) showSucces(succes, { onFin: showFin });
-      else showFin();
+  const allerSucces = () => {
+    const succes = dlgList.find(d => d.type === 'fin_succes');
+    document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
+    showScreen('scene');
+    // Mission terminée : après le dialogue de Kupi, on va à l'écran de fin
+    if (succes) showSucces(succes, { onFin: showFin });
+    else showFin();
+  };
+
+  const allerEchec = () => {
+    document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
+    showScreen('scene');
+    const echec = dlgList.find(d => d.type === 'fin_echec');
+    if (echec) {
+      dlgZoneEl().innerHTML = '';
+      const { bloc } = createDlgBloc(echec.personnage, echec.texte);
+      const txtEl = bloc.querySelector('.dlg-txt');
+      if (txtEl) txtEl.textContent = '';
+      dlgZoneEl().appendChild(bloc);
+      const cta = document.getElementById('cta-zone');
+      cta.style.display = 'flex';
+      document.getElementById('btn-continuer').style.display = 'none';
+      const btnHall = document.getElementById('btn-hall-scene');
+      btnHall.style.display = 'block';
+      btnHall.textContent = 'Retour au hall';
+      btnHall.onclick = goHall;
+      if (txtEl) typewriteBloc(txtEl, echec.texte, () => requestAnimationFrame(adjustDlgBottom));
+      requestAnimationFrame(adjustDlgBottom);
     } else {
-      document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
-      showScreen('scene');
-      const echec = dlgList.find(d => d.type === 'fin_echec');
-      if (echec) {
-        dlgZoneEl().innerHTML = '';
-        const { bloc } = createDlgBloc(echec.personnage, echec.texte);
-        dlgZoneEl().appendChild(bloc);
-        const cta = document.getElementById('cta-zone');
-        cta.style.display = 'flex';
-        document.getElementById('btn-continuer').style.display = 'none';
-        const btnHall = document.getElementById('btn-hall-scene');
-        btnHall.style.display = 'block';
-        btnHall.textContent = 'Retour au hall';
-        btnHall.onclick = goHall;
-        requestAnimationFrame(adjustDlgBottom);
-      }
+      goHall();
     }
   };
 
-  // Le popup "Well done gros, t'es là." s'affiche dans tous les cas après l'effort
-  if (popup) {
-    showPopupNarration(popup.texte, afterPopup);
+  if (asTout) {
+    // Popup "Well done gros, t'es là." uniquement en cas de réussite réelle
+    if (popup) showPopupNarration(popup.texte, allerSucces);
+    else allerSucces();
   } else {
-    afterPopup();
+    allerEchec();
   }
 }
 
