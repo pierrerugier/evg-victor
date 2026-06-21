@@ -901,6 +901,7 @@ function closeObjetPopup() {
 // POPUP NARRATION CENTRAL (réussite mini-jeux : pacman, tractions)
 // ══════════════════════════════════════════════════════════
 let popupCountdownTimer = null;
+let echecCountdownTimer = null;
 
 function showPopupNarration(texte, onOk, opts) {
   opts = opts || {};
@@ -1067,6 +1068,10 @@ function renderDlg() {
   choixZone.style.display = 'none';
   ctaZone.style.display = 'none';
   btnHall.style.display = 'none';
+  btnHall.disabled = false;
+  btnHall.style.opacity = '1';
+  btnHall.textContent = 'Retour au hall';
+  if (echecCountdownTimer) { clearInterval(echecCountdownTimer); echecCountdownTimer = null; }
   btnContinuer.style.display = 'block';
   // Nettoyer zones montres si elles existent
   document.querySelectorAll('.montre-zone').forEach(el => el.remove());
@@ -1286,6 +1291,9 @@ function showSucces(dlg, opts) {
   document.getElementById('btn-continuer').style.display = 'none';
   const btnHall = document.getElementById('btn-hall-scene');
   btnHall.style.display = 'block';
+  btnHall.disabled = false;
+  btnHall.style.opacity = '1';
+  if (echecCountdownTimer) { clearInterval(echecCountdownTimer); echecCountdownTimer = null; }
   // Jouer le son de succès du lieu
   if (currentLieu && currentLieu.son_succes) playSound(currentLieu.son_succes);
   if (opts.onFin) {
@@ -1894,7 +1902,7 @@ function finPacmanSucces() {
     else goHall();
   };
   if (popup) {
-    showPopupNarration(popup.texte, goToSucces);
+    showPopupNarration(popup.texte, goToSucces, { delai: 0 });
   } else {
     goToSucces();
   }
@@ -2061,8 +2069,29 @@ function finTractions() {
       document.getElementById('btn-continuer').style.display = 'none';
       const btnHall = document.getElementById('btn-hall-scene');
       btnHall.style.display = 'block';
-      btnHall.textContent = 'Retour au hall';
       btnHall.onclick = goHall;
+
+      // Bloquer le bouton pendant le délai de lecture (même logique que le popup),
+      // car le doigt continue de taper en bas après l'effort.
+      const delaiSec = parseFloat(G?.config?.popup_delai_lecture) || 3;
+      let restant = Math.ceil(delaiSec);
+      btnHall.disabled = true;
+      btnHall.style.opacity = '0.4';
+      btnHall.textContent = restant > 0 ? `Retour au hall (${restant})` : 'Retour au hall';
+      if (echecCountdownTimer) { clearInterval(echecCountdownTimer); echecCountdownTimer = null; }
+      const activer = () => {
+        if (echecCountdownTimer) { clearInterval(echecCountdownTimer); echecCountdownTimer = null; }
+        btnHall.disabled = false;
+        btnHall.style.opacity = '1';
+        btnHall.textContent = 'Retour au hall';
+      };
+      if (restant <= 0) activer();
+      else echecCountdownTimer = setInterval(() => {
+        restant--;
+        if (restant <= 0) activer();
+        else btnHall.textContent = `Retour au hall (${restant})`;
+      }, 1000);
+
       if (txtEl) typewriteBloc(txtEl, echec.texte, () => requestAnimationFrame(adjustDlgBottom));
       requestAnimationFrame(adjustDlgBottom);
     } else {
