@@ -900,19 +900,58 @@ function closeObjetPopup() {
 // ══════════════════════════════════════════════════════════
 // POPUP NARRATION CENTRAL (réussite mini-jeux : pacman, tractions)
 // ══════════════════════════════════════════════════════════
-function showPopupNarration(texte, onOk) {
+let popupCountdownTimer = null;
+
+function showPopupNarration(texte, onOk, opts) {
+  opts = opts || {};
   const overlay = document.getElementById('popup-narration');
   const txtEl = document.getElementById('popup-narration-txt');
   const okBtn = document.getElementById('popup-narration-ok');
+
+  // Délai de lecture forcé avant que le bouton OK devienne cliquable.
+  // Réglable depuis le Sheet (clé popup_delai_lecture, en secondes).
+  // opts.delai permet de surcharger ponctuellement (ex. tractions).
+  const delaiSec = (opts.delai != null)
+    ? opts.delai
+    : (parseFloat(G?.config?.popup_delai_lecture) || 3);
+
+  if (popupCountdownTimer) { clearInterval(popupCountdownTimer); popupCountdownTimer = null; }
+
   overlay.classList.add('open');
   okBtn.disabled = true;
   okBtn.style.opacity = '0.4';
-  typewriteBloc(txtEl, texte, () => {
+
+  // Le texte s'écrit en machine à écrire ; en parallèle, un compte à rebours
+  // tourne sur le bouton. Le bouton ne s'active qu'à la fin du décompte,
+  // même si le texte a fini de s'écrire avant.
+  typewriteBloc(txtEl, texte, null);
+
+  let restant = Math.ceil(delaiSec);
+  okBtn.textContent = restant > 0 ? `OK (${restant})` : 'OK';
+
+  const activer = () => {
+    if (popupCountdownTimer) { clearInterval(popupCountdownTimer); popupCountdownTimer = null; }
     okBtn.disabled = false;
     okBtn.style.opacity = '1';
-  });
+    okBtn.textContent = 'OK';
+  };
+
+  if (restant <= 0) {
+    activer();
+  } else {
+    popupCountdownTimer = setInterval(() => {
+      restant--;
+      if (restant <= 0) {
+        activer();
+      } else {
+        okBtn.textContent = `OK (${restant})`;
+      }
+    }, 1000);
+  }
+
   okBtn.onclick = () => {
     if (okBtn.disabled) return;
+    if (popupCountdownTimer) { clearInterval(popupCountdownTimer); popupCountdownTimer = null; }
     overlay.classList.remove('open');
     if (onOk) onOk();
   };
@@ -1669,9 +1708,24 @@ function startPacmanInner(phrases) {
     return maze[r][c] !== 1;
   }
 
+  // Billes : une sur chaque case couloir. Victoire quand toutes mangées.
+  const dots = [];
+  let dotsRestants = 0;
+  for (let r = 0; r < ROWS; r++) {
+    dots[r] = [];
+    for (let c = 0; c < COLS; c++) {
+      const estCouloir = maze[r][c] !== 1;
+      dots[r][c] = estCouloir;
+      if (estCouloir) dotsRestants++;
+    }
+  }
+
   // Victor en bas, Pierre en haut
   let vic = { col:7, row:11, dir:{dc:0,dr:0}, next:{dc:0,dr:0}, t:0 };
   let pier = { col:7, row:1, dir:{dc:0,dr:1}, t:0 };
+
+  // Manger la bille de la case de départ
+  if (dots[vic.row][vic.col]) { dots[vic.row][vic.col] = false; dotsRestants--; }
 
   const VSPEED = 0.045, PSPEED = 0.014;
   let phraseIdx = 0, phraseTimer = 0;
@@ -1731,10 +1785,13 @@ function startPacmanInner(phrases) {
         ctx.lineWidth=1.5;
         ctx.strokeRect(x+1.5,y+1.5,CW-3,CH-3);
       } else {
-        ctx.fillStyle='#4a4a7a';
-        ctx.beginPath();
-        ctx.arc(x+CW/2, y+CH/2, 2.5, 0, Math.PI*2);
-        ctx.fill();
+        // Bille seulement si pas encore mangée
+        if (dots[r][c]) {
+          ctx.fillStyle='#FFD86E';
+          ctx.beginPath();
+          ctx.arc(x+CW/2, y+CH/2, Math.max(2, CW*0.09), 0, Math.PI*2);
+          ctx.fill();
+        }
       }
     }
 
@@ -1773,19 +1830,12 @@ function startPacmanInner(phrases) {
     const dt = lastTs ? ts-lastTs : 16;
     lastTs = ts;
 
-    // Phrases
+    // Phrases : défilent en boucle (ne déclenchent plus la fin du jeu)
     phraseTimer += dt;
     if (phraseTimer >= PHRASE_MS) {
       phraseTimer = 0;
       phraseIdx++;
-      if (phraseIdx < phrases.length) {
-        typewriteBloc(document.getElementById('pac-phrase-txt'), phrases[phraseIdx], null);
-      } else {
-        // Toutes les phrases affichées → succès
-        pacRunning = false;
-        finPacmanSucces();
-        return;
-      }
+      typewriteBloc(document.getElementById('pac-phrase-txt'), phrases[phraseIdx % phrases.length], null);
     }
 
     // Mouvement Victor
@@ -1795,11 +1845,22 @@ function startPacmanInner(phrases) {
       if (canMove(vic.col+vic.next.dc, vic.row+vic.next.dr)) vic.dir = {...vic.next};
       if (canMove(vic.col+vic.dir.dc, vic.row+vic.dir.dr)) {
         vic.col += vic.dir.dc; vic.row += vic.dir.dr;
+        // Manger la bille de la nouvelle case
+        if (dots[vic.row][vic.col]) {
+          dots[vic.row][vic.col] = false;
+          dotsRestants--;
+          if (dotsRestants <= 0) {
+            // Toutes les billes mangées → succès
+            pacRunning = false;
+            finPacmanSucces();
+            return;
+          }
+        }
       }
     }
 
-    // Mouvement Pierre
-    pier.t += PSPEED + phraseIdx*0.002;
+    // Mouvement Pierre (vitesse constante)
+    pier.t += PSPEED;
     if (pier.t >= 1) {
       pier.t = 0;
       movePierre();
@@ -1808,20 +1869,10 @@ function startPacmanInner(phrases) {
       }
     }
 
-    // Collision - Pierre réapparaît loin sans restart
+    // Collision = GAME OVER (retour écran Pierre avec message + rejouer/hall)
     if (Math.abs(vic.col-pier.col)<1 && Math.abs(vic.row-pier.row)<1) {
-      const gameOverDlg = dlgList.find(d => d.type === 'game_over_pacman');
-      const msg = gameOverDlg ? gameOverDlg.texte.split('|')[Math.floor(Math.random() * gameOverDlg.texte.split('|').length)] : 'Hé mec, t\'endors pas !';
-      document.getElementById('pac-phrase-txt').textContent = msg;
-
-      const corners = [{col:1,row:1},{col:13,row:1},{col:1,row:11},{col:13,row:11}];
-      const far = corners.sort((a,b) => {
-        const da = Math.abs(a.col-vic.col)+Math.abs(a.row-vic.row);
-        const db = Math.abs(b.col-vic.col)+Math.abs(b.row-vic.row);
-        return db-da;
-      })[0];
-      pier.col = far.col; pier.row = far.row; pier.t = 0;
-      pacRAF = requestAnimationFrame(loop);
+      pacRunning = false;
+      gameOverPacman();
       return;
     }
 
@@ -1852,6 +1903,53 @@ function finPacmanSucces() {
 function restartPacman() {
   document.getElementById('pac-gameover').classList.remove('open');
   startPacman(pacPhrases);
+}
+
+// Game over pacman : retour à l'écran Pierre, message "t'endors pas",
+// puis choix Rejouer / Retour hall (bouton ← Hall en haut à gauche).
+function gameOverPacman() {
+  const gameOverDlg = dlgList.find(d => d.type === 'game_over_pacman');
+  const variantes = gameOverDlg ? gameOverDlg.texte.split('|').map(s => s.trim()).filter(Boolean) : ["Hey mec, t'endors pas, on est en pleine conversation !"];
+  const msg = variantes[Math.floor(Math.random() * variantes.length)];
+
+  // Afficher l'écran scène (Pierre), avec son décor
+  document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
+  showScreen('scene');
+
+  // Le bouton ← Hall en haut à gauche de l'écran scène permet déjà le retour hall.
+  const dlgZone = document.getElementById('dlg-zone');
+  const choixZone = document.getElementById('choix-zone');
+  const ctaZone = document.getElementById('cta-zone');
+  const btnContinuer = document.getElementById('btn-continuer');
+  const btnHall = document.getElementById('btn-hall-scene');
+
+  dlgZone.innerHTML = '';
+  choixZone.innerHTML = '';
+  choixZone.style.display = 'none';
+
+  const { bloc } = createDlgBloc('Pierre', msg);
+  const txtEl = bloc.querySelector('.dlg-txt');
+  if (txtEl) txtEl.textContent = '';
+  dlgZone.appendChild(bloc);
+
+  ctaZone.style.display = 'flex';
+  // Bouton principal = Rejouer
+  btnContinuer.style.display = 'block';
+  btnContinuer.disabled = true;
+  btnContinuer.style.opacity = '0.4';
+  btnContinuer.textContent = 'Rejouer';
+  btnContinuer.onclick = () => { if (!btnContinuer.disabled) startPacman(pacPhrases); };
+  // Bouton secondaire = Retour au hall
+  btnHall.style.display = 'block';
+  btnHall.textContent = 'Retour au hall';
+  btnHall.onclick = goHall;
+
+  if (txtEl) typewriteBloc(txtEl, msg, () => {
+    btnContinuer.disabled = false;
+    btnContinuer.style.opacity = '1';
+    requestAnimationFrame(adjustDlgBottom);
+  });
+  requestAnimationFrame(adjustDlgBottom);
 }
 
 // ══════════════════════════════════════════════════════════
