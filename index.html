@@ -618,12 +618,24 @@ async function init() {
 
   // Afficher le bouton Jouer
   document.getElementById('btn-jouer').style.display = 'block';
-  document.getElementById('btn-jouer').onclick = () => { goHall(); showTuto(); };
+  document.getElementById('btn-jouer').onclick = () => { startBgMusic(); goHall(); showTuto(); };
 
   // Setup inventaire icons
   document.querySelectorAll('.inv-icon-img').forEach(el => el.src = BASE + 'icons/inventaire-icon.png');
   document.getElementById('inv-icon').src = BASE + 'icons/inventaire-icon.png';
   document.getElementById('inv-bg').src = BASE + 'icons/inventaire.png';
+
+  // Filet de sécurité : si le navigateur a bloqué l'autoplay, relancer la
+  // musique de fond au tout premier clic/tap utilisateur, où qu'il soit.
+  const retryBg = () => {
+    if (!bgMusicStarted) startBgMusic();
+    if (bgMusicStarted) {
+      document.removeEventListener('click', retryBg);
+      document.removeEventListener('touchstart', retryBg);
+    }
+  };
+  document.addEventListener('click', retryBg);
+  document.addEventListener('touchstart', retryBg);
 }
 
 function collectImages() {
@@ -994,9 +1006,34 @@ function splitPhrases(texte) {
 }
 // ══════════════════════════════════════════════════════════
 // SONS
+// Deux canaux indépendants :
+//  - bgMusic : musique de fond globale, en boucle, jamais coupée
+//  - currentSound : sons/voix des lieux, joués PAR-DESSUS la musique
 // ══════════════════════════════════════════════════════════
 let currentSound = null;
+let bgMusic = null;
+let bgMusicStarted = false;
 
+// Démarre la musique de fond globale (une seule fois), en boucle.
+// La clé : config.musique_fond, sinon repli sur le son du lieu 'hall'.
+function startBgMusic() {
+  if (bgMusicStarted) return;
+  let path = (G.config && G.config.musique_fond) ? G.config.musique_fond : null;
+  if (!path) {
+    const hall = G.lieux.find(l => l.id === 'hall');
+    path = hall ? (hall.son || hall.son_entree || null) : null;
+  }
+  if (!path) return;
+  bgMusic = new Audio(BASE + path);
+  bgMusic.loop = true;
+  bgMusic.volume = parseFloat(G.config && G.config.musique_fond_volume) || 0.5;
+  bgMusic.play().then(() => { bgMusicStarted = true; }).catch(() => {
+    // Si le navigateur bloque l'autoplay, on retentera au prochain clic.
+    bgMusicStarted = false;
+  });
+}
+
+// Son de lieu : joué PAR-DESSUS la musique de fond (n'affecte pas bgMusic).
 function playSound(path) {
   if (!path) return;
   if (currentSound) { currentSound.pause(); currentSound.currentTime = 0; }
@@ -1004,14 +1041,15 @@ function playSound(path) {
   currentSound.play().catch(() => {});
 }
 
+// Ne coupe QUE le son de lieu, jamais la musique de fond.
 function stopSound() {
   if (currentSound) { currentSound.pause(); currentSound.currentTime = 0; currentSound = null; }
 }
 
-// Son unique par lieu : colonne 'son' du Sheet (un mp3 par personnage),
-// joué à l'arrivée ET à la réussite. Replis sur les anciennes colonnes.
+// Son par lieu : colonne 'son' du Sheet (un mp3 par personnage).
+// Le hall n'a pas de son de lieu (sa piste sert de musique de fond globale).
 function sonDuLieu(lieu) {
-  if (!lieu) return null;
+  if (!lieu || lieu.id === 'hall') return null;
   return lieu.son || lieu.son_entree || lieu.son_succes || null;
 }
 
