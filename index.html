@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>EVG Victor</title>
 <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -22,13 +22,33 @@ html, body {
   display: flex; align-items: center; justify-content: center;
   touch-action: manipulation;
 }
+html, body {
+  width: 100%; height: 100%;
+  /* hauteur dynamique : s'ajuste aux barres du navigateur mobile (Chrome/Safari) */
+  height: 100dvh;
+  overflow: hidden;
+  font-family: var(--font);
+  background: #111;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: manipulation;
+}
 #app {
   position: relative;
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  /* ne jamais dépasser la hauteur visible réelle */
+  max-height: 100dvh;
   overflow: hidden;
 }
+/* Sur écran assez large (paysage ou desktop), on borne la largeur pour garder
+   un format vertical, en se basant sur la hauteur dynamique. */
 @media (min-aspect-ratio: 9/16) {
-  #app { width: calc(100vh * 9 / 16); height: 100vh; }
+  #app {
+    width: calc(100dvh * 9 / 16);
+    height: 100dvh;
+    max-height: 100dvh;
+  }
 }
 
 /* SCREENS */
@@ -67,13 +87,29 @@ html, body {
 /* INVENTAIRE ICON */
 .inv-btn {
   position: absolute;
-  top: 10px; right: 10px;
+  top: calc(10px + env(safe-area-inset-top, 0px)); right: 10px;
   width: 64px; height: 64px;
   z-index: 50;
   background: none; border: none;
   cursor: pointer; padding: 0;
 }
 .inv-btn img { width: 100%; height: 100%; object-fit: contain; }
+
+/* BOUTON MUTE - à gauche du bouton inventaire, plus petit, blanc transparent */
+.mute-btn {
+  position: absolute;
+  top: calc(22px + env(safe-area-inset-top, 0px)); right: 80px;
+  width: 40px; height: 40px;
+  z-index: 50;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 50%;
+  cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.mute-btn svg { width: 20px; height: 20px; display: block; }
+.mute-btn svg path, .mute-btn svg line { stroke: #fff; }
 
 /* SCENE */
 #screen-scene { position: relative; }
@@ -131,7 +167,7 @@ html, body {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   z-index: 30;
-  padding: 4px 14px 14px;
+  padding: 4px 14px calc(14px + env(safe-area-inset-bottom, 0px));
   display: none; flex-direction: column; gap: 6px;
 }
 
@@ -403,6 +439,20 @@ html, body {
 <body>
 <div id="app">
 
+<!-- BOUTON MUTE GLOBAL (visible partout) -->
+<button class="mute-btn" id="mute-btn" onclick="toggleMute()" aria-label="Couper le son">
+  <svg id="mute-icon-on" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 9v6h4l5 4V5L7 9H3z" fill="#fff" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M16 8.5a4 4 0 0 1 0 7" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <path d="M18.5 6a7 7 0 0 1 0 12" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  </svg>
+  <svg id="mute-icon-off" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+    <path d="M3 9v6h4l5 4V5L7 9H3z" fill="#fff" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+    <line x1="16" y1="9" x2="21" y2="15" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="21" y1="9" x2="16" y2="15" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>
+</button>
+
 <!-- LOADING -->
 <div id="screen-loading" class="screen active">
   <div id="loading-cover"></div>
@@ -518,7 +568,7 @@ html, body {
 
 <!-- FIN -->
 <div id="screen-fin" class="screen">
-  <button id="btn-retour-titre-fin" onclick="goLoading()" style="position:absolute;top:14px;left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;">← Titre</button>
+  <button id="btn-retour-titre-fin" onclick="location.reload()" style="position:absolute;top:14px;left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;">← Titre</button>
   <img id="fin-img" src="" alt="">
 </div>
 
@@ -583,6 +633,7 @@ let phraseIndex = 0;
 let dlgList = [];
 let oscarVisites = 0;
 let milgaussAchetee = false; // vrai dès que la Milgauss est choisie chez Rolex
+let jeuTermine = false; // vrai uniquement à la vraie fin (toutes les missions OK)
 
 // ══════════════════════════════════════════════════════════
 // INIT
@@ -668,7 +719,7 @@ function showScreen(id) {
   document.getElementById('screen-' + id).classList.add('active');
 }
 
-function goLoading() { stopHallAnim(); showScreen('loading'); }
+function goLoading() { stopPacman(); stopSound(); stopHallAnim(); showScreen('loading'); }
 
 // Arrête l'animation des phrases de Victor sur le hall et masque la bulle.
 // Évite qu'un timer en cours fasse réapparaître une bulle par-dessus le tuto.
@@ -679,11 +730,20 @@ function stopHallAnim() {
 }
 
 function goHall() {
+  stopPacman(); // couper toute boucle pacman résiduelle
   stopSound();
   setupHall();
   showScreen('hall');
   // Relancer l'animation si le tuto est déjà terminé
   if (tutoDone) startHallAnim();
+}
+
+// Arrête complètement la boucle du pacman (animation + état).
+// Sans ça, la boucle continue en arrière-plan et affiche les messages
+// "t'endors pas" même quand on est dans un autre lieu.
+function stopPacman() {
+  pacRunning = false;
+  if (pacRAF) { cancelAnimationFrame(pacRAF); pacRAF = null; }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -752,6 +812,9 @@ function setupHall() {
 }
 
 function lieuEstComplete(lieu) {
+  // Sécurité (Kupi) : reste rose jusqu'à la vraie fin du jeu (tous les objets).
+  // Ne pas passer blanc juste parce qu'on y est entré pour une traction ratée.
+  if (lieu.id === 'securite') return jeuTermine;
   if (!lieu.objet_donne) return lieuxVisites.has(lieu.id);
   if (lieu.id === 'toilettes') return oscarVisites >= 2;
   // Rolex : le pin passe blanc dès que la Milgauss a été achetée,
@@ -1028,6 +1091,21 @@ function splitPhrases(texte) {
 let currentSound = null;
 let bgMusic = null;
 let bgMusicStarted = false;
+let isMuted = false; // état mute global (musique + sons)
+
+// Coupe ou réactive tout l'audio du jeu (musique de fond + son de lieu).
+function toggleMute() {
+  isMuted = !isMuted;
+  if (bgMusic) bgMusic.muted = isMuted;
+  if (currentSound) currentSound.muted = isMuted;
+  // Basculer l'icône
+  const on = document.getElementById('mute-icon-on');
+  const off = document.getElementById('mute-icon-off');
+  if (on && off) {
+    on.style.display = isMuted ? 'none' : 'block';
+    off.style.display = isMuted ? 'block' : 'none';
+  }
+}
 
 // Démarre la musique de fond globale (une seule fois), en boucle.
 // La clé : config.musique_fond, sinon repli sur le son du lieu 'hall'.
@@ -1044,6 +1122,7 @@ function startBgMusic() {
   // On crée l'instance tout de suite : bgMusic non-null verrouille les appels suivants.
   bgMusic = new Audio(BASE + path);
   bgMusic.loop = true;
+  bgMusic.muted = isMuted;
   bgMusic.volume = parseFloat(G.config && G.config.musique_fond_volume) || 0.5;
   // Ceinture-bretelles : si l'attribut loop ne se réamorce pas (cas fréquent
   // sur iOS/Safari où la piste s'arrête à la fin), on relance manuellement.
@@ -1063,6 +1142,7 @@ function playSound(path) {
   if (!path) return;
   if (currentSound) { currentSound.pause(); currentSound.currentTime = 0; }
   currentSound = new Audio(BASE + path);
+  currentSound.muted = isMuted;
   currentSound.play().catch(() => {});
 }
 
@@ -1088,6 +1168,7 @@ function playSonSucces() {
 }
 
 function entrerLieu(id) {
+  stopPacman(); // sécurité : aucune boucle pacman ne doit survivre à un changement de lieu
   const lieu = G.lieux.find(l => l.id === id);
   currentLieu = lieu;
   lieuxVisites.add(id);
@@ -2164,6 +2245,7 @@ function finTractions() {
   const popup = dlgList.find(d => d.type === 'popup_succes');
 
   const allerSucces = () => {
+    jeuTermine = true; // la vraie fin : le pin securite peut passer blanc
     const succes = dlgList.find(d => d.type === 'fin_succes');
     document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
     showScreen('scene');
@@ -2232,6 +2314,7 @@ function dlgZoneEl() { return document.getElementById('dlg-zone'); }
 // FIN
 // ══════════════════════════════════════════════════════════
 function showFin() {
+  stopPacman();
   showScreen('fin');
   const img = document.getElementById('fin-img');
   // Image de fin renseignée dans l'onglet config (clé 'ecran_fin'),
@@ -2240,6 +2323,16 @@ function showFin() {
   img.classList.remove('show');
   img.src = BASE + ecranFin;
   setTimeout(() => img.classList.add('show'), 100);
+
+  // Musique de victoire : remplace la musique de fond par faro.mp3, joué UNE
+  // SEULE FOIS puis silence (sauf retour au titre qui recharge tout).
+  const sonFin = (G.config && G.config.son_fin) ? G.config.son_fin : 'son/faro.mp3';
+  if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; }
+  if (currentSound) { currentSound.pause(); currentSound.currentTime = 0; }
+  currentSound = new Audio(BASE + sonFin);
+  currentSound.loop = false;
+  currentSound.muted = isMuted;
+  currentSound.play().catch(() => {});
 }
 
 // ══════════════════════════════════════════════════════════
