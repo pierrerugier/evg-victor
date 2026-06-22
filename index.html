@@ -1934,7 +1934,16 @@ function startPacmanInner(phrases) {
   // Manger la bille de la case de départ
   if (dots[vic.row][vic.col]) { dots[vic.row][vic.col] = false; dotsRestants--; }
 
-  const VSPEED = 0.045, PSPEED = 0.014;
+  // Difficulté réglable depuis le Sheet :
+  //  - pacman_vitesse : vitesse de référence de Victor (défaut 0.045).
+  //    Plus haut = plus rapide. Valeurs raisonnables : 0.03 (lent) à 0.07 (vif).
+  //  - pacman_ratio_fantome : vitesse du fantôme en proportion de Victor (0 à 1).
+  //    Toujours bridé sous 1 pour que le fantôme reste plus lent (défaut ~0.31).
+  const VSPEED = parseFloat(G.config && G.config.pacman_vitesse) || 0.045;
+  let ratio = parseFloat(G.config && G.config.pacman_ratio_fantome);
+  if (isNaN(ratio)) ratio = 0.31;
+  ratio = Math.min(0.9, Math.max(0.05, ratio)); // fantôme toujours plus lent que Victor
+  const PSPEED = VSPEED * ratio;
   let phraseIdx = 0, phraseTimer = 0;
   const PHRASE_MS = 4000;
   let lastTs = null;
