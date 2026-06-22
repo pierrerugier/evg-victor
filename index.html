@@ -673,26 +673,34 @@ async function init() {
   // Précharger tout en silence
   await preload(collectImages());
 
-  // Afficher le bouton Jouer
+  // Afficher le bouton Jouer + jouer le jingle de l'écran titre
   document.getElementById('btn-jouer').style.display = 'block';
-  document.getElementById('btn-jouer').onclick = () => { startBgMusic(); goHall(); showTuto(); };
+  playLaunch();
+  document.getElementById('btn-jouer').onclick = () => { stopLaunch(); startBgMusic(); goHall(); showTuto(); };
 
   // Setup inventaire icons
   document.querySelectorAll('.inv-icon-img').forEach(el => el.src = BASE + 'icons/inventaire-icon.png');
   document.getElementById('inv-icon').src = BASE + 'icons/inventaire-icon.png';
   document.getElementById('inv-bg').src = BASE + 'icons/inventaire.png';
 
-  // Filet de sécurité : si le navigateur a bloqué l'autoplay, relancer la
-  // musique de fond au tout premier clic/tap utilisateur, où qu'il soit.
-  const retryBg = () => {
-    if (!bgMusicStarted && !bgMusic) startBgMusic();
-    if (bgMusicStarted || bgMusic) {
-      document.removeEventListener('click', retryBg);
-      document.removeEventListener('touchstart', retryBg);
+  // Filet de sécurité : si le navigateur a bloqué l'autoplay, relancer le bon
+  // audio au tout premier clic/tap utilisateur, selon l'écran actif.
+  let launchTente = false; // évite de relancer le jingle une fois qu'il a démarré
+  const retryAudio = () => {
+    const surTitre = document.querySelector('#screen-loading.active');
+    if (surTitre) {
+      // Sur l'écran titre : (re)lancer le jingle seulement s'il n'a jamais pu démarrer
+      if (!launchTente && (!launchSound || (launchSound.paused && launchSound.currentTime === 0))) {
+        playLaunch();
+      }
+      if (launchSound && launchSound.currentTime > 0) launchTente = true;
+    } else {
+      // Ailleurs : relancer la musique de fond si besoin
+      if (!bgMusicStarted && !bgMusic) startBgMusic();
     }
   };
-  document.addEventListener('click', retryBg);
-  document.addEventListener('touchstart', retryBg);
+  document.addEventListener('click', retryAudio);
+  document.addEventListener('touchstart', retryAudio);
 }
 
 function collectImages() {
@@ -719,7 +727,7 @@ function showScreen(id) {
   document.getElementById('screen-' + id).classList.add('active');
 }
 
-function goLoading() { stopPacman(); stopSound(); stopHallAnim(); showScreen('loading'); }
+function goLoading() { stopPacman(); stopSound(); stopHallAnim(); showScreen('loading'); playLaunch(); }
 
 // Arrête l'animation des phrases de Victor sur le hall et masque la bulle.
 // Évite qu'un timer en cours fasse réapparaître une bulle par-dessus le tuto.
@@ -1097,13 +1105,15 @@ function splitPhrases(texte) {
 let currentSound = null;
 let bgMusic = null;
 let bgMusicStarted = false;
+let launchSound = null; // jingle de l'écran titre (launch.mp3)
 let isMuted = false; // état mute global (musique + sons)
 
-// Coupe ou réactive tout l'audio du jeu (musique de fond + son de lieu).
+// Coupe ou réactive tout l'audio du jeu (musique de fond + son de lieu + jingle).
 function toggleMute() {
   isMuted = !isMuted;
   if (bgMusic) bgMusic.muted = isMuted;
   if (currentSound) currentSound.muted = isMuted;
+  if (launchSound) launchSound.muted = isMuted;
   // Basculer l'icône
   const on = document.getElementById('mute-icon-on');
   const off = document.getElementById('mute-icon-off');
@@ -1111,6 +1121,25 @@ function toggleMute() {
     on.style.display = isMuted ? 'none' : 'block';
     off.style.display = isMuted ? 'block' : 'none';
   }
+}
+
+// Jingle de l'écran titre : joué SEUL (coupe la musique de fond le temps du
+// titre). Chemin configurable (clé 'son_launch'), repli sur son/launch.mp3.
+function playLaunch() {
+  // Couper la musique de fond pendant l'écran titre
+  if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; }
+  const path = (G.config && G.config.son_launch) ? G.config.son_launch : 'son/launch.mp3';
+  if (launchSound) { launchSound.pause(); launchSound.currentTime = 0; }
+  launchSound = new Audio(BASE + path);
+  launchSound.loop = false;
+  launchSound.muted = isMuted;
+  launchSound.volume = parseFloat(G.config && G.config.son_launch_volume) || 0.6;
+  launchSound.play().catch(() => {});
+}
+
+// Arrête le jingle de l'écran titre (au lancement du jeu via "Jouer").
+function stopLaunch() {
+  if (launchSound) { launchSound.pause(); launchSound.currentTime = 0; launchSound = null; }
 }
 
 // Démarre la musique de fond globale (une seule fois), en boucle.
