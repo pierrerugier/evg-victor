@@ -988,6 +988,15 @@ function ajouterObjet(id) {
   if (objetPopupQueue.length === 1) showNextObjetPopup();
 }
 
+// Joue l'animation d'obtention d'un objet À CHAQUE FOIS, même si l'objet est
+// déjà dans l'inventaire (utile pour le meuj repris plusieurs fois chez Oscar).
+function forcerAnimationObjet(id) {
+  if (!id) return;
+  if (!inventaire.includes(id)) inventaire.push(id);
+  objetPopupQueue.push(id);
+  if (objetPopupQueue.length === 1) showNextObjetPopup();
+}
+
 function showNextObjetPopup() {
   if (objetPopupQueue.length === 0) return;
   const id = objetPopupQueue[0];
@@ -1921,7 +1930,7 @@ function ouvrirCabine(idx, contenu, lieu) {
 
         if (pi === 2) {
           btn.textContent = 'Prendre le meuj';
-          btn.onclick = () => { if (btn.disabled) return; ajouterObjet('meuj'); pi++; showOscarPhrase(); };
+          btn.onclick = () => { if (btn.disabled) return; forcerAnimationObjet('meuj'); pi++; showOscarPhrase(); };
         } else if (pi === textes.length - 1) {
           btn.textContent = 'Fermer la porte';
           btn.onclick = () => { if (btn.disabled) return; pi++; showOscarPhrase(); };
@@ -1943,7 +1952,7 @@ function ouvrirCabine(idx, contenu, lieu) {
         d = G.dialogues.find(dd => dd.lieu_id === 'toilettes' && dd.type === 'fin_succes_2');
       }
       showDialogue('Oscar', d ? d.texte : '', 'Prendre le meuj', () => {
-        ajouterObjet('meuj');
+        forcerAnimationObjet('meuj'); // animation même si le meuj est déjà en inventaire
         retourCabines();
       }, false);
     }
