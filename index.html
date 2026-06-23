@@ -453,6 +453,9 @@ html, body {
   </svg>
 </button>
 
+<!-- BOUTON INVENTAIRE GLOBAL (visible sur les écrans de jeu) -->
+<button class="inv-btn" id="inv-btn-global" onclick="openInv()" style="display:none;"><img id="inv-icon" src="" alt=""></button>
+
 <!-- LOADING -->
 <div id="screen-loading" class="screen active">
   <div id="loading-cover"></div>
@@ -464,7 +467,6 @@ html, body {
 <!-- HALL -->
 <div id="screen-hall" class="screen">
   <div class="bg" id="hall-bg"></div>
-  <button class="inv-btn" onclick="openInv()"><img id="inv-icon" src="" alt=""></button>
   <button id="btn-retour-titre" onclick="goLoading()">← Titre</button>
   <div id="hall-pins"></div>
   <div id="hall-bubble">
@@ -485,7 +487,6 @@ html, body {
 <div id="screen-scene" class="screen">
   <div class="bg" id="scene-bg"></div>
   <button id="btn-retour-hall" onclick="goHall()">← Hall</button>
-  <button class="inv-btn" onclick="openInv()"><img class="inv-icon-img" src="" alt=""></button>
   <div class="scene-spacer"></div>
   <div id="scene-bottom">
     <div id="dlg-zone"></div>
@@ -694,7 +695,6 @@ async function init() {
   };
 
   // Setup inventaire icons
-  document.querySelectorAll('.inv-icon-img').forEach(el => el.src = BASE + 'icons/inventaire-icon.png');
   document.getElementById('inv-icon').src = BASE + 'icons/inventaire-icon.png';
   document.getElementById('inv-bg').src = BASE + 'icons/inventaire.png';
 
@@ -730,6 +730,13 @@ function preload(urls) {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
+  // Bouton inventaire global : visible sur les écrans de jeu, masqué ailleurs
+  // (titre, mini-jeux, écran de fin).
+  const invBtn = document.getElementById('inv-btn-global');
+  if (invBtn) {
+    const avecInv = ['hall', 'scene', 'valises', 'cabines'];
+    invBtn.style.display = avecInv.includes(id) ? 'block' : 'none';
+  }
 }
 
 function goLoading() { stopPacman(); stopSound(); stopLaunch(); stopHallAnim(); if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; } showScreen('loading'); }
@@ -1812,13 +1819,16 @@ function showCabines(lieu) {
     overlay.appendChild(z);
   });
 
-  // Phrase d'arrivée de Victor dans les toilettes : on cherche la ligne où
-  // Victor parle (type 'Victor' ou 'pnj'), affichée ~2s, cabines bloquées.
-  const arrivedlg = G.dialogues.find(d =>
-    d.lieu_id === 'toilettes' &&
-    ((d.type && d.type.toLowerCase() === 'victor') ||
-     (d.type === 'pnj' && d.personnage && d.personnage.toLowerCase() === 'victor'))
-  );
+  // Phrase d'arrivée de Victor dans les toilettes : ligne où le personnage est
+  // Victor (type 'victor', 'pnj', ou vide). Affichée ~2s, cabines bloquées.
+  const arrivedlg = G.dialogues.find(d => {
+    if (d.lieu_id !== 'toilettes') return false;
+    const t = (d.type || '').toLowerCase().trim();
+    const p = (d.personnage || '').toLowerCase().trim();
+    // On exclut les types fonctionnels (succès, narration, etc.)
+    const typeFonctionnel = ['fin_succes','fin_succes_2','fin_succes_3','fin_echec','narration','qcm','choix','reponse_incorrecte'].includes(t);
+    return p === 'victor' && !typeFonctionnel;
+  });
   if (arrivedlg) {
     const dlg = document.getElementById('cabine-dlg');
     const nom = document.getElementById('cabine-nom');
