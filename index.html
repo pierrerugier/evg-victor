@@ -802,7 +802,11 @@ function setupHall() {
   const pins = document.getElementById('hall-pins');
   pins.innerHTML = '';
 
-  G.lieux.filter(l => l.id !== 'hall' && String(l.actif).toLowerCase() === 'true').forEach(lieu => {
+  G.lieux.filter(l => {
+    if (l.id === 'hall') return false;
+    const a = String(l.actif).toLowerCase().trim();
+    return a === 'true' || a === 'vrai' || a === '1' || a === 'oui';
+  }).forEach(lieu => {
     if (!lieu.pos_x && lieu.pos_x !== 0) return;
     const done = lieuEstComplete(lieu);
     const btn = document.createElement('button');
@@ -1467,12 +1471,23 @@ function renderDlg() {
     ctaZone.style.display = 'flex';
     btnContinuer.style.display = 'none';
     btnHall.style.display = 'block';
-    btnHall.textContent = 'Retour au hall';
-    // Donner l'objet au clic sur le bouton retour (pas au rendu)
-    btnHall.onclick = () => {
-      if (dlg.meta) ajouterObjet(dlg.meta);
-      goHall();
-    };
+    // Jouer le son du personnage à la réussite
+    if (currentLieu) playSonLieu(currentLieu);
+    if (dlg.meta && !inventaire.includes(dlg.meta)) {
+      // Bouton rose "Récupérer le [objet]" : animation sur l'écran du PNJ,
+      // puis bascule en "Retour au hall".
+      const obj = G.objets.find(o => o.id === dlg.meta);
+      const nomObj = obj ? obj.nom : dlg.meta;
+      btnHall.textContent = 'Récupérer ' + nomObjAvecArticle(nomObj);
+      btnHall.onclick = () => {
+        ajouterObjet(dlg.meta); // animation popup sur l'écran PNJ
+        btnHall.textContent = 'Retour au hall';
+        btnHall.onclick = () => { stopSound(); goHall(); };
+      };
+    } else {
+      btnHall.textContent = 'Retour au hall';
+      btnHall.onclick = () => { if (dlg.meta) ajouterObjet(dlg.meta); goHall(); };
+    }
     requestAnimationFrame(adjustDlgBottom);
   }
 
