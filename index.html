@@ -1812,8 +1812,13 @@ function showCabines(lieu) {
     overlay.appendChild(z);
   });
 
-  // Phrase d'arrivée de Victor (type 'pnj' dans dialogues toilettes)
-  const arrivedlg = G.dialogues.find(d => d.lieu_id === 'toilettes' && d.type === 'pnj');
+  // Phrase d'arrivée de Victor dans les toilettes : on cherche la ligne où
+  // Victor parle (type 'Victor' ou 'pnj'), affichée ~2s, cabines bloquées.
+  const arrivedlg = G.dialogues.find(d =>
+    d.lieu_id === 'toilettes' &&
+    ((d.type && d.type.toLowerCase() === 'victor') ||
+     (d.type === 'pnj' && d.personnage && d.personnage.toLowerCase() === 'victor'))
+  );
   if (arrivedlg) {
     const dlg = document.getElementById('cabine-dlg');
     const nom = document.getElementById('cabine-nom');
@@ -1832,7 +1837,7 @@ function showCabines(lieu) {
         dlg.style.pointerEvents = '';
         btn.style.display = '';
         cabinesPortesActives = true; // déverrouiller les portes seulement maintenant
-      }, 2500);
+      }, 2000);
     });
   } else {
     // Pas de phrase d'arrivée → portes actives directement
