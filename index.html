@@ -673,31 +673,36 @@ async function init() {
   // Précharger tout en silence
   await preload(collectImages());
 
-  // Afficher le bouton Jouer + jouer le jingle de l'écran titre
+  // Afficher le bouton Jouer (le jingle launch se joue au clic, pas au chargement)
   document.getElementById('btn-jouer').style.display = 'block';
-  playLaunch();
-  document.getElementById('btn-jouer').onclick = () => { stopLaunch(); startBgMusic(); goHall(); showTuto(); };
+  document.getElementById('btn-jouer').onclick = () => {
+    const btn = document.getElementById('btn-jouer');
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    // Jouer le jingle sur l'écran titre, attendre 3s, puis lancer le jeu.
+    playLaunch();
+    const delai = (parseFloat(G.config && G.config.launch_delai) || 3) * 1000;
+    setTimeout(() => {
+      stopLaunch();
+      startBgMusic();
+      goHall();
+      showTuto();
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }, delai);
+  };
 
   // Setup inventaire icons
   document.querySelectorAll('.inv-icon-img').forEach(el => el.src = BASE + 'icons/inventaire-icon.png');
   document.getElementById('inv-icon').src = BASE + 'icons/inventaire-icon.png';
   document.getElementById('inv-bg').src = BASE + 'icons/inventaire.png';
 
-  // Filet de sécurité : si le navigateur a bloqué l'autoplay, relancer le bon
-  // audio au tout premier clic/tap utilisateur, selon l'écran actif.
-  let launchTente = false; // évite de relancer le jingle une fois qu'il a démarré
+  // Filet de sécurité : si le navigateur a bloqué l'autoplay de la musique de
+  // fond, la relancer au premier clic/tap utilisateur (hors écran titre).
   const retryAudio = () => {
     const surTitre = document.querySelector('#screen-loading.active');
-    if (surTitre) {
-      // Sur l'écran titre : (re)lancer le jingle seulement s'il n'a jamais pu démarrer
-      if (!launchTente && (!launchSound || (launchSound.paused && launchSound.currentTime === 0))) {
-        playLaunch();
-      }
-      if (launchSound && launchSound.currentTime > 0) launchTente = true;
-    } else {
-      // Ailleurs : relancer la musique de fond si besoin
-      if (!bgMusicStarted && !bgMusic) startBgMusic();
-    }
+    if (!surTitre && !bgMusicStarted && !bgMusic) startBgMusic();
   };
   document.addEventListener('click', retryAudio);
   document.addEventListener('touchstart', retryAudio);
@@ -727,7 +732,7 @@ function showScreen(id) {
   document.getElementById('screen-' + id).classList.add('active');
 }
 
-function goLoading() { stopPacman(); stopSound(); stopHallAnim(); showScreen('loading'); playLaunch(); }
+function goLoading() { stopPacman(); stopSound(); stopLaunch(); stopHallAnim(); if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; } showScreen('loading'); }
 
 // Arrête l'animation des phrases de Victor sur le hall et masque la bulle.
 // Évite qu'un timer en cours fasse réapparaître une bulle par-dessus le tuto.
@@ -1245,8 +1250,31 @@ function adjustDlgBottom() {
 }
 
 function renderDlg() {
-  const dlg = dlgList[dlgIndex];
+  let dlg = dlgList[dlgIndex];
   if (!dlg) { goHall(); return; }
+
+  // Ligne spéciale Arthur : Victor se parle à lui-même UNIQUEMENT s'il a un meuj,
+  // que Arthur lui fait disparaître. Sinon on saute cette ligne.
+  if (dlg.type === 'victor_si_meuj') {
+    if (dlg._traite) {
+      // Déjà traitée (navigation phrase par phrase) : afficher comme 'victor'
+      dlg = Object.assign({}, dlg, { type: 'victor' });
+    } else {
+      const idxMeuj = inventaire.indexOf('meuj');
+      if (idxMeuj === -1) {
+        // Pas de meuj : on saute cette ligne
+        dlgIndex++;
+        phraseIndex = 0;
+        renderDlg();
+        return;
+      } else {
+        // A un meuj : on le retire (une seule fois), on marque la ligne traitée
+        inventaire.splice(idxMeuj, 1);
+        dlgList[dlgIndex]._traite = true;
+        dlg = Object.assign({}, dlg, { type: 'victor' });
+      }
+    }
+  }
 
   // Reset UI
   const dlgZone = document.getElementById('dlg-zone');
@@ -1485,6 +1513,15 @@ function showTempDlg(dlg, cb, duree = 3000) {
   setTimeout(() => cb(), duree);
 }
 
+// Renvoie le nom de l'objet précédé d'un article ("le putter", "la valise").
+// Heuristique simple ; par défaut "le". Override possible via objet.article.
+function nomObjAvecArticle(nom) {
+  const n = (nom || '').toLowerCase();
+  const feminins = ['valise','photo','montre','mallette','carte'];
+  const art = feminins.some(f => n.includes(f)) ? 'la ' : 'le ';
+  return art + nom;
+}
+
 function showSucces(dlg, opts) {
   opts = opts || {};
   const dlgZone = document.getElementById('dlg-zone');
@@ -1514,6 +1551,17 @@ function showSucces(dlg, opts) {
       if (dlg.meta) ajouterObjet(dlg.meta);
       stopSound();
       opts.onFin();
+    };
+  } else if (dlg.meta && !inventaire.includes(dlg.meta)) {
+    // Objet à récupérer : bouton rose explicite "Récupérer le [objet]" qui
+    // déclenche l'animation sur l'écran du PNJ, puis bascule en "Retour au hall".
+    const obj = G.objets.find(o => o.id === dlg.meta);
+    const nomObj = obj ? obj.nom : dlg.meta;
+    btnHall.textContent = 'Récupérer ' + nomObjAvecArticle(nomObj);
+    btnHall.onclick = () => {
+      ajouterObjet(dlg.meta); // animation popup de l'objet, sur l'écran PNJ
+      btnHall.textContent = 'Retour au hall';
+      btnHall.onclick = () => { stopSound(); goHall(); };
     };
   } else {
     btnHall.textContent = 'Retour au hall';
@@ -2285,7 +2333,8 @@ function startTractions(phrases) {
 // Sinon → message d'échec de Kupi directement (pas de "bravo" incohérent).
 function finTractions() {
   const requis = OBJETS_REQUIS_SECURITE;
-  const asTout = requis.every(r => inventaire.includes(r));
+  // Tous les objets ET avoir vu Arthur sont nécessaires pour passer.
+  const asTout = requis.every(r => inventaire.includes(r)) && lieuxVisites.has('arthur');
   const popup = dlgList.find(d => d.type === 'popup_succes');
 
   const allerSucces = () => {
