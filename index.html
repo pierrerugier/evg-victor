@@ -681,17 +681,24 @@ async function init() {
     if (btn.disabled) return;
     btn.disabled = true;
     btn.style.opacity = '0.5';
-    // Jouer le jingle sur l'écran titre, attendre 3s, puis lancer le jeu.
-    playLaunch();
-    const delai = (parseFloat(G.config && G.config.launch_delai) || 3) * 1000;
-    setTimeout(() => {
+    // Jouer le jingle sur l'écran titre, attendre qu'il se termine, puis lancer le jeu.
+    const jingle = playLaunch();
+    const lancerJeu = () => {
       stopLaunch();
       startBgMusic();
       goHall();
       showTuto();
       btn.disabled = false;
       btn.style.opacity = '1';
-    }, delai);
+    };
+    if (jingle) {
+      // Filet de sécurité : si l'audio est bloqué/échoue, on ne reste pas bloqué sur le titre.
+      const delaiSecours = (parseFloat(G.config && G.config.launch_delai) || 8) * 1000;
+      const secours = setTimeout(lancerJeu, delaiSecours);
+      jingle.addEventListener('ended', () => { clearTimeout(secours); lancerJeu(); }, { once: true });
+    } else {
+      lancerJeu();
+    }
   };
 
   // Setup inventaire icons
@@ -1160,6 +1167,7 @@ function playLaunch() {
   launchSound.muted = isMuted;
   launchSound.volume = parseFloat(G.config && G.config.son_launch_volume) || 0.6;
   launchSound.play().catch(() => {});
+  return launchSound;
 }
 
 // Arrête le jingle de l'écran titre (au lancement du jeu via "Jouer").
@@ -1439,7 +1447,8 @@ function renderDlg() {
         if (!inventaire.includes('50k')) {
           document.querySelectorAll('.montre-zone').forEach(el => el.remove());
           const echec = dlgList.find(d => d.type === 'fin_echec');
-          showSucces(echec || { personnage: 'Vendeur Rolex', texte: "Il semblerait que vous ne soyez pas en capacité de procéder au paiement, Monsieur. Revenez quand vos finances seront réglées." });
+          // Pas de son de succès ici : il n'y a pas d'achat, donc pas de montre ramassée.
+          showSucces(echec || { personnage: 'Vendeur Rolex', texte: "Il semblerait que vous ne soyez pas en capacité de procéder au paiement, Monsieur. Revenez quand vos finances seront réglées." }, { skipSon: true });
           return;
         }
         document.querySelectorAll('.montre-zone').forEach(el => el.remove());
@@ -1457,11 +1466,13 @@ function renderDlg() {
         const idx50k = inventaire.indexOf('50k');
         if (idx50k !== -1) inventaire.splice(idx50k, 1);
         // 1) Animation popup objet → 2) au clic OK : dialogue du vendeur qui félicite
+        // (son joué une seule fois, au moment de l'animation de ramassage, pas à la félicitation)
         objetPopupOnEmpty = () => {
-          if (rep) showSucces(rep);
+          if (rep) showSucces(rep, { skipSon: true });
           else goHall();
         };
         ajouterObjet('montre');
+        if (currentLieu) playSonLieu(currentLieu);
       };
       document.getElementById('screen-scene').appendChild(z);
     });
@@ -1489,8 +1500,6 @@ function renderDlg() {
     ctaZone.style.display = 'flex';
     btnContinuer.style.display = 'none';
     btnHall.style.display = 'block';
-    // Jouer le son du personnage à la réussite
-    if (currentLieu) playSonLieu(currentLieu);
     if (dlg.meta && !inventaire.includes(dlg.meta)) {
       // Bouton rose épais "Récupérer le [objet]" (même DA que les toilettes),
       // animation sur l'écran du PNJ, puis bascule en "Retour au hall".
@@ -1500,11 +1509,14 @@ function renderDlg() {
       btnHall.textContent = 'Récupérer ' + nomObjAvecArticle(nomObj);
       btnHall.onclick = () => {
         ajouterObjet(dlg.meta); // animation popup sur l'écran PNJ
+        if (currentLieu) playSonLieu(currentLieu); // son joué au moment de l'animation, pas avant
         styleBtnRamasser(btnHall, false);
         btnHall.textContent = 'Retour au hall';
         btnHall.onclick = () => { stopSound(); goHall(); };
       };
     } else {
+      // Pas d'objet à ramasser (ou déjà en inventaire) : aucune animation à attendre, son immédiat.
+      if (currentLieu) playSonLieu(currentLieu);
       styleBtnRamasser(btnHall, false);
       btnHall.textContent = 'Retour au hall';
       btnHall.onclick = () => { if (dlg.meta) ajouterObjet(dlg.meta); goHall(); };
@@ -1590,18 +1602,20 @@ function showSucces(dlg, opts) {
   btnHall.disabled = false;
   btnHall.style.opacity = '1';
   if (echecCountdownTimer) { clearInterval(echecCountdownTimer); echecCountdownTimer = null; }
-  // Jouer le son du personnage à la réussite
-  if (currentLieu) playSonLieu(currentLieu);
+  // Un objet va être ramassé via une animation : on attend ce moment pour jouer le son.
+  // Sinon (pas d'objet, déjà en inventaire, ou son déjà joué ailleurs comme chez Rolex) : son immédiat.
+  const animationEnAttente = dlg.meta && !inventaire.includes(dlg.meta);
+  if (!animationEnAttente && !opts.skipSon && currentLieu) playSonLieu(currentLieu);
   if (opts.onFin) {
     // Fin de mission : le bouton enchaîne sur l'écran de fin
     styleBtnRamasser(btnHall, false);
     btnHall.textContent = 'Continuer';
     btnHall.onclick = () => {
-      if (dlg.meta) ajouterObjet(dlg.meta);
+      if (dlg.meta) { ajouterObjet(dlg.meta); if (!opts.skipSon && currentLieu) playSonLieu(currentLieu); }
       stopSound();
       opts.onFin();
     };
-  } else if (dlg.meta && !inventaire.includes(dlg.meta)) {
+  } else if (animationEnAttente) {
     // Objet à récupérer : bouton rose épais "Récupérer le [objet]" (DA toilettes),
     // déclenche l'animation sur l'écran du PNJ, puis bascule en "Retour au hall".
     const obj = G.objets.find(o => o.id === dlg.meta);
@@ -1610,6 +1624,7 @@ function showSucces(dlg, opts) {
     btnHall.textContent = 'Récupérer ' + nomObjAvecArticle(nomObj);
     btnHall.onclick = () => {
       ajouterObjet(dlg.meta); // animation popup de l'objet, sur l'écran PNJ
+      if (!opts.skipSon && currentLieu) playSonLieu(currentLieu); // son joué au moment de l'animation
       styleBtnRamasser(btnHall, false);
       btnHall.textContent = 'Retour au hall';
       btnHall.onclick = () => { stopSound(); goHall(); };
@@ -1911,9 +1926,8 @@ function ouvrirCabine(idx, contenu, lieu) {
   if (contenu === 'oscar') {
     document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/Oscar.jpg)`;
     oscarVisites++;
-    // Son d'Oscar joué à CHAQUE ouverture de sa cabine
+    // Son d'Oscar joué à CHAQUE ramassage du meuj (sur l'animation), pas à l'ouverture de la porte.
     const lieuToilettes = G.lieux.find(l => l.id === 'toilettes');
-    if (lieuToilettes) playSonLieu(lieuToilettes);
 
     if (oscarVisites === 1) {
       // Premier meuj : afficher dlgs 1-4 (type fin_succes), donner objet au dlg 3
@@ -1930,7 +1944,7 @@ function ouvrirCabine(idx, contenu, lieu) {
 
         if (pi === 2) {
           btn.textContent = 'Prendre le meuj';
-          btn.onclick = () => { if (btn.disabled) return; forcerAnimationObjet('meuj'); pi++; showOscarPhrase(); };
+          btn.onclick = () => { if (btn.disabled) return; forcerAnimationObjet('meuj'); if (lieuToilettes) playSonLieu(lieuToilettes); pi++; showOscarPhrase(); };
         } else if (pi === textes.length - 1) {
           btn.textContent = 'Fermer la porte';
           btn.onclick = () => { if (btn.disabled) return; pi++; showOscarPhrase(); };
@@ -1953,6 +1967,7 @@ function ouvrirCabine(idx, contenu, lieu) {
       }
       showDialogue('Oscar', d ? d.texte : '', 'Prendre le meuj', () => {
         forcerAnimationObjet('meuj'); // animation même si le meuj est déjà en inventaire
+        if (lieuToilettes) playSonLieu(lieuToilettes);
         retourCabines();
       }, false);
     }
