@@ -209,6 +209,17 @@ html, body {
   font-size: 12px; line-height: 1.5;
   text-shadow: 0 1px 6px rgba(0,0,0,0.9);
 }
+#loading-phrases {
+  position: absolute;
+  bottom: 13%; left: 0; right: 0;
+  z-index: 20; padding: 0 24px;
+  text-align: center; color: #fff;
+  font-size: 11px; letter-spacing: 0.3px;
+  opacity: 0.85;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+  pointer-events: none;
+  min-height: 14px;
+}
 #btn-jouer {
   display: none;
   position: absolute;
@@ -461,6 +472,7 @@ html, body {
   <div id="loading-cover"></div>
   <canvas id="loading-canvas"></canvas>
   <div id="loading-intro"></div>
+  <div id="loading-phrases"></div>
   <button class="btn-cta" id="btn-jouer">Jouer</button>
 </div>
 
@@ -676,6 +688,9 @@ async function init() {
 
   // Afficher le bouton Jouer (le jingle launch se joue au clic, pas au chargement)
   document.getElementById('btn-jouer').style.display = 'block';
+  // Lancer les fausses phrases de chargement (l'écran titre est déjà actif au démarrage,
+  // il ne passe donc pas par showScreen au premier affichage).
+  startLoadingPhrases();
   document.getElementById('btn-jouer').onclick = () => {
     const btn = document.getElementById('btn-jouer');
     if (btn.disabled) return;
@@ -744,6 +759,49 @@ function showScreen(id) {
     const avecInv = ['hall', 'scene', 'valises', 'cabines'];
     invBtn.style.display = avecInv.includes(id) ? 'block' : 'none';
   }
+  // Fausses phrases de chargement : ne défilent que sur l'écran titre.
+  if (id === 'loading') startLoadingPhrases(); else stopLoadingPhrases();
+}
+
+// ── FAUSSES PHRASES DE CHARGEMENT (écran titre) ──
+// Petites phrases bidon qui défilent au-dessus du bouton "Jouer".
+// Modifiables/ajoutables depuis le back end : ligne `phrases_chargement`
+// de l'onglet config du Sheet, séparées par des « | ».
+let loadingPhrasesTimer = null;
+const PHRASES_CHARGEMENT_DEFAUT = [
+  '...chargement des métadonnées...',
+  '...calibrage du narguilé...',
+  '...synchronisation des meujs de cess...',
+  '...vérification des passeports...',
+  '...polissage du putter...',
+  '...comptage des billets...',
+  '...réveil de Pierre...',
+  '...optimisation des tractions...',
+];
+function getPhrasesChargement() {
+  const raw = G && G.config && G.config.phrases_chargement;
+  const list = raw ? String(raw).split('|').map(s => s.trim()).filter(Boolean) : [];
+  return list.length ? list : PHRASES_CHARGEMENT_DEFAUT;
+}
+function startLoadingPhrases() {
+  stopLoadingPhrases();
+  const el = document.getElementById('loading-phrases');
+  if (!el) return;
+  const phrases = getPhrasesChargement();
+  let i = 0;
+  const tick = () => {
+    el.textContent = phrases[i % phrases.length];
+    i++;
+    // Durée d'affichage aléatoire entre 0,3 s et 1,5 s.
+    const delai = 300 + Math.random() * 1200;
+    loadingPhrasesTimer = setTimeout(tick, delai);
+  };
+  tick();
+}
+function stopLoadingPhrases() {
+  if (loadingPhrasesTimer) { clearTimeout(loadingPhrasesTimer); loadingPhrasesTimer = null; }
+  const el = document.getElementById('loading-phrases');
+  if (el) el.textContent = '';
 }
 
 function goLoading() { stopPacman(); stopSound(); stopLaunch(); stopHallAnim(); if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; } showScreen('loading'); }
