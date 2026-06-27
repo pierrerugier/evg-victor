@@ -1926,8 +1926,9 @@ function ouvrirCabine(idx, contenu, lieu) {
   if (contenu === 'oscar') {
     document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/Oscar.jpg)`;
     oscarVisites++;
-    // Son d'Oscar joué à CHAQUE ramassage du meuj (sur l'animation), pas à l'ouverture de la porte.
+    // Son d'Oscar joué à l'ouverture de sa cabine ET à CHAQUE ramassage du meuj (sur l'animation).
     const lieuToilettes = G.lieux.find(l => l.id === 'toilettes');
+    if (lieuToilettes) playSonLieu(lieuToilettes); // son à l'arrivée dans la cabine d'Oscar
 
     if (oscarVisites === 1) {
       // Premier meuj : afficher dlgs 1-4 (type fin_succes), donner objet au dlg 3
