@@ -783,18 +783,41 @@ function getPhrasesChargement() {
   const list = raw ? String(raw).split('|').map(s => s.trim()).filter(Boolean) : [];
   return list.length ? list : PHRASES_CHARGEMENT_DEFAUT;
 }
+// Durée d'affichage proportionnelle au nombre de mots :
+// 3 mots = 0,4 s, +0,2 s par mot supplémentaire (4 = 0,6 s, 5 = 0,8 s, etc.).
+// Plancher à 3 mots pour les phrases plus courtes.
+function dureePhraseMs(phrase) {
+  const nbMots = phrase.split(/\s+/).filter(Boolean).length;
+  return (Math.max(nbMots, 3) - 1) * 200;
+}
+// Mélange (Fisher-Yates) sans muter le tableau d'origine.
+function melange(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 function startLoadingPhrases() {
   stopLoadingPhrases();
   const el = document.getElementById('loading-phrases');
   if (!el) return;
   const phrases = getPhrasesChargement();
-  let i = 0;
+  // Ordre aléatoire : on pioche dans un sac mélangé, reconstitué une fois vidé
+  // (évite de répéter une phrase juste avant qu'elles soient toutes passées).
+  let sac = [];
+  let derniere = null;
   const tick = () => {
-    el.textContent = phrases[i % phrases.length];
-    i++;
-    // Durée d'affichage aléatoire entre 0,3 s et 1,5 s.
-    const delai = 300 + Math.random() * 1200;
-    loadingPhrasesTimer = setTimeout(tick, delai);
+    if (sac.length === 0) {
+      sac = melange(phrases);
+      // Éviter que la 1re phrase du nouveau sac soit identique à la précédente.
+      if (sac.length > 1 && sac[0] === derniere) sac.push(sac.shift());
+    }
+    const phrase = sac.shift();
+    derniere = phrase;
+    el.textContent = phrase;
+    loadingPhrasesTimer = setTimeout(tick, dureePhraseMs(phrase));
   };
   tick();
 }
