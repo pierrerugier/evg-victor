@@ -476,7 +476,7 @@ html, body {
   z-index: 1;
 }
 #fin-textes {
-  position: absolute; bottom: 17%; left: 0; right: 0;
+  position: absolute; bottom: 23%; left: 0; right: 0;
   z-index: 5; text-align: center; padding: 0 20px;
   pointer-events: none;
 }
@@ -792,9 +792,12 @@ async function init() {
 
   // Filet de sécurité : si le navigateur a bloqué l'autoplay de la musique de
   // fond, la relancer au premier clic/tap utilisateur (hors écran titre).
+  // Mais JAMAIS quand le jeu est terminé / sur l'écran de fin : sinon le clic
+  // qui déclenche la fin relancerait la musique du hall par-dessus finjeu.mp3.
   const retryAudio = () => {
     const surTitre = document.querySelector('#screen-loading.active');
-    if (!surTitre && !bgMusicStarted && !bgMusic) startBgMusic();
+    const surFin = document.querySelector('#screen-fin.active');
+    if (!surTitre && !surFin && !jeuTermine && !bgMusicStarted && !bgMusic) startBgMusic();
   };
   document.addEventListener('click', retryAudio);
   document.addEventListener('touchstart', retryAudio);
