@@ -227,6 +227,33 @@ html, body {
   z-index: 20;
 }
 
+/* ── CHEAT BAR (appui long sur l'icône inventaire) ── */
+.inv-btn {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#cheat-bar {
+  position: absolute; top: 0; left: 0; right: 0;
+  z-index: 200; display: none;
+  padding: 10px 14px 12px;
+  background: rgba(0,0,0,0.88);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.6);
+}
+#cheat-bar.open { display: block; }
+#cheat-input {
+  width: 100%; box-sizing: border-box;
+  padding: 11px 12px; border-radius: 8px;
+  border: 1px solid var(--rose);
+  background: #111; color: #fff;
+  font-size: 16px; text-align: center; letter-spacing: 1px;
+  outline: none;
+}
+#cheat-msg {
+  color: var(--rose); text-align: center;
+  font-size: 12px; margin-top: 6px; min-height: 14px;
+}
+
 /* ── HALL ── */
 #screen-hall { position: relative; }
 #hall-pins { position: absolute; inset: 0; z-index: 10; }
@@ -465,7 +492,13 @@ html, body {
 </button>
 
 <!-- BOUTON INVENTAIRE GLOBAL (visible sur les écrans de jeu) -->
-<button class="inv-btn" id="inv-btn-global" onclick="openInv()" style="display:none;"><img id="inv-icon" src="" alt=""></button>
+<button class="inv-btn" id="inv-btn-global" onclick="onInvBtnTap()" style="display:none;"><img id="inv-icon" src="" alt=""></button>
+
+<!-- CHEAT : appui long (3 s) sur l'icône inventaire → ce champ apparaît -->
+<div id="cheat-bar">
+  <input id="cheat-input" type="text" placeholder="code…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <div id="cheat-msg"></div>
+</div>
 
 <!-- LOADING -->
 <div id="screen-loading" class="screen active">
@@ -720,6 +753,9 @@ async function init() {
   document.getElementById('inv-icon').src = BASE + 'icons/inventaire-icon.png';
   document.getElementById('inv-bg').src = BASE + 'icons/inventaire.png';
 
+  // Cheat codes (appui long sur l'icône inventaire)
+  setupCheat();
+
   // Filet de sécurité : si le navigateur a bloqué l'autoplay de la musique de
   // fond, la relancer au premier clic/tap utilisateur (hors écran titre).
   const retryAudio = () => {
@@ -825,6 +861,73 @@ function stopLoadingPhrases() {
   if (loadingPhrasesTimer) { clearTimeout(loadingPhrasesTimer); loadingPhrasesTimer = null; }
   const el = document.getElementById('loading-phrases');
   if (el) el.textContent = '';
+}
+
+// ── CHEAT CODES ──
+// Appui long (3 s) sur l'icône inventaire → champ de saisie en haut de l'écran.
+// Code "complete" : ajoute tous les objets + la condition (Arthur vu) requis
+// pour la fin. Il suffit ensuite d'aller faire la traction de Kupi pour finir.
+// Déclencheur : 5 taps rapides sur l'icône inventaire. Fiable sur iOS,
+// contrairement à l'appui long que Safari interrompt avec son propre geste.
+let invTapCount = 0, invTapTimer = null;
+const INV_TAPS_CHEAT = 5;     // nombre de taps pour ouvrir le cheat
+const INV_TAP_FENETRE = 320;  // délai max (ms) entre deux taps de la séquence
+// Appelé par le bouton inventaire (onclick). N'impacte PAS les openInv()
+// déclenchés par le jeu lui-même (Charles, etc.), qui restent instantanés.
+function onInvBtnTap() {
+  invTapCount++;
+  if (invTapTimer) clearTimeout(invTapTimer);
+  if (invTapCount >= INV_TAPS_CHEAT) {
+    invTapCount = 0;
+    document.getElementById('inv-overlay').classList.remove('open');
+    ouvrirCheat();
+    return;
+  }
+  // Pas d'autre tap dans la fenêtre → appui normal, on ouvre l'inventaire.
+  invTapTimer = setTimeout(() => { invTapCount = 0; openInv(); }, INV_TAP_FENETRE);
+}
+function setupCheat() {
+  const input = document.getElementById('cheat-input');
+  if (!input) return;
+  // Validation du code : à la saisie (mobile, sans touche entrée) ou via Entrée.
+  input.addEventListener('input', () => {
+    if (input.value.trim().toLowerCase() === 'complete') appliquerCheat(input.value);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') appliquerCheat(input.value);
+    else if (e.key === 'Escape') fermerCheat();
+  });
+}
+function ouvrirCheat() {
+  const bar = document.getElementById('cheat-bar');
+  const input = document.getElementById('cheat-input');
+  const msg = document.getElementById('cheat-msg');
+  if (!bar || !input) return;
+  if (msg) msg.textContent = '';
+  input.value = '';
+  bar.classList.add('open');
+  setTimeout(() => input.focus(), 50);
+}
+function fermerCheat() {
+  const bar = document.getElementById('cheat-bar');
+  const input = document.getElementById('cheat-input');
+  if (input) input.blur();
+  if (bar) bar.classList.remove('open');
+}
+function appliquerCheat(code) {
+  const c = String(code || '').trim().toLowerCase();
+  if (c !== 'complete') return false;
+  // Tous les objets requis pour la fin + la condition "avoir vu Arthur".
+  OBJETS_REQUIS_SECURITE.forEach(id => { if (!inventaire.includes(id)) inventaire.push(id); });
+  lieuxVisites.add('arthur');
+  // Rafraîchir les pins du hall si on y est, pour refléter le nouvel état.
+  if (document.querySelector('#screen-hall.active')) setupHall();
+  const input = document.getElementById('cheat-input');
+  const msg = document.getElementById('cheat-msg');
+  if (input) { input.value = ''; input.blur(); }
+  if (msg) msg.textContent = '✓ Tout débloqué — va voir Kupi et fais la traction !';
+  setTimeout(fermerCheat, 1900);
+  return true;
 }
 
 function goLoading() { stopPacman(); stopSound(); stopLaunch(); stopHallAnim(); if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; } showScreen('loading'); }
