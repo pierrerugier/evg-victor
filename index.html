@@ -1828,8 +1828,8 @@ function showSucces(dlg, opts) {
   const animationEnAttente = dlg.meta && !inventaire.includes(dlg.meta);
   if (!animationEnAttente && !opts.skipSon && currentLieu) playSonLieu(currentLieu);
   if (opts.onFin) {
-    // Fin de mission : le bouton enchaîne sur l'écran de fin
-    styleBtnRamasser(btnHall, false);
+    // Fin de mission : gros bouton rose (btn-cta) qui enchaîne sur l'écran de fin.
+    styleBtnRamasser(btnHall, true);
     btnHall.textContent = 'Continuer';
     btnHall.onclick = () => {
       if (dlg.meta) { ajouterObjet(dlg.meta); if (!opts.skipSon && currentLieu) playSonLieu(currentLieu); }
