@@ -469,9 +469,37 @@ html, body {
 }
 
 /* FIN */
-#screen-fin { background: #000; align-items: center; justify-content: center; }
-#fin-img { width: 80%; opacity: 0; transform: scale(0.8); transition: opacity 1s, transform 1s; }
-#fin-img.show { opacity: 1; transform: scale(1); }
+#screen-fin { background: #000; }
+#fin-bg {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  z-index: 1;
+}
+#fin-textes {
+  position: absolute; bottom: 17%; left: 0; right: 0;
+  z-index: 5; text-align: center; padding: 0 20px;
+  pointer-events: none;
+}
+#fin-ligne1, #fin-ligne2 {
+  color: #fff; text-transform: uppercase;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.75);
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+#fin-ligne1.show, #fin-ligne2.show { opacity: 1; transform: translateY(0); }
+#fin-ligne1 { font-size: 30px; font-weight: 800; letter-spacing: 0.03em; }
+#fin-ligne2 { font-size: 17px; font-weight: 600; letter-spacing: 0.08em; margin-top: 8px; }
+#fin-rejouer {
+  display: none;
+  position: absolute; bottom: 5%; left: 5%; width: 90%; z-index: 10;
+}
+#fin-rejouer.show { display: block; }
+#fin-fondu {
+  position: absolute; inset: 0; background: #fff;
+  z-index: 60; opacity: 1; pointer-events: none;
+  transition: opacity 2s ease;
+}
+#fin-fondu.clear { opacity: 0; }
 </style>
 </head>
 <body>
@@ -615,7 +643,13 @@ html, body {
 <!-- FIN -->
 <div id="screen-fin" class="screen">
   <button id="btn-retour-titre-fin" onclick="location.reload()" style="position:absolute;top:14px;left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;">← Titre</button>
-  <img id="fin-img" src="" alt="">
+  <div id="fin-bg"></div>
+  <div id="fin-textes">
+    <div id="fin-ligne1">Algarve, Portugal</div>
+    <div id="fin-ligne2">Bon voyage !</div>
+  </div>
+  <button class="btn-cta" id="fin-rejouer" onclick="location.reload()">Rejouer</button>
+  <div id="fin-fondu"></div>
 </div>
 
 <!-- INV OVERLAY -->
@@ -2674,23 +2708,36 @@ function dlgZoneEl() { return document.getElementById('dlg-zone'); }
 function showFin() {
   stopPacman();
   showScreen('fin');
-  const img = document.getElementById('fin-img');
-  // Image de fin renseignée dans l'onglet config (clé 'ecran_fin'),
-  // ex. ecrans/fin-faro.jpg. Fallback sur l'écran de chargement.
-  const ecranFin = (G.config && G.config.ecran_fin) ? G.config.ecran_fin : 'ecrans/Victors-laoding.jpg';
-  img.classList.remove('show');
-  img.src = BASE + ecranFin;
-  setTimeout(() => img.classList.add('show'), 100);
 
-  // Musique de victoire : remplace la musique de fond par faro.mp3, joué UNE
-  // SEULE FOIS puis silence (sauf retour au titre qui recharge tout).
-  const sonFin = (G.config && G.config.son_fin) ? G.config.son_fin : 'son/faro.mp3';
+  // Image de fin plein écran (clé config 'ecran_fin', ex. ecrans/fin-faro.jpg).
+  const ecranFin = (G.config && G.config.ecran_fin) ? G.config.ecran_fin : 'ecrans/Victors-laoding.jpg';
+  document.getElementById('fin-bg').style.backgroundImage = `url(${BASE}${ecranFin})`;
+
+  const fondu = document.getElementById('fin-fondu');
+  const l1 = document.getElementById('fin-ligne1');
+  const l2 = document.getElementById('fin-ligne2');
+  const btn = document.getElementById('fin-rejouer');
+  // État initial : voile blanc opaque, textes et bouton masqués.
+  l1.classList.remove('show');
+  l2.classList.remove('show');
+  btn.classList.remove('show');
+  fondu.classList.remove('clear');
+  void fondu.offsetWidth; // force le reflow pour (re)jouer la transition
+
+  // Musique de fin : finjeu.mp3 en boucle.
+  const sonFin = (G.config && G.config.son_fin) ? G.config.son_fin : 'son/finjeu.mp3';
   if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; }
   if (currentSound) { currentSound.pause(); currentSound.currentTime = 0; }
   currentSound = new Audio(BASE + sonFin);
-  currentSound.loop = false;
+  currentSound.loop = true;
   currentSound.muted = isMuted;
   currentSound.play().catch(() => {});
+
+  // Fondu au blanc → image (2 s), puis textes ligne par ligne, puis bouton.
+  requestAnimationFrame(() => fondu.classList.add('clear'));    // démarre le fondu (2 s)
+  setTimeout(() => l1.classList.add('show'), 2000);            // "Algarve, Portugal" à 2 s
+  setTimeout(() => l2.classList.add('show'), 3000);            // "Bon voyage !" à 3 s
+  setTimeout(() => btn.classList.add('show'), 5000);          // bouton "Rejouer" à 5 s
 }
 
 // ══════════════════════════════════════════════════════════
