@@ -241,14 +241,23 @@ html, body {
   box-shadow: 0 2px 12px rgba(0,0,0,0.6);
 }
 #cheat-bar.open { display: block; }
+#cheat-row { display: flex; gap: 8px; align-items: stretch; }
 #cheat-input {
-  width: 100%; box-sizing: border-box;
+  flex: 1; box-sizing: border-box;
   padding: 11px 12px; border-radius: 8px;
   border: 1px solid var(--rose);
   background: #111; color: #fff;
   font-size: 16px; text-align: center; letter-spacing: 1px;
   outline: none;
 }
+#cheat-close {
+  flex: 0 0 auto; width: 44px;
+  border-radius: 8px; border: 1px solid var(--rose);
+  background: #111; color: #fff;
+  font-size: 18px; line-height: 1; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+#cheat-close:active { background: #222; }
 #cheat-msg {
   color: var(--rose); text-align: center;
   font-size: 12px; margin-top: 6px; min-height: 14px;
@@ -522,9 +531,12 @@ html, body {
 <!-- BOUTON INVENTAIRE GLOBAL (visible sur les écrans de jeu) -->
 <button class="inv-btn" id="inv-btn-global" onclick="onInvBtnTap()" style="display:none;"><img id="inv-icon" src="" alt=""></button>
 
-<!-- CHEAT : appui long (3 s) sur l'icône inventaire → ce champ apparaît -->
+<!-- CHEAT : 5 taps rapides sur l'icône inventaire → ce champ apparaît -->
 <div id="cheat-bar">
-  <input id="cheat-input" type="text" placeholder="code…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <div id="cheat-row">
+    <input id="cheat-input" type="text" placeholder="code…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button id="cheat-close" onclick="fermerCheat()" aria-label="Fermer">✕</button>
+  </div>
   <div id="cheat-msg"></div>
 </div>
 
