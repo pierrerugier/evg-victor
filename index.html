@@ -534,8 +534,8 @@ html, body {
 <!-- CHEAT : 5 taps rapides sur l'icône inventaire → ce champ apparaît -->
 <div id="cheat-bar">
   <div id="cheat-row">
-    <input id="cheat-input" type="text" placeholder="code…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
     <button id="cheat-close" onclick="fermerCheat()" aria-label="Fermer">✕</button>
+    <input id="cheat-input" type="text" placeholder="code…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
   </div>
   <div id="cheat-msg"></div>
 </div>
@@ -940,7 +940,7 @@ function setupCheat() {
   if (!input) return;
   // Validation du code : à la saisie (mobile, sans touche entrée) ou via Entrée.
   input.addEventListener('input', () => {
-    if (input.value.trim().toLowerCase() === 'complete') appliquerCheat(input.value);
+    if (CHEATS.includes(input.value.trim().toLowerCase())) appliquerCheat(input.value);
   });
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') appliquerCheat(input.value);
@@ -963,18 +963,33 @@ function fermerCheat() {
   if (input) input.blur();
   if (bar) bar.classList.remove('open');
 }
+// Override de session pour l'image de fond du hall (cheat "drag").
+// Remis à null au rechargement → tout revient à la normale au redémarrage.
+let hallEcranOverride = null;
+const CHEATS = ['complete', 'drag'];
 function appliquerCheat(code) {
   const c = String(code || '').trim().toLowerCase();
-  if (c !== 'complete') return false;
-  // Tous les objets requis pour la fin + la condition "avoir vu Arthur".
-  OBJETS_REQUIS_SECURITE.forEach(id => { if (!inventaire.includes(id)) inventaire.push(id); });
-  lieuxVisites.add('arthur');
-  // Rafraîchir les pins du hall si on y est, pour refléter le nouvel état.
-  if (document.querySelector('#screen-hall.active')) setupHall();
+  let msgTxt = null;
+  if (c === 'complete') {
+    // Tous les objets requis pour la fin + la condition "avoir vu Arthur".
+    OBJETS_REQUIS_SECURITE.forEach(id => { if (!inventaire.includes(id)) inventaire.push(id); });
+    lieuxVisites.add('arthur');
+    // Rafraîchir les pins du hall si on y est, pour refléter le nouvel état.
+    if (document.querySelector('#screen-hall.active')) setupHall();
+    msgTxt = '✓ Tout débloqué — va voir Kupi et fais la traction !';
+  } else if (c === 'drag') {
+    // Remplace l'image du hall par drag.jpg (même dossier), juste pour la session.
+    const hall = G.lieux.find(l => l.id === 'hall');
+    if (hall) hallEcranOverride = hall.ecran.replace(/[^/]+$/, 'drag.jpg');
+    if (document.querySelector('#screen-hall.active')) setupHall();
+    msgTxt = '✓ Mode drag activé (jusqu\'au redémarrage)';
+  } else {
+    return false;
+  }
   const input = document.getElementById('cheat-input');
   const msg = document.getElementById('cheat-msg');
   if (input) { input.value = ''; input.blur(); }
-  if (msg) msg.textContent = '✓ Tout débloqué — va voir Kupi et fais la traction !';
+  if (msg) msg.textContent = msgTxt;
   setTimeout(fermerCheat, 1900);
   return true;
 }
@@ -1044,7 +1059,8 @@ let TUTO = []; // chargé depuis le Sheet onglet 'tuto'
 
 function setupHall() {
   const hall = G.lieux.find(l => l.id === 'hall');
-  document.getElementById('hall-bg').style.backgroundImage = `url(${BASE}${hall.ecran})`;
+  const ecranHall = hallEcranOverride || hall.ecran; // cheat "drag" remplace l'image
+  document.getElementById('hall-bg').style.backgroundImage = `url(${BASE}${ecranHall})`;
 
   const pins = document.getElementById('hall-pins');
   pins.innerHTML = '';
