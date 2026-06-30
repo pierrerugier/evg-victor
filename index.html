@@ -985,11 +985,16 @@ function appliquerCheat(code) {
     if (document.querySelector('#screen-hall.active')) setupHall();
     msgTxt = '✓ Tout débloqué — va voir Kupi et fais la traction !';
   } else if (c === 'drag') {
-    // Remplace l'image du hall par drag.jpg (même dossier), juste pour la session.
-    const hall = G.lieux.find(l => l.id === 'hall');
-    if (hall) hallEcranOverride = hall.ecran.replace(/[^/]+$/, 'drag.jpg');
+    // Interrupteur : 1re fois → image drag.jpg ; en retapant "drag" → retour normal.
+    if (hallEcranOverride) {
+      hallEcranOverride = null;
+      msgTxt = '✓ Mode drag désactivé';
+    } else {
+      const hall = G.lieux.find(l => l.id === 'hall');
+      if (hall) hallEcranOverride = hall.ecran.replace(/[^/]+$/, 'drag.jpg');
+      msgTxt = '✓ Mode drag activé';
+    }
     if (document.querySelector('#screen-hall.active')) setupHall();
-    msgTxt = '✓ Mode drag activé (jusqu\'au redémarrage)';
   } else {
     return false;
   }
