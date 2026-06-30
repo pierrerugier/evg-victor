@@ -274,6 +274,15 @@ html, body {
 }
 .hall-pin.locked svg path { fill: #777; }
 .hall-pin.locked svg circle { fill: #555; }
+/* Pins masqués pendant la 1re phrase du tuto, puis "atterrissage" à la 2e. */
+.hall-pin.pin-hidden { opacity: 0; }
+.hall-pin.pin-land {
+  animation: pinLand 360ms cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+@keyframes pinLand {
+  0%   { opacity: 0; transform: translate(-50%, -200%) scale(0.8); }
+  100% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+}
 
 /* ── INVENTAIRE OVERLAY ── */
 #inv-overlay {
@@ -371,10 +380,6 @@ html, body {
 #tuto-bloc {
   background: var(--dlg-bg); padding: 14px 14px 12px; margin-bottom: 10px;
 }
-#tuto-nom {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--rose); margin-bottom: 5px;
-}
 #tuto-txt { font-size: 14px; line-height: 1.5; color: var(--narration-color, #FFDE00); }
 /* bouton tuto = rose comme les autres boutons d'action (hérite de .btn-cta) */
 
@@ -468,6 +473,9 @@ html, body {
 .baptiste-bloc {
   background: rgba(0,0,0,0.8); padding: 10px 12px; margin-bottom: 6px;
 }
+/* Mode "consigne" : instructions en jaune, sans le nom du personnage. */
+.baptiste-bloc.mode-consigne .dlg-nom { display: none; }
+.baptiste-bloc.mode-consigne #baptiste-txt { color: var(--narration-color, #FFDE00); }
 
 /* ── CABINES (OSCAR) ── */
 #screen-cabines { position: relative; }
@@ -561,7 +569,6 @@ html, body {
   <!-- TUTO -->
   <div id="tuto-zone" style="display:none;">
     <div id="tuto-bloc">
-      <div id="tuto-nom">Mission</div>
       <div id="tuto-txt"></div>
     </div>
     <button class="btn-cta" id="tuto-btn" onclick="nextTuto()">Suivant</button>
@@ -593,7 +600,7 @@ html, body {
       <div class="dlg-nom">Baptiste</div>
       <div class="dlg-txt" id="baptiste-txt"></div>
     </div>
-    <button class="btn-cta" id="baptiste-ok-btn" style="display:none;" onclick="goHall()">Continuer</button>
+    <button class="btn-cta" id="baptiste-ok-btn" style="display:none;">Continuer</button>
   </div>
 </div>
 
@@ -1026,6 +1033,7 @@ function stopPacman() {
 // ══════════════════════════════════════════════════════════
 let tutoIndex = 0;
 let tutoDone = false; // pins bloqués jusqu'à fin du tuto
+let pinsReveles = false; // pins masqués pendant la 1re phrase du tuto, révélés à la 2e
 let hallAnimTimer = null;
 
 // ══════════════════════════════════════════════════════════
@@ -1084,11 +1092,28 @@ function setupHall() {
       if (!tutoDone) return; // pins bloqués pendant le tuto
       entrerLieu(lieu.id);
     };
+    // Au tout début (1re phrase du tuto), les pins sont masqués ; ils
+    // "atterrissent" à la 2e phrase via revealPins().
+    if (!pinsReveles && !tutoDone) btn.classList.add('pin-hidden');
     pins.appendChild(btn);
   });
 
   setupInvGrid();
   // Ne pas démarrer l'animation ici - elle démarre après le tuto
+}
+
+// Fait apparaître les pins du hall en cascade (atterrissage), ~1 s au total.
+function revealPins() {
+  pinsReveles = true;
+  const pins = Array.from(document.querySelectorAll('#hall-pins .hall-pin'));
+  const n = pins.length;
+  const animDur = 360, total = 1000;
+  const stagger = n > 1 ? (total - animDur) / (n - 1) : 0;
+  pins.forEach((pin, i) => {
+    pin.classList.remove('pin-hidden');
+    pin.style.animationDelay = Math.round(i * stagger) + 'ms';
+    pin.classList.add('pin-land');
+  });
 }
 
 function lieuEstComplete(lieu) {
@@ -1129,6 +1154,8 @@ function renderTuto() {
     btn.style.opacity = '1';
   });
   btn.textContent = tutoIndex === TUTO.length - 1 ? "C'est parti !" : 'Suivant';
+  // Les pins atterrissent à l'apparition de la 2e phrase.
+  if (tutoIndex === 1 && !pinsReveles) revealPins();
 }
 function nextTuto() {
   if (document.getElementById('tuto-btn').disabled) return;
@@ -1136,6 +1163,7 @@ function nextTuto() {
   if (tutoIndex >= TUTO.length) {
     document.getElementById('tuto-zone').style.display = 'none';
     tutoDone = true;
+    if (!pinsReveles) revealPins(); // repli : tuto à moins de 2 phrases
     // Démarrer l'animation du hall 5 secondes après la fin du tuto
     hallAnimTimer = setTimeout(startHallAnim, 5000);
   } else {
@@ -1963,91 +1991,134 @@ function handleDonner(objetId) {
 // ══════════════════════════════════════════════════════════
 let baptisteTunnelIdx = 0;
 let baptisteTunnelPhrases = [];
-let baptisteClicks = 0;
-let baptisteEcrit = false; // bloque les clics pendant qu'un message s'écrit
+let baptisteEcrit = false;          // bloque pendant qu'un message s'écrit
+let baptisteValisesActives = false; // les valises ne sont cliquables qu'en mode "consigne"
+let baptisteConsigneDlg = null, baptisteSuccesDlg = null;
+
+// Découpe un texte du Sheet en phrases (séparateur "|"). Aucune phrase en dur.
+function splitPhrasesBaptiste(texte) {
+  return String(texte || '').split('|').map(s => s.trim()).filter(Boolean);
+}
 
 function showValises(lieu) {
   if (!peutAcceder(lieu)) { entrerLieuEchec(lieu); return; }
   document.getElementById('valises-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('valises');
 
+  // Tous les textes viennent du Sheet (lieu_id 'enregistrement').
+  const dlgs = G.dialogues.filter(d => d.lieu_id === 'enregistrement');
+  const intro = dlgs.find(d => d.type === 'pnj');
+  baptisteConsigneDlg = dlgs.find(d => d.type === 'consigne');
+  baptisteSuccesDlg   = dlgs.find(d => d.type === 'fin_succes');
+  baptisteTunnelPhrases = dlgs.filter(d => d.type === 'tunnel').sort((a,b) => +a.ordre - +b.ordre);
   baptisteTunnelIdx = 0;
-  baptisteClicks = 0;
-  baptisteEcrit = true; // bloqué le temps que l'intro s'écrive
-  baptisteTunnelPhrases = G.dialogues.filter(d => d.lieu_id === 'enregistrement' && d.type === 'tunnel')
-    .sort((a,b) => +a.ordre - +b.ordre);
+  baptisteValisesActives = false;
 
-  const tunnel = document.getElementById('baptiste-tunnel');
-  const intro = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'pnj');
-  if (intro) {
-    const txtEl = document.getElementById('baptiste-txt');
-    typewriteBloc(txtEl, intro.texte, () => { baptisteEcrit = false; });
-    tunnel.style.display = 'block';
-  } else {
-    baptisteEcrit = false;
-  }
-  document.getElementById('baptiste-ok-btn').style.display = 'none';
-
+  // Zones valises (les clics ne sont pris en compte qu'en mode "consigne").
   const overlay = document.getElementById('valises-overlay');
   overlay.innerHTML = '';
-
-  // 4 zones cliquables sur l'image Baptiste - toutes déclenchent choisirValise
   const valises = [
     { left:'5%',  top:'55%', w:'20%', h:'25%' },
     { left:'27%', top:'57%', w:'20%', h:'23%' },
     { left:'52%', top:'55%', w:'20%', h:'25%' },
     { left:'74%', top:'53%', w:'22%', h:'27%' },
   ];
-
   valises.forEach((v, idx) => {
     const zone = document.createElement('div');
     zone.className = 'valise-zone';
     zone.dataset.idx = idx;
     zone.dataset.essayee = 'false';
     zone.style.cssText = `position:absolute;left:${v.left};top:${v.top};width:${v.w};height:${v.h};cursor:pointer;z-index:10;-webkit-tap-highlight-color:rgba(255,110,199,0.2);`;
-    zone.ontouchstart = () => { if (zone.dataset.essayee === 'false' && !baptisteEcrit) zone.style.background = 'rgba(255,110,199,0.2)'; };
+    zone.ontouchstart = () => { if (baptisteValisesActives && zone.dataset.essayee === 'false') zone.style.background = 'rgba(255,110,199,0.2)'; };
     zone.ontouchend = () => zone.style.background = 'transparent';
     zone.onclick = () => choisirValise(zone);
     overlay.appendChild(zone);
   });
+
+  // Intro de Baptiste (phrase(s) + CONTINUER), puis consigne en jaune.
+  if (intro) {
+    montrerSequenceBaptiste(splitPhrasesBaptiste(intro.texte), false, montrerConsigne);
+  } else {
+    montrerConsigne();
+  }
+}
+
+// Affiche une suite de phrases dans le bloc Baptiste, une par une via CONTINUER.
+// onDone est appelé au clic CONTINUER de la dernière phrase.
+function montrerSequenceBaptiste(phrases, consigneMode, onDone) {
+  const seq = phrases.length ? phrases : ['...'];
+  let idx = 0;
+  const bloc = document.querySelector('#baptiste-tunnel .baptiste-bloc');
+  bloc.classList.toggle('mode-consigne', !!consigneMode);
+  document.getElementById('baptiste-tunnel').style.display = 'block';
+  baptisteValisesActives = false; // pas de clic valise pendant un dialogue
+  const txtEl = document.getElementById('baptiste-txt');
+  const btn = document.getElementById('baptiste-ok-btn');
+  const afficher = () => {
+    btn.style.display = 'none';
+    baptisteEcrit = true;
+    typewriteBloc(txtEl, seq[idx], () => {
+      baptisteEcrit = false;
+      btn.textContent = 'Continuer';
+      btn.style.display = 'block';
+      btn.onclick = () => {
+        if (baptisteEcrit) return;
+        idx++;
+        if (idx < seq.length) afficher();
+        else { btn.style.display = 'none'; if (onDone) onDone(); }
+      };
+    });
+  };
+  afficher();
+}
+
+// Consigne en jaune (depuis le Sheet) + valises rendues cliquables.
+function montrerConsigne() {
+  const bloc = document.querySelector('#baptiste-tunnel .baptiste-bloc');
+  document.getElementById('baptiste-ok-btn').style.display = 'none';
+  if (baptisteConsigneDlg) {
+    bloc.classList.add('mode-consigne');
+    document.getElementById('baptiste-tunnel').style.display = 'block';
+    baptisteEcrit = true;
+    typewriteBloc(document.getElementById('baptiste-txt'), baptisteConsigneDlg.texte, () => {
+      baptisteEcrit = false;
+      baptisteValisesActives = true;
+    });
+  } else {
+    // Pas de consigne dans le Sheet : on active simplement les valises.
+    document.getElementById('baptiste-tunnel').style.display = 'none';
+    baptisteValisesActives = true;
+  }
 }
 
 function choisirValise(zone) {
-  // Bloqué pendant l'écriture d'un message, ou si la valise a déjà été essayée
-  if (baptisteEcrit) return;
+  if (!baptisteValisesActives || baptisteEcrit) return;
   if (zone.dataset.essayee === 'true') return;
 
-  // Marquer cette valise comme essayée (non recliquable, visuellement neutralisée)
   zone.dataset.essayee = 'true';
   zone.style.cursor = 'default';
   zone.style.background = 'transparent';
 
-  const txtEl = document.getElementById('baptiste-txt');
   const zones = Array.from(document.querySelectorAll('#valises-overlay .valise-zone'));
   const restantes = zones.filter(z => z.dataset.essayee === 'false');
 
-  // S'il ne reste plus aucune valise non essayée → c'était la dernière = la bonne
   if (restantes.length === 0) {
-    const succes = G.dialogues.find(d => d.lieu_id === 'enregistrement' && d.type === 'fin_succes');
-    if (succes) {
-      if (succes.meta) ajouterObjet(succes.meta);
-      if (currentLieu) playSonLieu(currentLieu); // son du personnage à la réussite
-      baptisteEcrit = true;
-      typewriteBloc(txtEl, succes.texte, () => {
-        baptisteEcrit = false;
-        document.getElementById('baptiste-ok-btn').style.display = 'block';
-      });
-    }
-    // Plus aucune zone cliquable
+    // Dernière valise non essayée = la bonne → succès.
+    baptisteValisesActives = false;
     zones.forEach(z => z.onclick = null);
+    if (baptisteSuccesDlg && baptisteSuccesDlg.meta) ajouterObjet(baptisteSuccesDlg.meta); // animation ramassage
+    if (currentLieu) playSonLieu(currentLieu); // son au moment du ramassage de la valise
+    const phrases = baptisteSuccesDlg ? splitPhrasesBaptiste(baptisteSuccesDlg.texte) : ['...'];
+    montrerSequenceBaptiste(phrases, false, () => { stopSound(); goHall(); });
   } else {
-    // Mauvaise valise : phrase de tunnel suivante, clics bloqués pendant l'écriture
-    const phrase = baptisteTunnelPhrases[baptisteTunnelIdx % Math.max(1, baptisteTunnelPhrases.length)];
+    // Mauvaise valise → séquence "tunnel" (1 ligne tunnel = 1 valise, phrases
+    // séparées par "|"), puis retour à la consigne + valises de nouveau cliquables.
+    const row = baptisteTunnelPhrases.length
+      ? baptisteTunnelPhrases[baptisteTunnelIdx % baptisteTunnelPhrases.length]
+      : null;
     baptisteTunnelIdx++;
-    baptisteEcrit = true;
-    typewriteBloc(txtEl, phrase ? phrase.texte : '...', () => {
-      baptisteEcrit = false;
-    });
+    const phrases = row ? splitPhrasesBaptiste(row.texte) : ['...'];
+    montrerSequenceBaptiste(phrases, false, montrerConsigne);
   }
 }
 
