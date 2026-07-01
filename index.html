@@ -1998,7 +1998,7 @@ let baptisteTunnelIdx = 0;
 let baptisteTunnelPhrases = [];
 let baptisteEcrit = false;          // bloque pendant qu'un message s'écrit
 let baptisteValisesActives = false; // les valises ne sont cliquables qu'en mode "consigne"
-let baptisteConsigneDlg = null, baptisteSuccesDlg = null;
+let baptisteConsigneDlg = null, baptisteRelanceDlg = null, baptisteSuccesDlg = null;
 
 // Découpe un texte du Sheet en phrases (séparateur "|"). Aucune phrase en dur.
 function splitPhrasesBaptiste(texte) {
@@ -2014,6 +2014,7 @@ function showValises(lieu) {
   const dlgs = G.dialogues.filter(d => d.lieu_id === 'enregistrement');
   const intro = dlgs.find(d => d.type === 'pnj');
   baptisteConsigneDlg = dlgs.find(d => d.type === 'consigne');
+  baptisteRelanceDlg  = dlgs.find(d => d.type === 'relance'); // consigne courte après une mauvaise valise
   baptisteSuccesDlg   = dlgs.find(d => d.type === 'fin_succes');
   baptisteTunnelPhrases = dlgs.filter(d => d.type === 'tunnel').sort((a,b) => +a.ordre - +b.ordre);
   baptisteTunnelIdx = 0;
@@ -2078,14 +2079,17 @@ function montrerSequenceBaptiste(phrases, consigneMode, onDone) {
 }
 
 // Consigne en jaune (depuis le Sheet) + valises rendues cliquables.
-function montrerConsigne() {
+// relance=true → consigne courte après une mauvaise valise (repli sur la
+// consigne complète si aucune ligne 'relance' n'existe dans le Sheet).
+function montrerConsigne(relance) {
   const bloc = document.querySelector('#baptiste-tunnel .baptiste-bloc');
   document.getElementById('baptiste-ok-btn').style.display = 'none';
-  if (baptisteConsigneDlg) {
+  const dlg = (relance && baptisteRelanceDlg) ? baptisteRelanceDlg : baptisteConsigneDlg;
+  if (dlg) {
     bloc.classList.add('mode-consigne');
     document.getElementById('baptiste-tunnel').style.display = 'block';
     baptisteEcrit = true;
-    typewriteBloc(document.getElementById('baptiste-txt'), baptisteConsigneDlg.texte, () => {
+    typewriteBloc(document.getElementById('baptiste-txt'), dlg.texte, () => {
       baptisteEcrit = false;
       baptisteValisesActives = true;
     });
@@ -2123,7 +2127,7 @@ function choisirValise(zone) {
       : null;
     baptisteTunnelIdx++;
     const phrases = row ? splitPhrasesBaptiste(row.texte) : ['...'];
-    montrerSequenceBaptiste(phrases, false, montrerConsigne);
+    montrerSequenceBaptiste(phrases, false, () => montrerConsigne(true)); // relance courte
   }
 }
 
