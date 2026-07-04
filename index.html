@@ -2179,7 +2179,7 @@ function showCabines(lieu) {
     const t = (d.type || '').toLowerCase().trim();
     const p = (d.personnage || '').toLowerCase().trim();
     // On exclut les types fonctionnels (succès, narration, etc.)
-    const typeFonctionnel = ['fin_succes','fin_succes_2','fin_succes_3','fin_echec','narration','qcm','choix','reponse_incorrecte'].includes(t);
+    const typeFonctionnel = ['fin_succes','fin_succes_2','fin_succes_3','fin_succes_4','fin_echec','narration','qcm','choix','reponse_incorrecte'].includes(t);
     return p === 'victor' && !typeFonctionnel;
   });
   if (arrivedlg) {
@@ -2253,8 +2253,11 @@ function ouvrirCabine(idx, contenu, lieu) {
   }
 
   if (contenu === 'oscar') {
-    document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/Oscar.jpg)`;
     oscarVisites++;
+    // À partir de la 4e visite (4e meuj), la cabine d'Oscar bascule sur oscarbis.jpg,
+    // et le reste pour toute visite supplémentaire.
+    const ecranOscar = (oscarVisites >= 4) ? 'ecrans/oscarbis.jpg' : 'ecrans/Oscar.jpg';
+    document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}${ecranOscar})`;
     // Son d'Oscar joué à l'ouverture de sa cabine ET à CHAQUE ramassage du meuj (sur l'animation).
     const lieuToilettes = G.lieux.find(l => l.id === 'toilettes');
     if (lieuToilettes) playSonLieu(lieuToilettes); // son à l'arrivée dans la cabine d'Oscar
@@ -2288,12 +2291,17 @@ function ouvrirCabine(idx, contenu, lieu) {
       dlg.style.display = 'block';
       showOscarPhrase();
     } else {
-      // 2e visite : fin_succes_2 ; 3e visite et + : fin_succes_3
-      const typeOscar = (oscarVisites === 2) ? 'fin_succes_2' : 'fin_succes_3';
-      let d = G.dialogues.find(dd => dd.lieu_id === 'toilettes' && dd.type === typeOscar);
-      // Repli sur fin_succes_2 si fin_succes_3 n'existe pas encore dans le Sheet
-      if (!d && typeOscar === 'fin_succes_3') {
-        d = G.dialogues.find(dd => dd.lieu_id === 'toilettes' && dd.type === 'fin_succes_2');
+      // 2e visite : fin_succes_2 ; 3e : fin_succes_3 ; 4e et + : fin_succes_4.
+      let typeOscar;
+      if (oscarVisites === 2) typeOscar = 'fin_succes_2';
+      else if (oscarVisites === 3) typeOscar = 'fin_succes_3';
+      else typeOscar = 'fin_succes_4';
+      // Repli en cascade si le type n'existe pas encore dans le Sheet (4→3→2).
+      const fallbacksOscar = ['fin_succes_4', 'fin_succes_3', 'fin_succes_2'];
+      let d = null;
+      for (let i = Math.max(0, fallbacksOscar.indexOf(typeOscar)); i < fallbacksOscar.length; i++) {
+        d = G.dialogues.find(dd => dd.lieu_id === 'toilettes' && dd.type === fallbacksOscar[i]);
+        if (d) break;
       }
       showDialogue('Oscar', d ? d.texte : '', 'Prendre le meuj', () => {
         forcerAnimationObjet('meuj'); // animation même si le meuj est déjà en inventaire
