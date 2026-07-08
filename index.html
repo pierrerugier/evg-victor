@@ -808,6 +808,23 @@ async function init() {
     document.documentElement.style.setProperty('--font', `'${G.config.font_family}', sans-serif`);
   }
 
+  // Titre + icône de l'ajout à l'écran d'accueil (iOS), éditables depuis le Sheet :
+  // config.app_titre = titre affiché sous l'icône ; config.app_icone = chemin de
+  // l'image (relatif au dépôt, ex. "icons/app-icon.png", ou URL complète).
+  // iOS lit ces valeurs au moment de "Ajouter à l'écran d'accueil", donc les
+  // mettre à jour après le chargement de la config suffit.
+  if (G.config.app_titre) {
+    document.title = G.config.app_titre;
+    const metaTitre = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (metaTitre) metaTitre.setAttribute('content', G.config.app_titre);
+  }
+  if (G.config.app_icone) {
+    const ic = String(G.config.app_icone).trim();
+    const url = /^https?:\/\//.test(ic) ? ic : (BASE + ic);
+    document.querySelectorAll('link[rel="apple-touch-icon"], link[rel="icon"]')
+      .forEach(l => l.setAttribute('href', url));
+  }
+
   // Loading simplifié : juste le fond Victor + préchargement en silence
   document.getElementById('loading-cover').style.backgroundImage = `url(${BASE}ecrans/Victors-laoding.jpg)`;
 
