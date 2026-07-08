@@ -263,6 +263,31 @@ html, body {
   font-size: 12px; margin-top: 6px; min-height: 14px;
 }
 
+/* ── POP-UP PUB PARODIE ── */
+#pub-overlay {
+  position: absolute; inset: 0; z-index: 300;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+}
+#pub-overlay.open { display: flex; }
+#pub-box {
+  position: relative; width: 85%; line-height: 0;
+  border: 4px solid var(--rose); border-radius: 6px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+}
+#pub-img { width: 100%; height: auto; display: block; border-radius: 3px; }
+#pub-close {
+  position: absolute; top: 8px; right: 8px;
+  min-width: 30px; height: 30px; padding: 0 6px;
+  border-radius: 50%;
+  background: var(--rose); color: #000;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font); font-weight: 800; font-size: 15px; line-height: 1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  -webkit-tap-highlight-color: transparent; user-select: none;
+}
+#pub-close.actif { cursor: pointer; }
+
 /* ── HALL ── */
 #screen-hall { position: relative; }
 #hall-pins { position: absolute; inset: 0; z-index: 10; }
@@ -680,6 +705,14 @@ html, body {
   </div>
 </div>
 
+<!-- POP-UP PUB PARODIE (hall, après 20 s d'inactivité, une seule fois) -->
+<div id="pub-overlay">
+  <div id="pub-box">
+    <img id="pub-img" src="" alt="">
+    <div id="pub-close">5</div>
+  </div>
+</div>
+
 <!-- OBJET POPUP -->
 <div id="objet-popup">
   <img id="objet-popup-img" src="" alt="">
@@ -820,6 +853,9 @@ async function init() {
   };
   document.addEventListener('click', retryAudio);
   document.addEventListener('touchstart', retryAudio);
+  // Toute interaction sur le hall réarme le décompte d'inactivité de la pub.
+  document.addEventListener('click', resetPubTimer);
+  document.addEventListener('touchstart', resetPubTimer);
 }
 
 function collectImages() {
@@ -853,6 +889,59 @@ function showScreen(id) {
   }
   // Fausses phrases de chargement : ne défilent que sur l'écran titre.
   if (id === 'loading') startLoadingPhrases(); else stopLoadingPhrases();
+  // Pop-up pub parodie : minuteur d'inactivité armé uniquement sur le hall.
+  if (id === 'hall') { if (tutoDone && !pubVue) armPubTimer(); }
+  else clearPubIdleTimer();
+}
+
+// ── POP-UP PUB PARODIE (hall) ──
+// Après 20 s sans interaction sur le hall, une fausse pub plein écran apparaît,
+// une seule fois par partie. Countdown 5→0 puis croix pour fermer.
+let pubVue = false;              // n'apparaît qu'une fois par partie
+let pubIdleTimer = null;         // minuteur d'inactivité (20 s)
+let pubCountdownTimer = null;    // décompte 5→0
+const PUB_IDLE_MS = 20000;
+
+function clearPubIdleTimer() { if (pubIdleTimer) { clearTimeout(pubIdleTimer); pubIdleTimer = null; } }
+function armPubTimer() {
+  clearPubIdleTimer();
+  if (pubVue) return;
+  pubIdleTimer = setTimeout(showPub, PUB_IDLE_MS);
+}
+// Réinitialise le décompte d'inactivité à chaque interaction (uniquement sur le hall).
+function resetPubTimer() {
+  if (pubVue) return;
+  if (document.querySelector('#screen-hall.active') && tutoDone) armPubTimer();
+  else clearPubIdleTimer();
+}
+function showPub() {
+  if (pubVue) return;
+  pubVue = true;
+  clearPubIdleTimer();
+  const overlay = document.getElementById('pub-overlay');
+  const img = document.getElementById('pub-img');
+  const close = document.getElementById('pub-close');
+  img.src = BASE + 'ecrans/pubkorpus.jpg';
+  close.classList.remove('actif');
+  close.onclick = null;
+  let n = 5;
+  close.textContent = n;
+  overlay.classList.add('open');
+  pubCountdownTimer = setInterval(() => {
+    n--;
+    if (n > 0) {
+      close.textContent = n;
+    } else {
+      clearInterval(pubCountdownTimer); pubCountdownTimer = null;
+      close.textContent = '✕';           // le décompte devient une croix
+      close.classList.add('actif');
+      close.onclick = fermerPub;
+    }
+  }, 1000);
+}
+function fermerPub() {
+  document.getElementById('pub-overlay').classList.remove('open');
+  if (pubCountdownTimer) { clearInterval(pubCountdownTimer); pubCountdownTimer = null; }
 }
 
 // ── FAUSSES PHRASES DE CHARGEMENT (écran titre) ──
@@ -1171,6 +1260,7 @@ function nextTuto() {
     if (!pinsReveles) revealPins(); // repli : tuto à moins de 2 phrases
     // Démarrer l'animation du hall 5 secondes après la fin du tuto
     hallAnimTimer = setTimeout(startHallAnim, 5000);
+    armPubTimer(); // armer le décompte d'inactivité de la pub (on est sur le hall)
   } else {
     renderTuto();
   }
