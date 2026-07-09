@@ -78,7 +78,9 @@ html, body {
 /* BOUTON RETOUR */
 #btn-retour-hall, #btn-retour-titre {
   position: absolute;
-  top: 14px; left: 14px;
+  /* Descend sous la barre de statut iPhone en mode "app" plein écran
+     (safe-area), sinon reste à 14px du haut. */
+  top: calc(env(safe-area-inset-top, 0px) + 14px); left: 14px;
   z-index: 50;
   background: rgba(0,0,0,0.75);
   color: #fff;
@@ -244,7 +246,8 @@ html, body {
 #cheat-bar {
   position: absolute; top: 0; left: 0; right: 0;
   z-index: 200; display: none;
-  padding: 10px 14px 12px;
+  /* padding haut augmenté de la safe-area iPhone (mode app plein écran) */
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 12px;
   background: rgba(0,0,0,0.88);
   box-shadow: 0 2px 12px rgba(0,0,0,0.6);
 }
@@ -626,7 +629,7 @@ html, body {
 <!-- VALISES -->
 <div id="screen-valises" class="screen">
   <div class="bg" id="valises-bg"></div>
-  <button id="btn-retour-hall-valises" style="position:absolute;top:14px;left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
+  <button id="btn-retour-hall-valises" style="position:absolute;top:calc(env(safe-area-inset-top, 0px) + 14px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
   <div id="valises-overlay"></div>
   <div id="baptiste-tunnel">
     <div class="baptiste-bloc">
@@ -640,7 +643,7 @@ html, body {
 <!-- CABINES -->
 <div id="screen-cabines" class="screen">
   <div class="bg" id="cabines-bg"></div>
-  <button style="position:absolute;top:14px;left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
+  <button style="position:absolute;top:calc(env(safe-area-inset-top, 0px) + 14px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
   <div id="cabines-overlay"></div>
   <div id="cabine-dlg">
     <div class="dlg-bloc" style="background:rgba(0,0,0,0.8);padding:10px 12px;margin-bottom:6px;">
@@ -694,7 +697,7 @@ html, body {
 
 <!-- FIN -->
 <div id="screen-fin" class="screen">
-  <button id="btn-retour-titre-fin" onclick="location.reload()" style="position:absolute;top:14px;left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;">← Titre</button>
+  <button id="btn-retour-titre-fin" onclick="location.reload()" style="position:absolute;top:calc(env(safe-area-inset-top, 0px) + 14px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;">← Titre</button>
   <div id="fin-bg"></div>
   <div id="fin-textes">
     <div id="fin-ligne1">Algarve, Portugal</div>
