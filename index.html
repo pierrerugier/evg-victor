@@ -78,9 +78,9 @@ html, body {
 /* BOUTON RETOUR */
 #btn-retour-hall, #btn-retour-titre {
   position: absolute;
-  /* Descend sous la barre de statut iPhone en mode "app" plein écran
-     (safe-area), sinon reste à 14px du haut. */
-  top: calc(env(safe-area-inset-top, 0px) + 14px); left: 14px;
+  /* Collé juste sous la barre de statut iPhone (safe-area) en mode "app"
+     plein écran ; minimum 12px du haut en navigateur classique. */
+  top: max(calc(env(safe-area-inset-top, 0px) + 4px), 12px); left: 14px;
   z-index: 50;
   background: rgba(0,0,0,0.75);
   color: #fff;
@@ -97,7 +97,7 @@ html, body {
 /* INVENTAIRE ICON */
 .inv-btn {
   position: absolute;
-  top: calc(10px + env(safe-area-inset-top, 0px)); right: 10px;
+  top: max(calc(env(safe-area-inset-top, 0px) + 2px), 8px); right: 10px;
   width: 64px; height: 64px;
   z-index: 50;
   background: none; border: none;
@@ -108,7 +108,7 @@ html, body {
 /* BOUTON MUTE - à gauche du bouton inventaire, plus petit, blanc transparent */
 .mute-btn {
   position: absolute;
-  top: calc(80px + env(safe-area-inset-top, 0px)); right: 22px;
+  top: max(calc(env(safe-area-inset-top, 0px) + 70px), 76px); right: 22px;
   width: 40px; height: 40px;
   z-index: 50;
   background: rgba(255,255,255,0.15);
@@ -629,7 +629,7 @@ html, body {
 <!-- VALISES -->
 <div id="screen-valises" class="screen">
   <div class="bg" id="valises-bg"></div>
-  <button id="btn-retour-hall-valises" style="position:absolute;top:calc(env(safe-area-inset-top, 0px) + 14px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
+  <button id="btn-retour-hall-valises" style="position:absolute;top:max(calc(env(safe-area-inset-top, 0px) + 4px), 12px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
   <div id="valises-overlay"></div>
   <div id="baptiste-tunnel">
     <div class="baptiste-bloc">
@@ -643,7 +643,7 @@ html, body {
 <!-- CABINES -->
 <div id="screen-cabines" class="screen">
   <div class="bg" id="cabines-bg"></div>
-  <button style="position:absolute;top:calc(env(safe-area-inset-top, 0px) + 14px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
+  <button style="position:absolute;top:max(calc(env(safe-area-inset-top, 0px) + 4px), 12px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
   <div id="cabines-overlay"></div>
   <div id="cabine-dlg">
     <div class="dlg-bloc" style="background:rgba(0,0,0,0.8);padding:10px 12px;margin-bottom:6px;">
@@ -697,7 +697,7 @@ html, body {
 
 <!-- FIN -->
 <div id="screen-fin" class="screen">
-  <button id="btn-retour-titre-fin" onclick="location.reload()" style="position:absolute;top:calc(env(safe-area-inset-top, 0px) + 14px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;">← Titre</button>
+  <button id="btn-retour-titre-fin" onclick="location.reload()" style="position:absolute;top:max(calc(env(safe-area-inset-top, 0px) + 4px), 12px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;">← Titre</button>
   <div id="fin-bg"></div>
   <div id="fin-textes">
     <div id="fin-ligne1">Algarve, Portugal</div>
