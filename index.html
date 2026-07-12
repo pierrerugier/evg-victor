@@ -542,11 +542,16 @@ html, body {
 #fin-ligne1.show, #fin-ligne2.show { opacity: 1; transform: translateY(0); }
 #fin-ligne1 { font-size: 30px; font-weight: 800; letter-spacing: 0.03em; }
 #fin-ligne2 { font-size: 17px; font-weight: 600; letter-spacing: 0.08em; margin-top: 8px; }
-#fin-rejouer {
+#fin-btns {
   display: none;
   position: absolute; bottom: 5%; left: 5%; width: 90%; z-index: 10;
 }
-#fin-rejouer.show { display: block; }
+#fin-btns.show { display: block; }
+/* "Rejouer" : même gabarit que le bouton rose, mais noir transparent (DA du jeu). */
+#fin-rejouer {
+  margin-top: 10px;
+  background: rgba(0,0,0,0.75); color: #fff;
+}
 #fin-fondu {
   position: absolute; inset: 0; background: #fff;
   z-index: 60; opacity: 1; pointer-events: none;
@@ -703,7 +708,10 @@ html, body {
     <div id="fin-ligne1">Algarve, Portugal</div>
     <div id="fin-ligne2">Bon voyage !</div>
   </div>
-  <button class="btn-cta" id="fin-rejouer" onclick="location.reload()">Rejouer</button>
+  <div id="fin-btns">
+    <button class="btn-cta" id="fin-tournoi" onclick="window.location.href='https://victors2026.netlify.app/'">Victor's Tournament</button>
+    <button class="btn-cta" id="fin-rejouer" onclick="location.reload()">Rejouer</button>
+  </div>
   <div id="fin-fondu"></div>
 </div>
 
@@ -2953,11 +2961,11 @@ function showFin() {
   const fondu = document.getElementById('fin-fondu');
   const l1 = document.getElementById('fin-ligne1');
   const l2 = document.getElementById('fin-ligne2');
-  const btn = document.getElementById('fin-rejouer');
-  // État initial : voile blanc opaque, textes et bouton masqués.
+  const btns = document.getElementById('fin-btns');
+  // État initial : voile blanc opaque, textes et boutons masqués.
   l1.classList.remove('show');
   l2.classList.remove('show');
-  btn.classList.remove('show');
+  btns.classList.remove('show');
   fondu.classList.remove('clear');
   void fondu.offsetWidth; // force le reflow pour (re)jouer la transition
 
@@ -2974,7 +2982,7 @@ function showFin() {
   requestAnimationFrame(() => fondu.classList.add('clear'));    // démarre le fondu (2 s)
   setTimeout(() => l1.classList.add('show'), 2000);            // "Algarve, Portugal" à 2 s
   setTimeout(() => l2.classList.add('show'), 3000);            // "Bon voyage !" à 3 s
-  setTimeout(() => btn.classList.add('show'), 5000);          // bouton "Rejouer" à 5 s
+  setTimeout(() => btns.classList.add('show'), 5000);         // boutons Tournament + Rejouer à 5 s
 }
 
 // ══════════════════════════════════════════════════════════
