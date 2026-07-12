@@ -1613,6 +1613,38 @@ function startBgMusic() {
   });
 }
 
+// ── SON DE TAP ──
+// Petit "tick" synthétisé (Web Audio, ~60 ms) joué à chaque tap sur un bouton.
+// Pas de fichier à charger : zéro latence. Respecte le mute global.
+// Volume réglable depuis le Sheet : config.son_tap_volume (défaut 0.15, 0 = désactivé).
+let tapAudioCtx = null;
+function playTapSound() {
+  const raw = parseFloat(G && G.config && G.config.son_tap_volume);
+  const volume = isNaN(raw) ? 0.15 : raw;
+  if (volume <= 0 || isMuted) return;
+  try {
+    if (!tapAudioCtx) tapAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (tapAudioCtx.state === 'suspended') tapAudioCtx.resume();
+    const t = tapAudioCtx.currentTime;
+    const osc = tapAudioCtx.createOscillator();
+    const gain = tapAudioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(900, t);
+    osc.frequency.exponentialRampToValueAtTime(600, t + 0.05);
+    gain.gain.setValueAtTime(volume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    osc.connect(gain);
+    gain.connect(tapAudioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.07);
+  } catch (e) { /* Web Audio indisponible : pas de tick, pas d'erreur */ }
+}
+// pointerdown (et non click) : le son part dès que le doigt touche, plus réactif.
+document.addEventListener('pointerdown', (e) => {
+  const btn = e.target && e.target.closest ? e.target.closest('button') : null;
+  if (btn && !btn.disabled) playTapSound();
+}, { capture: true, passive: true });
+
 // Son de lieu : joué PAR-DESSUS la musique de fond (n'affecte pas bgMusic).
 function playSound(path) {
   if (!path) return;
