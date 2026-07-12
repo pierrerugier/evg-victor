@@ -2331,7 +2331,12 @@ let lambertClicks = 0;            // compteur avant l'interruption de Q
 let lambertClickable = false;     // le briquet ne réagit qu'entre les dialogues
 let lambertEcrit = false;         // bloque pendant qu'un message s'écrit
 let lambertArriveeLignes = [], lambertQLignes = [];
-const LAMBERT_SEUIL = 15;         // nb de clics avant que Q interrompe
+// Nb de clics avant que Q interrompe — réglable depuis le Sheet
+// (config.lambert_seuil), défaut 15.
+function lambertSeuil() {
+  const n = parseInt(G && G.config && G.config.lambert_seuil);
+  return (n > 0) ? n : 15;
+}
 
 // Élément Audio réutilisable pour le briquet : préchargé une fois puis rejoué à
 // chaque clic (currentTime=0 + play). Bien plus fiable sur iOS que de recréer un
@@ -2415,7 +2420,7 @@ function cliquerBriquet() {
   jouerSonLambert();
   lambertValide = true; // le pin est validé dès le 1er clic
   lambertClicks++;
-  if (lambertClicks >= LAMBERT_SEUIL) {
+  if (lambertClicks >= lambertSeuil()) {
     lambertClicks = 0;
     lambertClickable = false;
     // Interruption de Q, puis on peut recliquer.
