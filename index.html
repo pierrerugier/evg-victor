@@ -513,6 +513,19 @@ html, body {
 .baptiste-bloc.mode-consigne .dlg-nom { display: none; }
 .baptiste-bloc.mode-consigne #baptiste-txt { color: var(--narration-color, #FFDE00); }
 
+/* ── LAMBERT (briquet) ── */
+#screen-lambert { position: relative; }
+#lambert-overlay { position: absolute; inset: 0; z-index: 10; }
+#lambert-zone {
+  position: absolute; left: 26%; top: 42%; width: 48%; height: 22%;
+  cursor: pointer; z-index: 11;
+  -webkit-tap-highlight-color: rgba(255,110,199,0.25);
+}
+#lambert-dlg {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+  padding: 10px 14px 6px; display: none;
+}
+
 /* ── CABINES (OSCAR) ── */
 #screen-cabines { position: relative; }
 #cabines-overlay { position: absolute; inset: 0; z-index: 10; }
@@ -642,6 +655,20 @@ html, body {
       <div class="dlg-txt" id="baptiste-txt"></div>
     </div>
     <button class="btn-cta" id="baptiste-ok-btn" style="display:none;">Continuer</button>
+  </div>
+</div>
+
+<!-- LAMBERT (briquet / boîte à lambert) -->
+<div id="screen-lambert" class="screen">
+  <div class="bg" id="lambert-bg"></div>
+  <button style="position:absolute;top:max(calc(env(safe-area-inset-top, 0px) + 4px), 12px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
+  <div id="lambert-overlay"></div>
+  <div id="lambert-dlg">
+    <div class="baptiste-bloc">
+      <div class="dlg-nom" id="lambert-nom"></div>
+      <div class="dlg-txt" id="lambert-txt"></div>
+    </div>
+    <button class="btn-cta" id="lambert-btn" style="display:none;">Continuer</button>
   </div>
 </div>
 
@@ -920,7 +947,7 @@ function showScreen(id) {
   // (titre, mini-jeux, écran de fin).
   const invBtn = document.getElementById('inv-btn-global');
   if (invBtn) {
-    const avecInv = ['hall', 'scene', 'valises', 'cabines'];
+    const avecInv = ['hall', 'scene', 'valises', 'cabines', 'lambert'];
     invBtn.style.display = avecInv.includes(id) ? 'block' : 'none';
   }
   // Fausses phrases de chargement : ne défilent que sur l'écran titre.
@@ -1103,9 +1130,10 @@ function appliquerCheat(code) {
   const c = String(code || '').trim().toLowerCase();
   let msgTxt = null;
   if (c === 'complete') {
-    // Tous les objets requis pour la fin + la condition "avoir vu Arthur".
+    // Tous les objets requis pour la fin + les conditions (Arthur vu, lambert validé).
     OBJETS_REQUIS_SECURITE.forEach(id => { if (!inventaire.includes(id)) inventaire.push(id); });
     lieuxVisites.add('arthur');
+    lambertValide = true;
     // Rafraîchir les pins du hall si on y est, pour refléter le nouvel état.
     if (document.querySelector('#screen-hall.active')) setupHall();
     msgTxt = '✓ Tout débloqué — va voir Kupi et fais la traction !';
@@ -1250,6 +1278,8 @@ function lieuEstComplete(lieu) {
   // Sécurité (Kupi) : reste rose jusqu'à la vraie fin du jeu (tous les objets).
   // Ne pas passer blanc juste parce qu'on y est entré pour une traction ratée.
   if (lieu.id === 'securite') return jeuTermine;
+  // Lambert : validé dès qu'on a cliqué au moins une fois sur le briquet.
+  if (lieu.id === 'lambert') return lambertValide;
   if (!lieu.objet_donne) return lieuxVisites.has(lieu.id);
   if (lieu.id === 'toilettes') return oscarVisites >= 2;
   // Rolex : le pin passe blanc dès que la Milgauss a été achetée,
@@ -1691,6 +1721,7 @@ function entrerLieu(id) {
 
   if (id === 'toilettes') { showCabines(lieu); return; }
   if (id === 'enregistrement') { showValises(lieu); return; }
+  if (id === 'lambert') { showLambert(lieu); return; }
 
   document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('scene');
@@ -2286,6 +2317,95 @@ function choisirValise(zone) {
     baptisteTunnelIdx++;
     const phrases = row ? splitPhrasesBaptiste(row.texte) : ['...'];
     montrerSequenceBaptiste(phrases, false, () => montrerConsigne(true)); // relance courte
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// LAMBERT (briquet / boîte à lambert)
+// ══════════════════════════════════════════════════════════
+// Dialogues depuis le Sheet (lieu_id 'lambert') : type 'pnj' = arrivée (Victor),
+// type 'interruption' = phrases de "Q" toutes les 15 clics.
+let lambertValide = false;        // validé dès le 1er clic sur le briquet (requis pour finir)
+let lambertClicks = 0;            // compteur avant l'interruption de Q
+let lambertClickable = false;     // le briquet ne réagit qu'entre les dialogues
+let lambertEcrit = false;         // bloque pendant qu'un message s'écrit
+let lambertArriveeLignes = [], lambertQLignes = [];
+const LAMBERT_SEUIL = 15;         // nb de clics avant que Q interrompe
+
+function showLambert(lieu) {
+  document.getElementById('lambert-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
+  showScreen('lambert');
+
+  const dlgs = G.dialogues.filter(d => d.lieu_id === 'lambert');
+  lambertArriveeLignes = dlgs.filter(d => d.type === 'pnj').sort((a,b) => +a.ordre - +b.ordre);
+  lambertQLignes = dlgs.filter(d => d.type === 'interruption').sort((a,b) => +a.ordre - +b.ordre);
+  lambertClicks = 0;
+  lambertClickable = false;
+
+  // Zone cliquable sur le briquet
+  const overlay = document.getElementById('lambert-overlay');
+  overlay.innerHTML = '';
+  const zone = document.createElement('div');
+  zone.id = 'lambert-zone';
+  zone.onclick = cliquerBriquet;
+  overlay.appendChild(zone);
+
+  // Dialogue d'arrivée de Victor, puis le briquet devient cliquable.
+  if (lambertArriveeLignes.length) {
+    montrerSequenceLambert(lambertArriveeLignes, () => { masquerLambertDlg(); lambertClickable = true; });
+  } else {
+    masquerLambertDlg();
+    lambertClickable = true;
+  }
+}
+
+// Affiche une suite de répliques (avec le nom de chaque ligne) une par une via CONTINUER.
+function montrerSequenceLambert(rows, onDone) {
+  let idx = 0;
+  const nomEl = document.getElementById('lambert-nom');
+  const txtEl = document.getElementById('lambert-txt');
+  const btn = document.getElementById('lambert-btn');
+  document.getElementById('lambert-dlg').style.display = 'block';
+  lambertClickable = false; // pas de clic briquet pendant un dialogue
+  const afficher = () => {
+    const row = rows[idx];
+    nomEl.textContent = row.personnage || '';
+    btn.style.display = 'none';
+    lambertEcrit = true;
+    typewriteBloc(txtEl, row.texte, () => {
+      lambertEcrit = false;
+      btn.textContent = 'Continuer';
+      btn.style.display = 'block';
+      btn.onclick = () => {
+        if (lambertEcrit) return;
+        idx++;
+        if (idx < rows.length) afficher();
+        else { btn.style.display = 'none'; if (onDone) onDone(); }
+      };
+    });
+  };
+  afficher();
+}
+
+function masquerLambertDlg() {
+  document.getElementById('lambert-dlg').style.display = 'none';
+}
+
+function cliquerBriquet() {
+  if (!lambertClickable || lambertEcrit) return;
+  // Son aléatoire parmi lambert1/2/3.mp3 à chaque clic.
+  playSound('son/lambert' + (1 + Math.floor(Math.random() * 3)) + '.mp3');
+  lambertValide = true; // le pin est validé dès le 1er clic
+  lambertClicks++;
+  if (lambertClicks >= LAMBERT_SEUIL) {
+    lambertClicks = 0;
+    lambertClickable = false;
+    // Interruption de Q, puis on peut recliquer.
+    if (lambertQLignes.length) {
+      montrerSequenceLambert(lambertQLignes, () => { masquerLambertDlg(); lambertClickable = true; });
+    } else {
+      lambertClickable = true;
+    }
   }
 }
 
@@ -2909,8 +3029,8 @@ function startTractions(phrases) {
 // Sinon → message d'échec de Kupi directement (pas de "bravo" incohérent).
 function finTractions() {
   const requis = OBJETS_REQUIS_SECURITE;
-  // Tous les objets ET avoir vu Arthur sont nécessaires pour passer.
-  const asTout = requis.every(r => inventaire.includes(r)) && lieuxVisites.has('arthur');
+  // Tous les objets, avoir vu Arthur ET avoir validé la boîte à lambert.
+  const asTout = requis.every(r => inventaire.includes(r)) && lieuxVisites.has('arthur') && lambertValide;
   const popup = dlgList.find(d => d.type === 'popup_succes');
 
   const allerSucces = () => {
