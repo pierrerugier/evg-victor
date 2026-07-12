@@ -2393,8 +2393,8 @@ function masquerLambertDlg() {
 
 function cliquerBriquet() {
   if (!lambertClickable || lambertEcrit) return;
-  // Son aléatoire parmi lambert1/2/3.mp3 à chaque clic.
-  playSound('son/lambert' + (1 + Math.floor(Math.random() * 3)) + '.mp3');
+  // Son du briquet à chaque clic.
+  playSound('son/lambert.mp3');
   lambertValide = true; // le pin est validé dès le 1er clic
   lambertClicks++;
   if (lambertClicks >= LAMBERT_SEUIL) {
