@@ -1584,6 +1584,7 @@ function toggleMute() {
   if (bgMusic) bgMusic.muted = isMuted;
   if (currentSound) currentSound.muted = isMuted;
   if (launchSound) launchSound.muted = isMuted;
+  if (lambertAudio) lambertAudio.muted = isMuted;
   // Basculer l'icône
   const on = document.getElementById('mute-icon-on');
   const off = document.getElementById('mute-icon-off');
@@ -2332,9 +2333,26 @@ let lambertEcrit = false;         // bloque pendant qu'un message s'écrit
 let lambertArriveeLignes = [], lambertQLignes = [];
 const LAMBERT_SEUIL = 15;         // nb de clics avant que Q interrompe
 
+// Élément Audio réutilisable pour le briquet : préchargé une fois puis rejoué à
+// chaque clic (currentTime=0 + play). Bien plus fiable sur iOS que de recréer un
+// new Audio() à chaque clic rapide.
+let lambertAudio = null;
+function jouerSonLambert() {
+  if (!lambertAudio) {
+    lambertAudio = new Audio(BASE + 'son/lambert.mp3');
+    lambertAudio.preload = 'auto';
+  }
+  lambertAudio.muted = isMuted;
+  try { lambertAudio.currentTime = 0; } catch (e) {}
+  lambertAudio.play().catch(() => {});
+}
+
 function showLambert(lieu) {
   document.getElementById('lambert-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('lambert');
+  // Précharger le son du briquet dès l'entrée dans le lieu.
+  if (!lambertAudio) { lambertAudio = new Audio(BASE + 'son/lambert.mp3'); lambertAudio.preload = 'auto'; }
+  lambertAudio.load();
 
   const dlgs = G.dialogues.filter(d => d.lieu_id === 'lambert');
   lambertArriveeLignes = dlgs.filter(d => d.type === 'pnj').sort((a,b) => +a.ordre - +b.ordre);
@@ -2393,8 +2411,8 @@ function masquerLambertDlg() {
 
 function cliquerBriquet() {
   if (!lambertClickable || lambertEcrit) return;
-  // Son du briquet à chaque clic.
-  playSound('son/lambert.mp3');
+  // Son du briquet à chaque clic (élément réutilisable, fiable sur iOS).
+  jouerSonLambert();
   lambertValide = true; // le pin est validé dès le 1er clic
   lambertClicks++;
   if (lambertClicks >= LAMBERT_SEUIL) {
