@@ -997,6 +997,9 @@ async function init() {
     if (btn.disabled) return;
     btn.disabled = true;
     btn.style.opacity = '0.5';
+    // Débloquer/résumer le contexte Web Audio DANS le geste, pour que le fondu de
+    // la musique d'intro (gain Web Audio) fonctionne ensuite (surtout iOS).
+    getAudioCtx();
     // Jouer le jingle sur l'écran titre, attendre qu'il se termine, puis lancer le jeu.
     const jingle = playLaunch();
     const lancerJeu = () => {
@@ -1473,7 +1476,7 @@ function showIntroSequence(onDone) {
   //   - musique d'intro qui fade out sur les 3 secondes entières
   const terminerIntro = () => {
     btn.disabled = true; btn.style.opacity = '0.4';
-    fadeOutMusic(introMusic, 3000);        // fondu sortant musique sur 3 s
+    fadeOutIntroMusic(3000);               // fondu sortant musique sur 3 s (gain Web Audio, marche iOS)
     fondu.style.transitionDuration = '2s';
     fondu.classList.remove('clear');       // fondu AU noir sur 2 s
     const suite = () => {
@@ -1787,27 +1790,56 @@ let bgMusic = null;
 let bgMusicStarted = false;
 let launchSound = null; // jingle de l'écran titre (launch.mp3)
 let introMusic = null;  // musique de l'écran d'intro (intro.mp3)
+let introGain = null;   // gain Web Audio de la musique d'intro (pour le fondu)
 let isMuted = false; // état mute global (musique + sons)
 
-// Musique de l'intro (intro.mp3, en boucle).
+// Contexte audio partagé (aussi utilisé par le son de tap), résumé après un geste.
+function getAudioCtx() {
+  if (!tapAudioCtx) tapAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (tapAudioCtx.state === 'suspended') tapAudioCtx.resume();
+  return tapAudioCtx;
+}
+
+// Musique de l'intro (intro.mp3, en boucle) routée via Web Audio : iOS ignore
+// audio.volume mais respecte le gain Web Audio → permet un vrai fondu sortant.
 function playIntroMusic() {
-  if (introMusic) { introMusic.pause(); }
+  if (introMusic) { try { introMusic.pause(); } catch (e) {} }
   introMusic = new Audio(BASE + 'son/intro.mp3');
   introMusic.loop = true;
-  introMusic.muted = isMuted;
-  introMusic.volume = 1;
+  introMusic.crossOrigin = 'anonymous'; // requis pour router du cross-origin (CORS OK côté raw.githubusercontent)
+  introGain = null;
+  try {
+    const ctx = getAudioCtx();
+    const src = ctx.createMediaElementSource(introMusic);
+    introGain = ctx.createGain();
+    introGain.gain.value = isMuted ? 0 : 1;
+    src.connect(introGain);
+    introGain.connect(ctx.destination);
+  } catch (e) { introGain = null; introMusic.muted = isMuted; } // repli si Web Audio indispo
   introMusic.play().catch(() => {});
 }
-// Fondu sortant du volume d'un élément audio (fade out en code) sur `ms` millisecondes.
-function fadeOutMusic(audio, ms) {
-  if (!audio) return;
-  const v0 = audio.volume, t0 = performance.now();
-  const step = () => {
-    const p = Math.min(1, (performance.now() - t0) / ms);
-    try { audio.volume = v0 * (1 - p); } catch (e) {}
-    if (p < 1 && !audio.paused) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
+
+// Fondu sortant de la musique d'intro sur `ms` ms — via le gain Web Audio (marche
+// sur iOS), avec repli sur le volume pour les navigateurs desktop sans routage.
+function fadeOutIntroMusic(ms) {
+  if (introGain && tapAudioCtx) {
+    const now = tapAudioCtx.currentTime;
+    try {
+      // Rampe linéaire : le volume baisse de façon régulière sur toute la durée,
+      // le fade se sent bien sur les 3 s (au lieu de devenir inaudible trop tôt).
+      introGain.gain.cancelScheduledValues(now);
+      introGain.gain.setValueAtTime(introGain.gain.value, now);
+      introGain.gain.linearRampToValueAtTime(0, now + ms / 1000);
+    } catch (e) {}
+  } else if (introMusic) {
+    const v0 = introMusic.volume, t0 = performance.now();
+    const step = () => {
+      const p = Math.min(1, (performance.now() - t0) / ms);
+      try { introMusic.volume = v0 * (1 - p); } catch (e) {}
+      if (p < 1 && introMusic && !introMusic.paused) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
 }
 
 // Coupe ou réactive tout l'audio du jeu (musique de fond + son de lieu + jingle).
@@ -1817,6 +1849,7 @@ function toggleMute() {
   if (currentSound) currentSound.muted = isMuted;
   if (launchSound) launchSound.muted = isMuted;
   if (introMusic) introMusic.muted = isMuted;
+  if (introGain) { try { introGain.gain.value = isMuted ? 0 : 1; } catch (e) {} }
   if (lambertAudio) lambertAudio.muted = isMuted;
   if (pageAudio) pageAudio.muted = isMuted;
   // Basculer l'icône
