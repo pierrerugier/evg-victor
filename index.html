@@ -960,7 +960,7 @@ async function init() {
   const hallLieu = G.lieux.find(l => l.id === 'hall');
   await preload([
     BASE + 'ecrans/Victors-laoding.jpg',
-    BASE + 'ecrans/intro.jpg',
+    BASE + ecranIntro(),
     hallLieu && hallLieu.ecran ? BASE + hallLieu.ecran : null,
   ].filter(Boolean));
 
@@ -1031,7 +1031,8 @@ function collectImages() {
    'ecrans/Victors-laoding.jpg','ecrans/pullupbase.jpg','ecrans/victor-bodypullup.png',
    'ecrans/montreschoix.jpg','ecrans/Oscar.jpg','ecrans/oscarbis.jpg',
    'ecrans/toilette-50K.jpg','ecrans/toilette-shortbernardini.jpg',
-   'ecrans/pubkorpus.jpg','ecrans/drag.jpg','ecrans/intro.jpg'].forEach(p => urls.push(BASE + p));
+   'ecrans/pubkorpus.jpg','ecrans/drag.jpg'].forEach(p => urls.push(BASE + p));
+  urls.push(BASE + ecranIntro());
   // Image de fin (config 'ecran_fin').
   urls.push(BASE + ((G.config && G.config.ecran_fin) ? G.config.ecran_fin : 'ecrans/fin-faro.jpg'));
   // Toutes les pages du magazine (magazine1..N.jpg) dès le chargement initial.
@@ -1411,6 +1412,10 @@ function peutAcceder(lieu) {
 // INTRO NARRATION : un écran (ecrans/intro.jpg) avec plusieurs blocs jaunes
 // enchaînés (un par ligne 'intro' du Sheet). "Continuer" cliquable seulement
 // après la fin de l'écriture du bloc. Le nombre de blocs = nombre de lignes.
+// Image de fond de l'écran d'intro, éditable via config.intro_ecran (défaut intro1.jpg).
+function ecranIntro() {
+  return (G.config && G.config.intro_ecran) ? G.config.intro_ecran : 'ecrans/intro1.jpg';
+}
 function showIntroSequence(onDone) {
   const blocs = G.dialogues
     .filter(d => d.lieu_id === 'intro')
@@ -1419,7 +1424,7 @@ function showIntroSequence(onDone) {
     .filter(t => t && String(t).trim());
   if (blocs.length === 0) { onDone(); return; } // aucune narration → direct au hall
 
-  document.getElementById('intro-bg').style.backgroundImage = `url(${BASE}ecrans/intro.jpg)`;
+  document.getElementById('intro-bg').style.backgroundImage = `url(${BASE}${ecranIntro()})`;
   showScreen('intro');
   const txtEl = document.getElementById('intro-txt');
   const btn = document.getElementById('intro-btn');
