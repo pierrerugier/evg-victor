@@ -526,6 +526,19 @@ html, body {
   padding: 10px 14px 6px; display: none;
 }
 
+/* ── MAGAZINE (Hobbies Magazine) ── */
+#screen-magazine { position: relative; }
+#magazine-bg { background-size: contain; background-color: #000; }
+#magazine-dlg {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+  padding: 10px 14px 6px; display: none;
+}
+#magazine-nav {
+  position: absolute; bottom: 5%; left: 5%; right: 5%; z-index: 20;
+  display: none; gap: 10px;
+}
+#magazine-nav button { flex: 1; }
+
 /* ── CABINES (OSCAR) ── */
 #screen-cabines { position: relative; }
 #cabines-overlay { position: absolute; inset: 0; z-index: 10; }
@@ -669,6 +682,23 @@ html, body {
       <div class="dlg-txt" id="lambert-txt"></div>
     </div>
     <button class="btn-cta" id="lambert-btn" style="display:none;">Continuer</button>
+  </div>
+</div>
+
+<!-- MAGAZINE (Hobbies Magazine feuilletable) -->
+<div id="screen-magazine" class="screen">
+  <div class="bg" id="magazine-bg"></div>
+  <button style="position:absolute;top:max(calc(env(safe-area-inset-top, 0px) + 4px), 12px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
+  <div id="magazine-dlg">
+    <div class="baptiste-bloc">
+      <div class="dlg-nom" id="magazine-nom"></div>
+      <div class="dlg-txt" id="magazine-txt"></div>
+    </div>
+    <button class="btn-cta" id="magazine-feuilleter">Feuilleter</button>
+  </div>
+  <div id="magazine-nav">
+    <button class="btn-sec" id="magazine-prev">← Précédente</button>
+    <button class="btn-cta" id="magazine-next">Suivante →</button>
   </div>
 </div>
 
@@ -1723,6 +1753,7 @@ function entrerLieu(id) {
   if (id === 'toilettes') { showCabines(lieu); return; }
   if (id === 'enregistrement') { showValises(lieu); return; }
   if (id === 'lambert') { showLambert(lieu); return; }
+  if (id === 'magazine') { showMagazine(lieu); return; }
 
   document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('scene');
@@ -2429,6 +2460,57 @@ function cliquerBriquet() {
     } else {
       lambertClickable = true;
     }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// MAGAZINE (Hobbies Magazine feuilletable)
+// ══════════════════════════════════════════════════════════
+// Couverture (lieu.ecran) + réplique Victor (Sheet type 'pnj') + bouton
+// "Feuilleter", puis pages magazine1..N.jpg. Nb de pages réglable via
+// config.magazine_pages (défaut 8).
+let magazineCoverEcran = '';
+let magazineNbPages = 8;
+
+function showMagazine(lieu) {
+  showScreen('magazine');
+  magazineCoverEcran = lieu.ecran;
+  magazineNbPages = (parseInt(G.config && G.config.magazine_pages) > 0)
+    ? parseInt(G.config.magazine_pages) : 8;
+
+  // Réplique de Victor depuis le Sheet.
+  const intro = G.dialogues.find(d => d.lieu_id === 'magazine' && d.type === 'pnj');
+  document.getElementById('magazine-nom').textContent = intro ? (intro.personnage || 'Victor') : 'Victor';
+  document.getElementById('magazine-feuilleter').onclick = () => allerPageMagazine(1);
+
+  // Précharger les pages pour un feuilletage fluide.
+  for (let i = 1; i <= magazineNbPages; i++) { const im = new Image(); im.src = BASE + 'ecrans/magazine' + i + '.jpg'; }
+
+  afficherCouvertureMagazine(intro ? intro.texte : '');
+}
+
+function afficherCouvertureMagazine(texte) {
+  document.getElementById('magazine-bg').style.backgroundImage = `url(${BASE}${magazineCoverEcran})`;
+  document.getElementById('magazine-nav').style.display = 'none';
+  document.getElementById('magazine-dlg').style.display = 'block';
+  if (texte != null) typewriteBloc(document.getElementById('magazine-txt'), texte, () => {});
+}
+
+function allerPageMagazine(p) {
+  if (p <= 0) { afficherCouvertureMagazine(null); return; } // retour à la couverture
+  document.getElementById('magazine-dlg').style.display = 'none';
+  document.getElementById('magazine-nav').style.display = 'flex';
+  document.getElementById('magazine-bg').style.backgroundImage = `url(${BASE}ecrans/magazine${p}.jpg)`;
+  const prev = document.getElementById('magazine-prev');
+  const next = document.getElementById('magazine-next');
+  prev.textContent = '← Précédente';
+  prev.onclick = () => allerPageMagazine(p - 1); // page 1 → retour couverture
+  if (p >= magazineNbPages) {
+    next.textContent = 'Retour au hall';
+    next.onclick = goHall;
+  } else {
+    next.textContent = 'Suivante →';
+    next.onclick = () => allerPageMagazine(p + 1);
   }
 }
 
