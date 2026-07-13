@@ -36,7 +36,7 @@ html, body {
   height: 100dvh;
   overflow: hidden;
   font-family: var(--font);
-  background: #111;
+  background: #000;
   display: flex; align-items: center; justify-content: center;
   touch-action: manipulation;
 }
@@ -58,6 +58,13 @@ html, body {
     max-height: 100dvh;
   }
 }
+/* Mode "app" iOS (ajouté à l'écran d'accueil) : 100dvh peut exclure la zone de
+   l'indicateur home en bas → bande noire. On force le plein écran réel (100vh,
+   safe areas incluses) uniquement dans ce mode, sans toucher au navigateur. */
+@media all and (display-mode: standalone) {
+  html, body { height: 100vh; }
+  #app { height: 100vh; max-height: 100vh; }
+}
 
 /* SCREENS */
 .screen {
@@ -71,7 +78,9 @@ html, body {
 .bg {
   position: absolute; inset: 0;
   background-size: cover;
-  background-position: center top;
+  /* centré : si l'écran est plus haut que l'image (crop vertical), on rogne
+     symétriquement en haut ET en bas au lieu de tout couper en bas. */
+  background-position: center center;
   z-index: 0;
 }
 
@@ -433,9 +442,10 @@ html, body {
   color: var(--narration-color, #FFDE00);
   white-space: pre-wrap;
 }
-/* Fondu noir : l'image apparaît en 1 s depuis le noir. */
+/* Fondu noir : l'image apparaît en 1 s depuis le noir, et recouvre TOUT en sortie
+   (texte + bouton + boutons UI) pour un écran noir total → z-index élevé. */
 #intro-fondu {
-  position: absolute; inset: 0; z-index: 5; background: #000;
+  position: absolute; inset: 0; z-index: 100; background: #000;
   opacity: 1; pointer-events: none; transition: opacity 1s ease;
 }
 #intro-fondu.clear { opacity: 0; }
