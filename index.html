@@ -433,6 +433,21 @@ html, body {
   color: var(--narration-color, #FFDE00);
   white-space: pre-wrap;
 }
+/* Fondu noir : l'image apparaît en 1 s depuis le noir. */
+#intro-fondu {
+  position: absolute; inset: 0; z-index: 5; background: #000;
+  opacity: 1; pointer-events: none; transition: opacity 1s ease;
+}
+#intro-fondu.clear { opacity: 0; }
+/* Spinner de chargement (DA rose) si le reste du jeu n'est pas prêt à la fin de l'intro. */
+#intro-spinner {
+  position: absolute; inset: 0; z-index: 50; display: none;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+}
+#intro-spinner.show { display: flex; }
+#intro-spinner svg { animation: introSpin 0.9s linear infinite; }
+@keyframes introSpin { to { transform: rotate(360deg); } }
 
 /* ── PACMAN ── */
 #screen-pacman { background: #1a1a2e; }
@@ -664,11 +679,17 @@ html, body {
 <!-- INTRO NARRATION (2 écrans entre le titre et le hall) -->
 <div id="screen-intro" class="screen">
   <div class="bg" id="intro-bg"></div>
+  <div id="intro-fondu"></div>
   <div id="intro-zone">
     <div id="intro-bloc">
       <div id="intro-txt"></div>
     </div>
     <button class="btn-cta" id="intro-btn">Continuer</button>
+  </div>
+  <div id="intro-spinner">
+    <svg viewBox="0 0 50 50" width="46" height="46" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="25" cy="25" r="20" fill="none" stroke="var(--rose)" stroke-width="5" stroke-linecap="round" stroke-dasharray="80 50"/>
+    </svg>
   </div>
 </div>
 
@@ -876,6 +897,8 @@ const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzze8-guvyUP7j04Mg_RW
 
 let BASE = '';
 let G = null; // { config, objets, lieux, dialogues }
+let preloadRestePromise = null; // préchargement d'arrière-plan (tout sauf le critique)
+let preloadResteDone = false;   // vrai quand ce préchargement est terminé
 
 // Liste des slots affichés dans l'inventaire (inclut la montre, qu'on récupère
 // chez Rolex puis qu'on donne à Charles).
@@ -978,9 +1001,9 @@ async function init() {
     const jingle = playLaunch();
     const lancerJeu = () => {
       stopLaunch();
-      startBgMusic();
-      // Deux écrans de narration avant le hall, puis hall + tuto.
-      showIntroSequence(() => { goHall(); showTuto(); });
+      // Pas de musique de hall ici : l'intro a sa propre musique (intro.mp3).
+      // ambiance-hall démarre seulement à l'arrivée au hall (onDone).
+      showIntroSequence(() => { goHall(); showTuto(); startBgMusic(); });
       btn.disabled = false;
       btn.style.opacity = '1';
     };
@@ -1008,7 +1031,8 @@ async function init() {
   const retryAudio = () => {
     const surTitre = document.querySelector('#screen-loading.active');
     const surFin = document.querySelector('#screen-fin.active');
-    if (!surTitre && !surFin && !jeuTermine && !bgMusicStarted && !bgMusic) startBgMusic();
+    const surIntro = document.querySelector('#screen-intro.active');
+    if (!surTitre && !surFin && !surIntro && !jeuTermine && !bgMusicStarted && !bgMusic) startBgMusic();
   };
   document.addEventListener('click', retryAudio);
   document.addEventListener('touchstart', retryAudio);
@@ -1019,8 +1043,9 @@ async function init() {
   // Précharger TOUT LE RESTE en arrière-plan (sans bloquer l'affichage du titre).
   // Le joueur voit le titre + lit l'intro pendant que les décors, le magazine,
   // les icônes, etc. se chargent → plus d'attente noire au démarrage, et tout est
-  // prêt quand il arrive au hall.
-  preload(collectImages());
+  // prêt quand il arrive au hall. On mémorise l'état pour l'intro (spinner si pas fini).
+  preloadRestePromise = preload(collectImages());
+  preloadRestePromise.then(() => { preloadResteDone = true; });
 }
 
 function collectImages() {
@@ -1416,6 +1441,10 @@ function peutAcceder(lieu) {
 function ecranIntro() {
   return (G.config && G.config.intro_ecran) ? G.config.intro_ecran : 'ecrans/intro1.jpg';
 }
+function montrerSpinnerIntro(show) {
+  const sp = document.getElementById('intro-spinner');
+  if (sp) sp.classList.toggle('show', !!show);
+}
 function showIntroSequence(onDone) {
   const blocs = G.dialogues
     .filter(d => d.lieu_id === 'intro')
@@ -1424,10 +1453,38 @@ function showIntroSequence(onDone) {
     .filter(t => t && String(t).trim());
   if (blocs.length === 0) { onDone(); return; } // aucune narration → direct au hall
 
+  // Image + fondu noir + musique d'intro dès le début du fondu.
   document.getElementById('intro-bg').style.backgroundImage = `url(${BASE}${ecranIntro()})`;
-  showScreen('intro');
+  const fondu = document.getElementById('intro-fondu');
+  const zone = document.getElementById('intro-zone');
   const txtEl = document.getElementById('intro-txt');
   const btn = document.getElementById('intro-btn');
+  fondu.classList.remove('clear');
+  zone.style.display = 'none'; // texte caché pendant le fondu
+  montrerSpinnerIntro(false);
+  showScreen('intro');
+  playIntroMusic();                 // intro.mp3 dès le début du fondu
+  void fondu.offsetWidth;           // reflow → commit opacity:1 avant de lancer le fondu
+  fondu.classList.add('clear');     // fondu noir → image (1 s), fiable même onglet arrière-plan
+
+  // Fin de l'intro : fondu sortant sur la musique, attendre le préchargement
+  // (spinner si besoin), puis hall (où ambiance-hall démarrera via onDone).
+  const terminerIntro = () => {
+    btn.disabled = true; btn.style.opacity = '0.4';
+    fadeOutMusic(introMusic, 1000);
+    const suite = () => {
+      if (introMusic) { introMusic.pause(); introMusic = null; }
+      onDone();
+    };
+    if (preloadResteDone) {
+      setTimeout(suite, 1000);      // laisser le fondu musical se finir
+    } else {
+      montrerSpinnerIntro(true);    // le reste n'est pas prêt → petit spinner
+      Promise.all([preloadRestePromise, new Promise(r => setTimeout(r, 1000))])
+        .then(() => { montrerSpinnerIntro(false); suite(); });
+    }
+  };
+
   let i = 0;
   const afficher = () => {
     btn.disabled = true; btn.style.opacity = '0.4';
@@ -1438,10 +1495,11 @@ function showIntroSequence(onDone) {
       if (btn.disabled) return;
       i++;
       if (i < blocs.length) afficher();
-      else onDone();
+      else terminerIntro();
     };
   };
-  afficher();
+  // Le texte commence quand l'image est totalement visible (fin du fondu, 1 s).
+  setTimeout(() => { zone.style.display = 'block'; afficher(); }, 1000);
 }
 
 // TUTO
@@ -1726,7 +1784,29 @@ let currentSound = null;
 let bgMusic = null;
 let bgMusicStarted = false;
 let launchSound = null; // jingle de l'écran titre (launch.mp3)
+let introMusic = null;  // musique de l'écran d'intro (intro.mp3)
 let isMuted = false; // état mute global (musique + sons)
+
+// Musique de l'intro (intro.mp3, en boucle).
+function playIntroMusic() {
+  if (introMusic) { introMusic.pause(); }
+  introMusic = new Audio(BASE + 'son/intro.mp3');
+  introMusic.loop = true;
+  introMusic.muted = isMuted;
+  introMusic.volume = 1;
+  introMusic.play().catch(() => {});
+}
+// Fondu sortant du volume d'un élément audio (fade out en code) sur `ms` millisecondes.
+function fadeOutMusic(audio, ms) {
+  if (!audio) return;
+  const v0 = audio.volume, t0 = performance.now();
+  const step = () => {
+    const p = Math.min(1, (performance.now() - t0) / ms);
+    try { audio.volume = v0 * (1 - p); } catch (e) {}
+    if (p < 1 && !audio.paused) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 
 // Coupe ou réactive tout l'audio du jeu (musique de fond + son de lieu + jingle).
 function toggleMute() {
@@ -1734,6 +1814,7 @@ function toggleMute() {
   if (bgMusic) bgMusic.muted = isMuted;
   if (currentSound) currentSound.muted = isMuted;
   if (launchSound) launchSound.muted = isMuted;
+  if (introMusic) introMusic.muted = isMuted;
   if (lambertAudio) lambertAudio.muted = isMuted;
   if (pageAudio) pageAudio.muted = isMuted;
   // Basculer l'icône
