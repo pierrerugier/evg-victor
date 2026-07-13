@@ -1460,6 +1460,7 @@ function showIntroSequence(onDone) {
   const txtEl = document.getElementById('intro-txt');
   const btn = document.getElementById('intro-btn');
   fondu.classList.remove('clear');
+  fondu.style.transitionDuration = '1s'; // fondu d'entrée sur 1 s
   zone.style.display = 'none'; // texte caché pendant le fondu
   montrerSpinnerIntro(false);
   showScreen('intro');
@@ -1467,22 +1468,23 @@ function showIntroSequence(onDone) {
   void fondu.offsetWidth;           // reflow → commit opacity:1 avant de lancer le fondu
   fondu.classList.add('clear');     // fondu noir → image (1 s), fiable même onglet arrière-plan
 
-  // Fin de l'intro : fondu sortant sur la musique, attendre le préchargement
-  // (spinner si besoin), puis hall (où ambiance-hall démarrera via onDone).
+  // Fin de l'intro (clic "C'est parti") :
+  //   - fondu AU noir sur 2 s, puis 1 s d'écran noir (3 s au total) avant le hall
+  //   - musique d'intro qui fade out sur les 3 secondes entières
   const terminerIntro = () => {
     btn.disabled = true; btn.style.opacity = '0.4';
-    fadeOutMusic(introMusic, 1000);
+    fadeOutMusic(introMusic, 3000);        // fondu sortant musique sur 3 s
+    fondu.style.transitionDuration = '2s';
+    fondu.classList.remove('clear');       // fondu AU noir sur 2 s
     const suite = () => {
       if (introMusic) { introMusic.pause(); introMusic = null; }
-      onDone();
+      onDone();                            // hall + ambiance-hall
     };
-    if (preloadResteDone) {
-      setTimeout(suite, 1000);      // laisser le fondu musical se finir
-    } else {
-      montrerSpinnerIntro(true);    // le reste n'est pas prêt → petit spinner
-      Promise.all([preloadRestePromise, new Promise(r => setTimeout(r, 1000))])
-        .then(() => { montrerSpinnerIntro(false); suite(); });
-    }
+    // Après 3 s (2 s fondu + 1 s écran noir) : hall, ou spinner si pas encore prêt.
+    setTimeout(() => {
+      if (preloadResteDone) suite();
+      else { montrerSpinnerIntro(true); preloadRestePromise.then(() => { montrerSpinnerIntro(false); suite(); }); }
+    }, 3000);
   };
 
   let i = 0;
