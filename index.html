@@ -439,14 +439,14 @@ html, body {
   opacity: 1; pointer-events: none; transition: opacity 1s ease;
 }
 #intro-fondu.clear { opacity: 0; }
-/* Spinner de chargement (DA rose) si le reste du jeu n'est pas prêt à la fin de l'intro. */
-#intro-spinner {
-  position: absolute; inset: 0; z-index: 50; display: none;
+/* Spinner de chargement global (DA rose) : attente titre→intro ou intro→hall. */
+#app-spinner {
+  position: absolute; inset: 0; z-index: 300; display: none;
   align-items: center; justify-content: center;
   background: rgba(0,0,0,0.55);
 }
-#intro-spinner.show { display: flex; }
-#intro-spinner svg { animation: introSpin 0.9s linear infinite; }
+#app-spinner.show { display: flex; }
+#app-spinner svg { animation: introSpin 0.9s linear infinite; }
 @keyframes introSpin { to { transform: rotate(360deg); } }
 
 /* ── PACMAN ── */
@@ -667,6 +667,13 @@ html, body {
   <div id="cheat-msg"></div>
 </div>
 
+<!-- SPINNER GLOBAL (chargement : titre→intro, intro→hall) -->
+<div id="app-spinner">
+  <svg viewBox="0 0 50 50" width="46" height="46" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="25" cy="25" r="20" fill="none" stroke="var(--rose)" stroke-width="5" stroke-linecap="round" stroke-dasharray="80 50"/>
+  </svg>
+</div>
+
 <!-- LOADING -->
 <div id="screen-loading" class="screen active">
   <div id="loading-cover"></div>
@@ -685,11 +692,6 @@ html, body {
       <div id="intro-txt"></div>
     </div>
     <button class="btn-cta" id="intro-btn">Continuer</button>
-  </div>
-  <div id="intro-spinner">
-    <svg viewBox="0 0 50 50" width="46" height="46" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="25" cy="25" r="20" fill="none" stroke="var(--rose)" stroke-width="5" stroke-linecap="round" stroke-dasharray="80 50"/>
-    </svg>
   </div>
 </div>
 
@@ -928,10 +930,14 @@ async function init() {
   // éliminer l'écran noir de démarrage. BASE par défaut le temps d'avoir la config.
   const BASE_DEFAUT = 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
   document.getElementById('loading-cover').style.backgroundImage = `url(${BASE_DEFAUT}ecrans/Victors-laoding.jpg)`;
+  // Phrases de chargement dès le tout début (occupent pendant le fetch config),
+  // avec la liste par défaut ; elles seront relancées avec la liste du Sheet après.
+  startLoadingPhrases();
 
   const res = await fetch(SHEET_URL + '?v=' + Date.now());
   G = await res.json();
   BASE = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
+  startLoadingPhrases(); // relancer avec les phrases du Sheet (config chargée)
 
   // Slot inventaire générique "montre" : on l'injecte s'il n'existe pas
   // dans le Sheet, pour que la montre choisie chez Rolex s'affiche.
@@ -987,11 +993,12 @@ async function init() {
     hallLieu && hallLieu.ecran ? BASE + hallLieu.ecran : null,
   ].filter(Boolean));
 
-  // Afficher le bouton Jouer (le jingle launch se joue au clic, pas au chargement)
+  // Précharger la musique d'intro dès maintenant (elle sera attendue avant l'intro).
+  preloadIntroMusic();
+
+  // Afficher le bouton Jouer (le jingle launch se joue au clic, pas au chargement).
+  // Les phrases de chargement tournent déjà depuis le début (voir plus haut).
   document.getElementById('btn-jouer').style.display = 'block';
-  // Lancer les fausses phrases de chargement (l'écran titre est déjà actif au démarrage,
-  // il ne passe donc pas par showScreen au premier affichage).
-  startLoadingPhrases();
   document.getElementById('btn-jouer').onclick = () => {
     const btn = document.getElementById('btn-jouer');
     if (btn.disabled) return;
@@ -1006,7 +1013,15 @@ async function init() {
       stopLaunch();
       // Pas de musique de hall ici : l'intro a sa propre musique (intro.mp3).
       // ambiance-hall démarre seulement à l'arrivée au hall (onDone).
-      showIntroSequence(() => { goHall(); showTuto(); startBgMusic(); });
+      const demarrerIntro = () => showIntroSequence(() => { goHall(); showTuto(); startBgMusic(); });
+      // Attendre que intro.mp3 soit prête (spinner si besoin) pour que l'intro
+      // démarre AVEC sa musique, pas en retard.
+      if (introMusicReady) {
+        montrerSpinner(true);
+        introMusicReady.then(() => { montrerSpinner(false); demarrerIntro(); });
+      } else {
+        demarrerIntro();
+      }
       btn.disabled = false;
       btn.style.opacity = '1';
     };
@@ -1444,8 +1459,8 @@ function peutAcceder(lieu) {
 function ecranIntro() {
   return (G.config && G.config.intro_ecran) ? G.config.intro_ecran : 'ecrans/intro1.jpg';
 }
-function montrerSpinnerIntro(show) {
-  const sp = document.getElementById('intro-spinner');
+function montrerSpinner(show) {
+  const sp = document.getElementById('app-spinner');
   if (sp) sp.classList.toggle('show', !!show);
 }
 function showIntroSequence(onDone) {
@@ -1465,7 +1480,7 @@ function showIntroSequence(onDone) {
   fondu.classList.remove('clear');
   fondu.style.transitionDuration = '1s'; // fondu d'entrée sur 1 s
   zone.style.display = 'none'; // texte caché pendant le fondu
-  montrerSpinnerIntro(false);
+  montrerSpinner(false);
   showScreen('intro');
   playIntroMusic();                 // intro.mp3 dès le début du fondu
   void fondu.offsetWidth;           // reflow → commit opacity:1 avant de lancer le fondu
@@ -1486,7 +1501,7 @@ function showIntroSequence(onDone) {
     // Après 3 s (2 s fondu + 1 s écran noir) : hall, ou spinner si pas encore prêt.
     setTimeout(() => {
       if (preloadResteDone) suite();
-      else { montrerSpinnerIntro(true); preloadRestePromise.then(() => { montrerSpinnerIntro(false); suite(); }); }
+      else { montrerSpinner(true); preloadRestePromise.then(() => { montrerSpinner(false); suite(); }); }
     }, 3000);
   };
 
@@ -1789,8 +1804,9 @@ let currentSound = null;
 let bgMusic = null;
 let bgMusicStarted = false;
 let launchSound = null; // jingle de l'écran titre (launch.mp3)
-let introMusic = null;  // musique de l'écran d'intro (intro.mp3)
+let introMusic = null;  // élément <audio> de la musique d'intro (intro.mp3), préchargé
 let introGain = null;   // gain Web Audio de la musique d'intro (pour le fondu)
+let introMusicReady = null; // promesse résolue quand intro.mp3 est prêt à jouer
 let isMuted = false; // état mute global (musique + sons)
 
 // Contexte audio partagé (aussi utilisé par le son de tap), résumé après un geste.
@@ -1800,13 +1816,26 @@ function getAudioCtx() {
   return tapAudioCtx;
 }
 
-// Musique de l'intro (intro.mp3, en boucle) routée via Web Audio : iOS ignore
-// audio.volume mais respecte le gain Web Audio → permet un vrai fondu sortant.
-function playIntroMusic() {
-  if (introMusic) { try { introMusic.pause(); } catch (e) {} }
-  introMusic = new Audio(BASE + 'son/intro.mp3');
+// Précharger intro.mp3 (élément <audio>) dès l'init pour qu'il soit prêt quand
+// l'intro démarre — évite que l'intro commence sans musique / avec du retard.
+function preloadIntroMusic() {
+  introMusic = new Audio();
   introMusic.loop = true;
+  introMusic.preload = 'auto';
   introMusic.crossOrigin = 'anonymous'; // requis pour router du cross-origin (CORS OK côté raw.githubusercontent)
+  introMusicReady = new Promise((resolve) => {
+    const ok = () => resolve();
+    introMusic.addEventListener('canplaythrough', ok, { once: true });
+    introMusic.addEventListener('error', ok, { once: true });
+    setTimeout(ok, 8000); // filet : ne jamais bloquer indéfiniment
+  });
+  introMusic.src = BASE + 'son/intro.mp3';
+  introMusic.load();
+}
+
+// Lancer la musique d'intro (déjà préchargée), routée via Web Audio pour le fondu.
+function playIntroMusic() {
+  if (!introMusic) preloadIntroMusic(); // filet
   introGain = null;
   try {
     const ctx = getAudioCtx();
@@ -1816,6 +1845,7 @@ function playIntroMusic() {
     src.connect(introGain);
     introGain.connect(ctx.destination);
   } catch (e) { introGain = null; introMusic.muted = isMuted; } // repli si Web Audio indispo
+  try { introMusic.currentTime = 0; } catch (e) {}
   introMusic.play().catch(() => {});
 }
 
