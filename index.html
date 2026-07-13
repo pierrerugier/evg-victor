@@ -528,9 +528,9 @@ html, body {
 
 /* ── MAGAZINE (Hobbies Magazine) ── */
 #screen-magazine { position: relative; }
-/* Magazine : page entière visible et CENTRÉE (la classe .bg colle en haut, ce
-   qui laissait un vide en bas sur les écrans plus hauts que 9:16 type iPhone). */
-#magazine-bg { background-size: contain; background-position: center center; background-color: #000; }
+/* Magazine : même rendu que les autres décors (classe .bg = cover + center top :
+   remplit l'écran en hauteur, rogne les côtés). Pas d'override → pas de letterbox
+   ni de répétition. */
 #magazine-dlg {
   position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
   padding: 10px 14px 6px; display: none;
