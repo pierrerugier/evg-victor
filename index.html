@@ -538,6 +538,11 @@ html, body {
   display: none; gap: 10px;
 }
 #magazine-nav button { flex: 1; }
+/* Commentaire de Victor par page, affiché 1 s après le changement de page. */
+#magazine-page-dlg {
+  position: absolute; bottom: calc(5% + 62px); left: 0; right: 0; z-index: 21;
+  padding: 0 14px; display: none;
+}
 
 /* ── CABINES (OSCAR) ── */
 #screen-cabines { position: relative; }
@@ -695,6 +700,12 @@ html, body {
       <div class="dlg-txt" id="magazine-txt"></div>
     </div>
     <button class="btn-cta" id="magazine-feuilleter">Feuilleter</button>
+  </div>
+  <div id="magazine-page-dlg">
+    <div class="baptiste-bloc">
+      <div class="dlg-nom" id="magazine-page-nom">Victor</div>
+      <div class="dlg-txt" id="magazine-page-txt"></div>
+    </div>
   </div>
   <div id="magazine-nav">
     <button class="btn-sec" id="magazine-prev">← Précédente</button>
@@ -2476,6 +2487,14 @@ function cliquerBriquet() {
 let magazineCoverEcran = '';
 let magazineNbPages = 8;
 let magazineLu = false;   // vrai quand on a atteint la dernière page (requis pour finir)
+let magazinePageLignes = {};    // { numéro de page → réplique } (Sheet type 'page')
+let magazinePageDlgTimer = null; // délai avant l'affichage du commentaire de page
+
+function masquerDlgPageMagazine() {
+  if (magazinePageDlgTimer) { clearTimeout(magazinePageDlgTimer); magazinePageDlgTimer = null; }
+  const el = document.getElementById('magazine-page-dlg');
+  if (el) el.style.display = 'none';
+}
 // Bruit de page tournée (élément réutilisable préchargé, fiable iOS).
 let pageAudio = null;
 function jouerSonPage() {
@@ -2496,6 +2515,13 @@ function showMagazine(lieu) {
   document.getElementById('magazine-nom').textContent = intro ? (intro.personnage || 'Victor') : 'Victor';
   document.getElementById('magazine-feuilleter').onclick = () => { jouerSonPage(); allerPageMagazine(1); };
 
+  // Commentaires par page (Sheet type 'page', ordre = numéro de page). Optionnels.
+  magazinePageLignes = {};
+  G.dialogues.filter(d => d.lieu_id === 'magazine' && d.type === 'page').forEach(d => {
+    const p = parseInt(d.ordre);
+    if (p > 0 && d.texte && String(d.texte).trim()) magazinePageLignes[p] = d;
+  });
+
   // Précharger les pages pour un feuilletage fluide.
   for (let i = 1; i <= magazineNbPages; i++) { const im = new Image(); im.src = BASE + 'ecrans/magazine' + i + '.jpg'; }
 
@@ -2503,6 +2529,7 @@ function showMagazine(lieu) {
 }
 
 function afficherCouvertureMagazine(texte) {
+  masquerDlgPageMagazine();
   document.getElementById('magazine-bg').style.backgroundImage = `url(${BASE}${magazineCoverEcran})`;
   document.getElementById('magazine-nav').style.display = 'none';
   document.getElementById('magazine-dlg').style.display = 'block';
@@ -2510,10 +2537,20 @@ function afficherCouvertureMagazine(texte) {
 }
 
 function allerPageMagazine(p) {
+  masquerDlgPageMagazine(); // cacher le commentaire de la page précédente + annuler son timer
   if (p <= 0) { afficherCouvertureMagazine(null); return; } // retour à la couverture
   document.getElementById('magazine-dlg').style.display = 'none';
   document.getElementById('magazine-nav').style.display = 'flex';
   document.getElementById('magazine-bg').style.backgroundImage = `url(${BASE}ecrans/magazine${p}.jpg)`;
+  // Commentaire de Victor pour cette page, 1 s après le changement (si défini).
+  const ligne = magazinePageLignes[p];
+  if (ligne) {
+    magazinePageDlgTimer = setTimeout(() => {
+      document.getElementById('magazine-page-nom').textContent = ligne.personnage || 'Victor';
+      typewriteBloc(document.getElementById('magazine-page-txt'), ligne.texte, () => {});
+      document.getElementById('magazine-page-dlg').style.display = 'block';
+    }, 1000);
+  }
   const prev = document.getElementById('magazine-prev');
   const next = document.getElementById('magazine-next');
   prev.textContent = '← Précédente';
