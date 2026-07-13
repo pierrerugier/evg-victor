@@ -528,9 +528,16 @@ html, body {
 
 /* ── MAGAZINE (Hobbies Magazine) ── */
 #screen-magazine { position: relative; }
-/* Magazine : même rendu que les autres décors (classe .bg = cover + center top :
-   remplit l'écran en hauteur, rogne les côtés). Pas d'override → pas de letterbox
-   ni de répétition. */
+/* Magazine : toutes les pages empilées en <img> (préchargées/décodées), on bascule
+   juste laquelle est visible → aucun flash noir entre les pages. object-fit:cover
+   + center top reproduit le rendu des autres décors (remplit, rogne les côtés). */
+#magazine-bg { position: absolute; inset: 0; z-index: 0; background: #000; }
+.magazine-img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center top;
+  opacity: 0;
+}
+.magazine-img.active { opacity: 1; }
 #magazine-dlg {
   position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
   padding: 10px 14px 6px; display: none;
@@ -699,7 +706,7 @@ html, body {
 
 <!-- MAGAZINE (Hobbies Magazine feuilletable) -->
 <div id="screen-magazine" class="screen">
-  <div class="bg" id="magazine-bg"></div>
+  <div id="magazine-bg"></div>
   <button style="position:absolute;top:max(calc(env(safe-area-inset-top, 0px) + 4px), 12px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
   <div id="magazine-dlg">
     <div class="baptiste-bloc">
@@ -2503,6 +2510,8 @@ function cliquerBriquet() {
 let magazineCoverEcran = '';
 let magazineNbPages = 8;
 let magazineLu = false;   // vrai quand on a atteint la dernière page (requis pour finir)
+let magazineLayers = [];        // 2 calques <img> (double-buffer, anti-flash)
+let magazineFront = 0;          // index du calque actuellement visible
 let magazinePageLignes = {};    // { numéro de page → réplique } (Sheet type 'page')
 let magazinePageDlgTimer = null; // délai avant l'affichage du commentaire de page
 
@@ -2538,14 +2547,39 @@ function showMagazine(lieu) {
     if (p > 0 && d.texte && String(d.texte).trim()) magazinePageLignes[p] = d;
   });
 
-  // (Les pages sont préchargées au chargement initial du jeu — voir collectImages.)
+  // Double-buffer : 2 calques <img>. On charge la nouvelle image (déjà préchargée
+  // → en cache) sur le calque caché puis on bascule l'opacité → aucun flash noir,
+  // et seulement 2 images décodées à la fois (léger pour la mémoire mobile).
+  const bg = document.getElementById('magazine-bg');
+  bg.innerHTML = '';
+  magazineLayers = [document.createElement('img'), document.createElement('img')];
+  magazineLayers.forEach(im => { im.className = 'magazine-img'; bg.appendChild(im); });
+  magazineFront = 0;
 
   afficherCouvertureMagazine(intro ? intro.texte : '');
 }
 
+// Affiche l'image `src` sans flash : on la met sur le calque caché, on attend
+// qu'elle soit prête (instantané car en cache), puis on croise l'opacité.
+function montrerImageMagazine(src) {
+  const front = magazineLayers[magazineFront];
+  const back = magazineLayers[1 - magazineFront];
+  if (front.src === src) return; // déjà à l'écran
+  const swap = () => {
+    back.onload = null; back.onerror = null;
+    front.classList.remove('active');
+    back.classList.add('active');
+    magazineFront = 1 - magazineFront;
+  };
+  back.onload = swap;
+  back.onerror = swap;
+  back.src = src;
+  if (back.complete && back.src === src) swap(); // déjà en cache → immédiat
+}
+
 function afficherCouvertureMagazine(texte) {
   masquerDlgPageMagazine();
-  document.getElementById('magazine-bg').style.backgroundImage = `url(${BASE}${magazineCoverEcran})`;
+  montrerImageMagazine(BASE + magazineCoverEcran);
   document.getElementById('magazine-nav').style.display = 'none';
   document.getElementById('magazine-dlg').style.display = 'block';
   if (texte != null) typewriteBloc(document.getElementById('magazine-txt'), texte, () => {});
@@ -2556,7 +2590,7 @@ function allerPageMagazine(p) {
   if (p <= 0) { afficherCouvertureMagazine(null); return; } // retour à la couverture
   document.getElementById('magazine-dlg').style.display = 'none';
   document.getElementById('magazine-nav').style.display = 'flex';
-  document.getElementById('magazine-bg').style.backgroundImage = `url(${BASE}ecrans/magazine${p}.jpg)`;
+  montrerImageMagazine(BASE + 'ecrans/magazine' + p + '.jpg');
   // Commentaire de Victor pour cette page, 1 s après le changement (si défini).
   const ligne = magazinePageLignes[p];
   if (ligne) {
