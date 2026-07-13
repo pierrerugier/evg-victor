@@ -940,14 +940,20 @@ async function init() {
   // éliminer l'écran noir de démarrage. BASE par défaut le temps d'avoir la config.
   const BASE_DEFAUT = 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
   document.getElementById('loading-cover').style.backgroundImage = `url(${BASE_DEFAUT}ecrans/Victors-laoding.jpg)`;
-  // Phrases de chargement dès le tout début (occupent pendant le fetch config),
-  // avec la liste par défaut ; elles seront relancées avec la liste du Sheet après.
+  // Phrases de chargement dès le tout début (occupent pendant le fetch config).
+  // Pas de liste par défaut : on rejoue la DERNIÈRE liste du Sheet mise en cache
+  // au dernier lancement (localStorage). Au tout 1er lancement (aucun cache),
+  // rien ne s'affiche jusqu'à ce que la config arrive — puis la vraie liste tourne.
   startLoadingPhrases();
 
   const res = await fetch(SHEET_URL + '?v=' + Date.now());
   G = await res.json();
   BASE = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
-  startLoadingPhrases(); // relancer avec les phrases du Sheet (config chargée)
+  // Mémoriser la liste du Sheet pour l'afficher dès le début au prochain lancement.
+  try {
+    if (G.config.phrases_chargement) localStorage.setItem(PHRASES_CACHE_KEY, String(G.config.phrases_chargement));
+  } catch (e) {}
+  startLoadingPhrases(); // relancer avec la liste (fraîche) du Sheet
 
   // Slot inventaire générique "montre" : on l'injecte s'il n'existe pas
   // dans le Sheet, pour que la montre choisie chez Rolex s'affiche.
@@ -1177,20 +1183,19 @@ function fermerPub() {
 // Modifiables/ajoutables depuis le back end : ligne `phrases_chargement`
 // de l'onglet config du Sheet, séparées par des « | ».
 let loadingPhrasesTimer = null;
-const PHRASES_CHARGEMENT_DEFAUT = [
-  '...chargement des métadonnées...',
-  '...calibrage du narguilé...',
-  '...synchronisation des meujs de cess...',
-  '...vérification des passeports...',
-  '...polissage du putter...',
-  '...comptage des billets...',
-  '...réveil de Pierre...',
-  '...optimisation des tractions...',
-];
+const PHRASES_CACHE_KEY = 'evg_phrases_chargement';
+function parsePhrases(raw) {
+  return raw ? String(raw).split('|').map(s => s.trim()).filter(Boolean) : [];
+}
+// Aucune liste par défaut : on veut TA liste du Sheet. Si la config n'est pas
+// encore chargée, on utilise la dernière liste du Sheet mise en cache au
+// lancement précédent. Au tout premier lancement (aucun cache), liste vide →
+// rien tant que le Sheet n'a pas répondu.
 function getPhrasesChargement() {
   const raw = G && G.config && G.config.phrases_chargement;
-  const list = raw ? String(raw).split('|').map(s => s.trim()).filter(Boolean) : [];
-  return list.length ? list : PHRASES_CHARGEMENT_DEFAUT;
+  const list = parsePhrases(raw);
+  if (list.length) return list;
+  try { return parsePhrases(localStorage.getItem(PHRASES_CACHE_KEY)); } catch (e) { return []; }
 }
 // Durée d'affichage proportionnelle au nombre de mots :
 // 3 mots = 0,4 s, +0,2 s par mot supplémentaire (4 = 0,6 s, 5 = 0,8 s, etc.).
@@ -1213,6 +1218,7 @@ function startLoadingPhrases() {
   const el = document.getElementById('loading-phrases');
   if (!el) return;
   const phrases = getPhrasesChargement();
+  if (!phrases.length) return; // pas encore de liste (1er lancement, avant config)
   // Ordre aléatoire : on pioche dans un sac mélangé, reconstitué une fois vidé
   // (évite de répéter une phrase juste avant qu'elles soient toutes passées).
   let sac = [];
@@ -1368,18 +1374,25 @@ let typewriterTimeout = null;
 function typewrite(el, text, speed, onDone) {
   if (typewriterTimeout) clearTimeout(typewriterTimeout);
   el.textContent = '';
-  let i = 0;
   const len = text.length;
+  if (len === 0) { if (onDone) onDone(); return; }
+  // On ajoute les caractères un par un à un nœud texte existant (appendData)
+  // au lieu de réécrire tout le textContent à chaque frame : évite de recréer
+  // le nœud + relayouter tout le bloc à chaque caractère. Rendu identique mais
+  // bien moins coûteux → même vitesse réelle sur un long paragraphe (intro) que
+  // sur une réplique courte.
+  const node = document.createTextNode('');
+  el.appendChild(node);
+  let i = 0;
   function step() {
     if (i < len) {
-      el.textContent = text.slice(0, i + 1);
+      node.appendData(text[i]);
       i++;
       typewriterTimeout = setTimeout(step, speed);
     } else {
       if (onDone) onDone();
     }
   }
-  if (len === 0) { if (onDone) onDone(); return; }
   step();
 }
 
