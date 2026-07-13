@@ -83,6 +83,17 @@ html, body {
   background-position: center center;
   z-index: 0;
 }
+/* Fond du hall (hall.jpg / drag.jpg) : images ALLONGÉES pour montrer toute la
+   largeur. Sur un iPhone (plus étroit que l'image), un `cover` rognerait les
+   côtés → largeur incomplète. On force donc la largeur pleine (100%) et on laisse
+   la hauteur suivre le ratio, centrée : si l'image est plus haute que l'écran on
+   rogne haut+bas symétriquement, sinon une fine bande noire apparaît en haut ET
+   en bas (au lieu de tout en bas). */
+#hall-bg {
+  background-size: 100% auto;
+  background-position: center center;
+  background-color: #000;
+}
 
 /* BOUTON RETOUR */
 #btn-retour-hall, #btn-retour-titre {
