@@ -1448,8 +1448,11 @@ function revealPins() {
   const stagger = n > 1 ? (total - animDur) / (n - 1) : 0;
   pins.forEach((pin, i) => {
     pin.classList.remove('pin-hidden');
-    pin.style.animationDelay = Math.round(i * stagger) + 'ms';
+    const delay = Math.round(i * stagger);
+    pin.style.animationDelay = delay + 'ms';
     pin.classList.add('pin-land');
+    // "Toc" à l'impact : le pin touche vers ~62 % de l'anim d'atterrissage.
+    setTimeout(() => playPinDrop(i), delay + Math.round(animDur * 0.62));
   });
 }
 
@@ -1995,6 +1998,31 @@ document.addEventListener('pointerdown', (e) => {
   const btn = e.target && e.target.closest ? e.target.closest('button') : null;
   if (btn && !btn.disabled) playTapSound();
 }, { capture: true, passive: true });
+
+// Petit "toc" quand un pin atterrit (cascade du tuto) : même timbre que le clic
+// des actions, avec une légère variation de hauteur par pin pour que la pluie de
+// pins sonne comme une cascade plutôt qu'un tir uniforme.
+function playPinDrop(i) {
+  const raw = parseFloat(G && G.config && G.config.son_tap_volume);
+  const volume = isNaN(raw) ? 0.15 : raw;
+  if (volume <= 0 || isMuted) return;
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    const detune = 1 + (((i % 5) - 2) * 0.045); // ~0.91 .. 1.09 selon le pin
+    osc.frequency.setValueAtTime(900 * detune, t);
+    osc.frequency.exponentialRampToValueAtTime(600 * detune, t + 0.05);
+    gain.gain.setValueAtTime(volume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.07);
+  } catch (e) { /* Web Audio indisponible : pas de son, pas d'erreur */ }
+}
 
 // Son de lieu : joué PAR-DESSUS la musique de fond (n'affecte pas bgMusic).
 function playSound(path) {
