@@ -973,7 +973,16 @@ function collectImages() {
   (G.objets || []).forEach(o => o.icon && urls.push(BASE + o.icon));
   ['icons/inventaire.png','icons/inventaire-icon.png',
    'ecrans/Victors-laoding.jpg','ecrans/pullupbase.jpg','ecrans/victor-bodypullup.png',
-   'ecrans/montreschoix.jpg','ecrans/Oscar.jpg','ecrans/toilette-50K.jpg','ecrans/toilette-shortbernardini.jpg'].forEach(p => urls.push(BASE + p));
+   'ecrans/montreschoix.jpg','ecrans/Oscar.jpg','ecrans/oscarbis.jpg',
+   'ecrans/toilette-50K.jpg','ecrans/toilette-shortbernardini.jpg',
+   'ecrans/pubkorpus.jpg','ecrans/drag.jpg'].forEach(p => urls.push(BASE + p));
+  // Image de fin (config 'ecran_fin').
+  urls.push(BASE + ((G.config && G.config.ecran_fin) ? G.config.ecran_fin : 'ecrans/fin-faro.jpg'));
+  // Toutes les pages du magazine (magazine1..N.jpg) dès le chargement initial.
+  if ((G.lieux || []).some(l => l.id === 'magazine')) {
+    const n = (parseInt(G.config && G.config.magazine_pages) > 0) ? parseInt(G.config.magazine_pages) : 8;
+    for (let i = 1; i <= n; i++) urls.push(BASE + 'ecrans/magazine' + i + '.jpg');
+  }
   return urls;
 }
 
@@ -2527,8 +2536,7 @@ function showMagazine(lieu) {
     if (p > 0 && d.texte && String(d.texte).trim()) magazinePageLignes[p] = d;
   });
 
-  // Précharger les pages pour un feuilletage fluide.
-  for (let i = 1; i <= magazineNbPages; i++) { const im = new Image(); im.src = BASE + 'ecrans/magazine' + i + '.jpg'; }
+  // (Les pages sont préchargées au chargement initial du jeu — voir collectImages.)
 
   afficherCouvertureMagazine(intro ? intro.texte : '');
 }
