@@ -901,6 +901,11 @@ let jeuTermine = false; // vrai uniquement à la vraie fin (toutes les missions 
 // INIT
 // ══════════════════════════════════════════════════════════
 async function init() {
+  // Afficher le visuel du titre TOUT DE SUITE (avant même le fetch config) pour
+  // éliminer l'écran noir de démarrage. BASE par défaut le temps d'avoir la config.
+  const BASE_DEFAUT = 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
+  document.getElementById('loading-cover').style.backgroundImage = `url(${BASE_DEFAUT}ecrans/Victors-laoding.jpg)`;
+
   const res = await fetch(SHEET_URL + '?v=' + Date.now());
   G = await res.json();
   BASE = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
@@ -946,11 +951,18 @@ async function init() {
       .forEach(l => l.setAttribute('href', url));
   }
 
-  // Loading simplifié : juste le fond Victor + préchargement en silence
+  // Réafficher le visuel du titre avec le BASE réel (au cas où il diffère du défaut).
   document.getElementById('loading-cover').style.backgroundImage = `url(${BASE}ecrans/Victors-laoding.jpg)`;
 
-  // Précharger tout en silence
-  await preload(collectImages());
+  // Ne précharger QUE le strict nécessaire pour démarrer vite : titre, intro, hall.
+  // Tout le reste est chargé en arrière-plan (fin de init), pendant que le joueur
+  // regarde le titre puis lit l'intro.
+  const hallLieu = G.lieux.find(l => l.id === 'hall');
+  await preload([
+    BASE + 'ecrans/Victors-laoding.jpg',
+    BASE + 'ecrans/intro.jpg',
+    hallLieu && hallLieu.ecran ? BASE + hallLieu.ecran : null,
+  ].filter(Boolean));
 
   // Afficher le bouton Jouer (le jingle launch se joue au clic, pas au chargement)
   document.getElementById('btn-jouer').style.display = 'block';
@@ -1003,6 +1015,12 @@ async function init() {
   // Toute interaction sur le hall réarme le décompte d'inactivité de la pub.
   document.addEventListener('click', resetPubTimer);
   document.addEventListener('touchstart', resetPubTimer);
+
+  // Précharger TOUT LE RESTE en arrière-plan (sans bloquer l'affichage du titre).
+  // Le joueur voit le titre + lit l'intro pendant que les décors, le magazine,
+  // les icônes, etc. se chargent → plus d'attente noire au démarrage, et tout est
+  // prêt quand il arrive au hall.
+  preload(collectImages());
 }
 
 function collectImages() {
