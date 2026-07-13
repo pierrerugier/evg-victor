@@ -419,6 +419,21 @@ html, body {
 #tuto-txt { font-size: 14px; line-height: 1.5; color: var(--narration-color, #FFDE00); }
 /* bouton tuto = rose comme les autres boutons d'action (hérite de .btn-cta) */
 
+/* ── INTRO NARRATION (image + blocs jaunes avant le hall) ── */
+#screen-intro { position: relative; }
+#intro-zone {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  z-index: 40; padding: 14px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+}
+#intro-bloc {
+  background: var(--dlg-bg); padding: 14px 14px 12px; margin-bottom: 10px;
+}
+#intro-txt {
+  font-size: 14px; line-height: 1.5;
+  color: var(--narration-color, #FFDE00);
+  white-space: pre-wrap;
+}
+
 /* ── PACMAN ── */
 #screen-pacman { background: #1a1a2e; }
 /* Zone de jeu : prend l'espace dispo et centre le canvas verticalement */
@@ -644,6 +659,17 @@ html, body {
   <div id="loading-intro"></div>
   <div id="loading-phrases"></div>
   <button class="btn-cta" id="btn-jouer">Jouer</button>
+</div>
+
+<!-- INTRO NARRATION (2 écrans entre le titre et le hall) -->
+<div id="screen-intro" class="screen">
+  <div class="bg" id="intro-bg"></div>
+  <div id="intro-zone">
+    <div id="intro-bloc">
+      <div id="intro-txt"></div>
+    </div>
+    <button class="btn-cta" id="intro-btn">Continuer</button>
+  </div>
 </div>
 
 <!-- HALL -->
@@ -941,8 +967,8 @@ async function init() {
     const lancerJeu = () => {
       stopLaunch();
       startBgMusic();
-      goHall();
-      showTuto();
+      // Deux écrans de narration avant le hall, puis hall + tuto.
+      showIntroSequence(() => { goHall(); showTuto(); });
       btn.disabled = false;
       btn.style.opacity = '1';
     };
@@ -987,7 +1013,7 @@ function collectImages() {
    'ecrans/Victors-laoding.jpg','ecrans/pullupbase.jpg','ecrans/victor-bodypullup.png',
    'ecrans/montreschoix.jpg','ecrans/Oscar.jpg','ecrans/oscarbis.jpg',
    'ecrans/toilette-50K.jpg','ecrans/toilette-shortbernardini.jpg',
-   'ecrans/pubkorpus.jpg','ecrans/drag.jpg'].forEach(p => urls.push(BASE + p));
+   'ecrans/pubkorpus.jpg','ecrans/drag.jpg','ecrans/intro.jpg'].forEach(p => urls.push(BASE + p));
   // Image de fin (config 'ecran_fin').
   urls.push(BASE + ((G.config && G.config.ecran_fin) ? G.config.ecran_fin : 'ecrans/fin-faro.jpg'));
   // Toutes les pages du magazine (magazine1..N.jpg) dès le chargement initial.
@@ -1362,6 +1388,37 @@ function peutAcceder(lieu) {
   const requis = String(lieu.objets_requis || '').trim();
   if (!requis) return true;
   return requis.split(',').map(s => s.trim()).filter(Boolean).every(id => inventaire.includes(id));
+}
+
+// INTRO NARRATION : un écran (ecrans/intro.jpg) avec plusieurs blocs jaunes
+// enchaînés (un par ligne 'intro' du Sheet). "Continuer" cliquable seulement
+// après la fin de l'écriture du bloc. Le nombre de blocs = nombre de lignes.
+function showIntroSequence(onDone) {
+  const blocs = G.dialogues
+    .filter(d => d.lieu_id === 'intro')
+    .sort((a, b) => +a.ordre - +b.ordre)
+    .map(d => d.texte)
+    .filter(t => t && String(t).trim());
+  if (blocs.length === 0) { onDone(); return; } // aucune narration → direct au hall
+
+  document.getElementById('intro-bg').style.backgroundImage = `url(${BASE}ecrans/intro.jpg)`;
+  showScreen('intro');
+  const txtEl = document.getElementById('intro-txt');
+  const btn = document.getElementById('intro-btn');
+  let i = 0;
+  const afficher = () => {
+    btn.disabled = true; btn.style.opacity = '0.4';
+    txtEl.textContent = '';
+    typewriteBloc(txtEl, blocs[i], () => { btn.disabled = false; btn.style.opacity = '1'; });
+    btn.textContent = (i === blocs.length - 1) ? "C'est parti !" : 'Continuer';
+    btn.onclick = () => {
+      if (btn.disabled) return;
+      i++;
+      if (i < blocs.length) afficher();
+      else onDone();
+    };
+  };
+  afficher();
 }
 
 // TUTO
