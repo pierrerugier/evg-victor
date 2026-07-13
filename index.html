@@ -1164,6 +1164,7 @@ function appliquerCheat(code) {
     OBJETS_REQUIS_SECURITE.forEach(id => { if (!inventaire.includes(id)) inventaire.push(id); });
     lieuxVisites.add('arthur');
     lambertValide = true;
+    magazineLu = true;
     // Rafraîchir les pins du hall si on y est, pour refléter le nouvel état.
     if (document.querySelector('#screen-hall.active')) setupHall();
     msgTxt = '✓ Tout débloqué — va voir Kupi et fais la traction !';
@@ -1310,6 +1311,8 @@ function lieuEstComplete(lieu) {
   if (lieu.id === 'securite') return jeuTermine;
   // Lambert : validé dès qu'on a cliqué au moins une fois sur le briquet.
   if (lieu.id === 'lambert') return lambertValide;
+  // Magazine : validé une fois parcouru en entier (dernière page atteinte).
+  if (lieu.id === 'magazine') return magazineLu;
   if (!lieu.objet_donne) return lieuxVisites.has(lieu.id);
   if (lieu.id === 'toilettes') return oscarVisites >= 2;
   // Rolex : le pin passe blanc dès que la Milgauss a été achetée,
@@ -1615,6 +1618,7 @@ function toggleMute() {
   if (currentSound) currentSound.muted = isMuted;
   if (launchSound) launchSound.muted = isMuted;
   if (lambertAudio) lambertAudio.muted = isMuted;
+  if (pageAudio) pageAudio.muted = isMuted;
   // Basculer l'icône
   const on = document.getElementById('mute-icon-on');
   const off = document.getElementById('mute-icon-off');
@@ -2471,6 +2475,15 @@ function cliquerBriquet() {
 // config.magazine_pages (défaut 8).
 let magazineCoverEcran = '';
 let magazineNbPages = 8;
+let magazineLu = false;   // vrai quand on a atteint la dernière page (requis pour finir)
+// Bruit de page tournée (élément réutilisable préchargé, fiable iOS).
+let pageAudio = null;
+function jouerSonPage() {
+  if (!pageAudio) { pageAudio = new Audio(BASE + 'son/page.mp3'); pageAudio.preload = 'auto'; }
+  pageAudio.muted = isMuted;
+  try { pageAudio.currentTime = 0; } catch (e) {}
+  pageAudio.play().catch(() => {});
+}
 
 function showMagazine(lieu) {
   showScreen('magazine');
@@ -2481,7 +2494,7 @@ function showMagazine(lieu) {
   // Réplique de Victor depuis le Sheet.
   const intro = G.dialogues.find(d => d.lieu_id === 'magazine' && d.type === 'pnj');
   document.getElementById('magazine-nom').textContent = intro ? (intro.personnage || 'Victor') : 'Victor';
-  document.getElementById('magazine-feuilleter').onclick = () => allerPageMagazine(1);
+  document.getElementById('magazine-feuilleter').onclick = () => { jouerSonPage(); allerPageMagazine(1); };
 
   // Précharger les pages pour un feuilletage fluide.
   for (let i = 1; i <= magazineNbPages; i++) { const im = new Image(); im.src = BASE + 'ecrans/magazine' + i + '.jpg'; }
@@ -2506,11 +2519,12 @@ function allerPageMagazine(p) {
   prev.textContent = '← Précédente';
   prev.onclick = () => allerPageMagazine(p - 1); // page 1 → retour couverture
   if (p >= magazineNbPages) {
+    magazineLu = true; // magazine parcouru en entier → pin validable / requis pour finir
     next.textContent = 'Retour au hall';
     next.onclick = goHall;
   } else {
     next.textContent = 'Suivante →';
-    next.onclick = () => allerPageMagazine(p + 1);
+    next.onclick = () => { jouerSonPage(); allerPageMagazine(p + 1); }; // bruit de page tournée
   }
 }
 
@@ -3134,8 +3148,12 @@ function startTractions(phrases) {
 // Sinon → message d'échec de Kupi directement (pas de "bravo" incohérent).
 function finTractions() {
   const requis = OBJETS_REQUIS_SECURITE;
-  // Tous les objets, avoir vu Arthur ET avoir validé la boîte à lambert.
-  const asTout = requis.every(r => inventaire.includes(r)) && lieuxVisites.has('arthur') && lambertValide;
+  // Un lieu n'est requis pour finir que s'il est présent et actif dans le Sheet.
+  const lieuActif = (id) => G.lieux.some(l => l.id === id && ['true','vrai','1','oui'].includes(String(l.actif).toLowerCase().trim()));
+  const lambertOk = !lieuActif('lambert') || lambertValide;
+  const magazineOk = !lieuActif('magazine') || magazineLu;
+  // Tous les objets, avoir vu Arthur, validé la boîte à lambert ET lu le magazine.
+  const asTout = requis.every(r => inventaire.includes(r)) && lieuxVisites.has('arthur') && lambertOk && magazineOk;
   const popup = dlgList.find(d => d.type === 'popup_succes');
 
   const allerSucces = () => {
