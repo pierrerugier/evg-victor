@@ -538,6 +538,11 @@ html, body {
   display: none; gap: 10px;
 }
 #magazine-nav button { flex: 1; }
+/* "Suivante" reste rose mais adopte la typo de "Précédente" (même taille, minuscules). */
+#magazine-next {
+  font-size: 13px; font-weight: 600; padding: 12px;
+  text-transform: none; letter-spacing: normal;
+}
 /* Commentaire de Victor par page, affiché 1 s après le changement de page. */
 #magazine-page-dlg {
   position: absolute; bottom: calc(5% + 62px); left: 0; right: 0; z-index: 21;
@@ -2554,7 +2559,7 @@ function allerPageMagazine(p) {
   const prev = document.getElementById('magazine-prev');
   const next = document.getElementById('magazine-next');
   prev.textContent = '← Précédente';
-  prev.onclick = () => allerPageMagazine(p - 1); // page 1 → retour couverture
+  prev.onclick = () => { jouerSonPage(); allerPageMagazine(p - 1); }; // page 1 → retour couverture, avec bruit de page
   if (p >= magazineNbPages) {
     magazineLu = true; // magazine parcouru en entier → pin validable / requis pour finir
     next.textContent = 'Retour au hall';
