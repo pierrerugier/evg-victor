@@ -2317,7 +2317,7 @@ function renderDlg() {
     const isLast = phraseIndex >= phrases.length - 1;
     const isPnjDlg = type === 'pnj' || type === 'victor' || type === 'narration';
     const nextDlgType = dlgList[dlgIndex + 1]?.type;
-    const noMorePnjAfter = !nextDlgType || ['fin_succes','fin_echec','reponse_incorrecte','qcm','choix','tunnel_pacman','tunnel_tractions'].includes(nextDlgType);
+    const noMorePnjAfter = !nextDlgType || ['fin_succes','fin_echec','reponse_incorrecte','qcm','qcm_audio','choix','tunnel_pacman','tunnel_tractions'].includes(nextDlgType);
     // Un mini-jeu (pacman/tractions) suit-il ? Si oui, on ne propose pas l'inventaire.
     const miniJeuSuit = nextDlgType === 'tunnel_pacman' || nextDlgType === 'tunnel_tractions';
     // L'inventaire ne se propose que si le lieu attend vraiment un objet ET qu'aucun mini-jeu ne suit.
@@ -2371,26 +2371,53 @@ function renderDlg() {
       btn.className = 'btn-choix';
       if (court) btn.style.cssText = 'flex:1;min-width:44%;text-align:center;margin:2px;';
       btn.textContent = opt;
-      btn.onclick = () => {
-        const lettre = opt.trim().charAt(0);
-        if (lettre === bonne) {
-          // Bonne réponse : sauter les reponse_incorrecte et aller au prochain dialogue utile
-          phraseIndex = 0;
-          dlgIndex++;
-          // Sauter les entrées reponse_incorrecte
-          while (dlgIndex < dlgList.length && dlgList[dlgIndex].type === 'reponse_incorrecte') {
-            dlgIndex++;
-          }
-          renderDlg();
-        } else {
-          // Mauvaise réponse : afficher message temporaire 3 secondes puis réafficher le QCM
-          const mauvaise = dlgList.find((d, i) => i > dlgIndex && d.type === 'reponse_incorrecte');
-          if (mauvaise) showTempDlg(mauvaise, () => { renderDlg(); }, 3000);
-        }
-      };
+      btn.onclick = () => handleQcmAnswer(opt, bonne);
       choixZone.appendChild(btn);
     });
     // Ajuster après que les choix sont dans le DOM
+    requestAnimationFrame(() => requestAnimationFrame(adjustDlgBottom));
+  }
+
+  // QCM "audio" (deviner ce que dit Paul) : un audio se joue, on choisit la
+  // bonne transcription parmi les propositions — MÊME affichage que le QCM.
+  // meta = "son/paulX.mp3 | A) prop1 | B) prop2 | ... | <bonne lettre>"
+  //   1er token = fichier audio ; dernier = bonne lettre ; milieu = options.
+  // texte = la consigne (ex. "Es-tu capable de comprendre cette phrase ?").
+  else if (type === 'qcm_audio') {
+    const parts = dlg.meta.split('|');
+    const audioFile = parts[0].trim();
+    const bonne = parts[parts.length - 1].trim();
+    const options = parts.slice(1, -1);
+    const court = options.every(o => o.length < 28);
+
+    choixZone.style.display = 'flex';
+    choixZone.style.flexDirection = 'column';
+    choixZone.style.flexWrap = 'nowrap';
+
+    // Bouton "Écouter" (rejouable à volonté).
+    const btnAudio = document.createElement('button');
+    btnAudio.className = 'btn-choix';
+    btnAudio.style.cssText = 'text-align:center;font-weight:700;margin-bottom:6px;';
+    btnAudio.textContent = '▶  Réécouter Paul';
+    btnAudio.onclick = () => playSound(audioFile);
+    choixZone.appendChild(btnAudio);
+
+    // Propositions : même disposition qu'un QCM classique (rangée si courtes).
+    const optWrap = document.createElement('div');
+    optWrap.style.cssText = 'display:flex;width:100%;flex-direction:' +
+      (court ? 'row' : 'column') + ';flex-wrap:' + (court ? 'wrap' : 'nowrap') + ';';
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-choix';
+      if (court) btn.style.cssText = 'flex:1;min-width:44%;text-align:center;margin:2px;';
+      btn.textContent = opt;
+      btn.onclick = () => handleQcmAnswer(opt, bonne);
+      optWrap.appendChild(btn);
+    });
+    choixZone.appendChild(optWrap);
+
+    // L'audio se joue automatiquement dès que la question apparaît.
+    playSound(audioFile);
     requestAnimationFrame(() => requestAnimationFrame(adjustDlgBottom));
   }
 
@@ -2515,6 +2542,23 @@ function renderDlg() {
     // Type inconnu (ex. popup_succes, game_over_pacman, reponse_*) — ignorer et passer au suivant
     dlgIndex++;
     renderDlg();
+  }
+}
+
+// Validation d'une réponse de QCM (texte ou audio) : partagée par les deux types.
+// Bonne lettre → on saute les 'reponse_incorrecte' et on enchaîne (question
+// suivante d'une série, ou dialogue final qui donne l'objet). Mauvaise → message
+// 'reponse_incorrecte' 3 s puis on réaffiche la question.
+function handleQcmAnswer(opt, bonne) {
+  const lettre = opt.trim().charAt(0);
+  if (lettre === bonne) {
+    phraseIndex = 0;
+    dlgIndex++;
+    while (dlgIndex < dlgList.length && dlgList[dlgIndex].type === 'reponse_incorrecte') dlgIndex++;
+    renderDlg();
+  } else {
+    const mauvaise = dlgList.find((d, i) => i > dlgIndex && d.type === 'reponse_incorrecte');
+    if (mauvaise) showTempDlg(mauvaise, () => { renderDlg(); }, 3000);
   }
 }
 
