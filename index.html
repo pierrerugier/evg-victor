@@ -2394,7 +2394,12 @@ function renderDlg() {
     choixZone.style.flexDirection = 'column';
     choixZone.style.flexWrap = 'nowrap';
 
-    // Bouton "Écouter" (rejouable à volonté).
+    // La question et le bouton "Réécouter" forment UN SEUL bloc : on annule la
+    // marge basse du bloc de dialogue (globale à tous les dialogues) pour cette
+    // question uniquement, afin qu'ils soient collés.
+    bloc.style.marginBottom = '0';
+
+    // Bouton "Écouter" (rejouable à volonté), collé sous la question.
     const btnAudio = document.createElement('button');
     btnAudio.className = 'btn-choix';
     btnAudio.style.cssText = 'text-align:center;font-weight:700;margin-bottom:6px;';
