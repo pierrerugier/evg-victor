@@ -1311,22 +1311,36 @@ function fermerCheat() {
 let hallEcranOverride = null;
 
 // ── MEUJ DE CESS (action depuis l'inventaire) ──
-// Clic sur le meuj dans l'inventaire (depuis le hall) → joue cess.mp3, ferme
-// l'inventaire, revient au hall avec l'image "victordetendu.jpg" pendant 5 s,
-// puis retour à l'image normale. Au bout de 3 usages, le meuj disparaît de
+// Clic sur le meuj dans l'inventaire (depuis le hall) → joue cess.mp3. Quand le
+// SON EST FINI, l'inventaire se ferme, on revient au hall avec "victordetendu.jpg"
+// pendant 5 s, et une phrase spéciale (dialogues lieu_id 'Cess') s'affiche dans la
+// bulle, prioritaire sur les phrases d'animation normales ; au bout des 5 s l'image
+// et les phrases normales reviennent. Au bout de 3 usages, le meuj disparaît de
 // l'inventaire (il faut aller en récupérer un autre chez Oscar).
 let cessCount = 0;            // nb d'usages du meuj de cess (disparaît à 3)
+let cessEnCours = false;     // vrai pendant la lecture du son (évite un double clic)
 let cessAudio = null;        // <audio> dédié (indépendant de currentSound → pas coupé au retour hall)
+let cessPhraseTimer = null;  // timer de la phrase spéciale sur le hall
 let hallEcranTemp = null;    // image temporaire du hall (victordetendu, 5 s)
 let hallEcranTempTimer = null;
 const CESS_MAX = 3;          // nb d'usages avant disparition du meuj
-const CESS_DUREE_MS = 5000;  // durée de l'image "détendu" sur le hall
+const CESS_DUREE_MS = 5000;  // durée de l'image "détendu" + phrase spéciale sur le hall
 
-function jouerCess() {
+// Joue cess.mp3 et appelle onEnd À LA FIN du son (ou en cas d'erreur/refus de
+// lecture, pour ne jamais bloquer le jeu).
+function jouerCess(onEnd) {
   if (!cessAudio) { cessAudio = new Audio(BASE + 'son/cess.mp3'); cessAudio.preload = 'auto'; }
   cessAudio.muted = isMuted;
+  let fini = false;
+  const finir = () => { if (fini) return; fini = true; if (onEnd) onEnd(); };
+  cessAudio.onended = finir;
+  cessAudio.onerror = finir;                 // fichier manquant → on enchaîne quand même
   try { cessAudio.currentTime = 0; } catch (e) {}
-  cessAudio.play().catch(() => {});
+  const p = cessAudio.play();
+  if (p && p.catch) p.catch(() => finir()); // lecture refusée → on enchaîne
+  // Filet de sécurité si 'ended' ne se déclenche jamais (rare) : durée connue + marge.
+  const dur = (isFinite(cessAudio.duration) && cessAudio.duration > 0) ? cessAudio.duration : null;
+  setTimeout(finir, dur ? (dur * 1000 + 3000) : 20000);
 }
 
 // Affiche temporairement une image du hall (même dossier que hall.ecran), puis
@@ -1342,18 +1356,48 @@ function hallEcranTemporaire(fichier, dureeMs) {
   }, dureeMs);
 }
 
+// Phrase spéciale "Cess" dans la bulle du hall pendant dureeMs, prioritaire :
+// coupe l'animation normale, puis la relance à la fin.
+function montrerPhraseCess(dureeMs) {
+  const rows = G.dialogues
+    .filter(d => d.lieu_id && d.lieu_id.toLowerCase() === 'cess')
+    .sort((a, b) => +a.ordre - +b.ordre);
+  const bubble = document.getElementById('hall-bubble');
+  const nomEl = document.getElementById('hall-bubble-nom');
+  const txtEl = document.getElementById('hall-bubble-txt');
+  if (!rows.length || !bubble || !txtEl) return;
+  const row = rows[0]; // ordre 1
+  stopHallAnim();                       // couper les phrases normales (et vider la bulle)
+  bubble.style.display = 'block';
+  if (nomEl) nomEl.textContent = row.personnage || 'Victor';
+  txtEl.textContent = '';
+  typewriteBloc(txtEl, row.texte, () => {});
+  if (cessPhraseTimer) clearTimeout(cessPhraseTimer);
+  cessPhraseTimer = setTimeout(() => {
+    cessPhraseTimer = null;
+    bubble.style.display = 'none';
+    if (nomEl) nomEl.textContent = 'Victor';
+    if (tutoDone && document.querySelector('#screen-hall.active')) startHallAnim();
+  }, dureeMs);
+}
+
 function actionMeujCess() {
-  jouerCess();
+  if (cessEnCours) return;      // déjà une lecture en cours → ignorer
+  cessEnCours = true;
   cessCount++;
   if (cessCount >= CESS_MAX) {
     const i = inventaire.indexOf('meuj');
     if (i >= 0) inventaire.splice(i, 1); // le meuj disparaît
     cessCount = 0;                       // reset : il faudra reprendre un meuj
   }
-  closeInv();
-  // Retour au hall avec l'image "détendu" pendant 5 s (image posée AVANT goHall).
-  hallEcranTemporaire('victordetendu.jpg', CESS_DUREE_MS);
-  goHall();
+  // À la FIN du son : fermer l'inventaire, hall "détendu" 5 s + phrase spéciale.
+  jouerCess(() => {
+    cessEnCours = false;
+    closeInv();
+    hallEcranTemporaire('victordetendu.jpg', CESS_DUREE_MS); // image posée AVANT goHall
+    goHall();
+    montrerPhraseCess(CESS_DUREE_MS);
+  });
 }
 
 // ── Cheats "écran de hall" éditables depuis le Sheet ──
