@@ -1101,7 +1101,7 @@ function collectImages() {
    'ecrans/Victors-laoding.jpg','ecrans/pullupbase.jpg','ecrans/victor-bodypullup.png',
    'ecrans/montreschoix.jpg','ecrans/Oscar.jpg','ecrans/oscarbis.jpg',
    'ecrans/toilette-50K.jpg','ecrans/toilette-shortbernardini.jpg',
-   'ecrans/pubkorpus.jpg','ecrans/drag.jpg'].forEach(p => urls.push(BASE + p));
+   'ecrans/pubkorpus.jpg','ecrans/drag.jpg','ecrans/praud.jpg'].forEach(p => urls.push(BASE + p));
   urls.push(BASE + ecranIntro());
   // Image de fin (config 'ecran_fin').
   urls.push(BASE + ((G.config && G.config.ecran_fin) ? G.config.ecran_fin : 'ecrans/fin-faro.jpg'));
@@ -1307,7 +1307,19 @@ function fermerCheat() {
 // Override de session pour l'image de fond du hall (cheat "drag").
 // Remis à null au rechargement → tout revient à la normale au redémarrage.
 let hallEcranOverride = null;
-const CHEATS = ['complete', 'drag'];
+const CHEATS = ['complete', 'drag', 'praud'];
+// Interrupteur d'image de fond du hall : retaper le même code désactive ;
+// taper l'autre code bascule directement sur son image.
+function toggleHallOverride(fichier, nom) {
+  const hall = G.lieux.find(l => l.id === 'hall');
+  const cible = hall ? hall.ecran.replace(/[^/]+$/, fichier) : null;
+  if (hallEcranOverride === cible) {
+    hallEcranOverride = null;
+    return '✓ Mode ' + nom + ' désactivé';
+  }
+  hallEcranOverride = cible;
+  return '✓ Mode ' + nom + ' activé';
+}
 function appliquerCheat(code) {
   const c = String(code || '').trim().toLowerCase();
   let msgTxt = null;
@@ -1321,15 +1333,10 @@ function appliquerCheat(code) {
     if (document.querySelector('#screen-hall.active')) setupHall();
     msgTxt = '✓ Tout débloqué — va voir Kupi et fais la traction !';
   } else if (c === 'drag') {
-    // Interrupteur : 1re fois → image drag.jpg ; en retapant "drag" → retour normal.
-    if (hallEcranOverride) {
-      hallEcranOverride = null;
-      msgTxt = '✓ Mode drag désactivé';
-    } else {
-      const hall = G.lieux.find(l => l.id === 'hall');
-      if (hall) hallEcranOverride = hall.ecran.replace(/[^/]+$/, 'drag.jpg');
-      msgTxt = '✓ Mode drag activé';
-    }
+    msgTxt = toggleHallOverride('drag.jpg', 'drag');
+    if (document.querySelector('#screen-hall.active')) setupHall();
+  } else if (c === 'praud') {
+    msgTxt = toggleHallOverride('praud.jpg', 'praud');
     if (document.querySelector('#screen-hall.active')) setupHall();
   } else {
     return false;
