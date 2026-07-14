@@ -1101,7 +1101,7 @@ function collectImages() {
    'ecrans/Victors-laoding.jpg','ecrans/pullupbase.jpg','ecrans/victor-bodypullup.png',
    'ecrans/montreschoix.jpg','ecrans/Oscar.jpg','ecrans/oscarbis.jpg',
    'ecrans/toilette-50K.jpg','ecrans/toilette-shortbernardini.jpg',
-   'ecrans/pubkorpus.jpg'].forEach(p => urls.push(BASE + p));
+   'ecrans/pubkorpus.jpg','ecrans/victordétendu.jpg'].forEach(p => urls.push(BASE + p));
   // Images des cheats de hall (intégrés + Sheet cheats_hall).
   Object.values(getCheatsHall()).forEach(f => urls.push(BASE + 'ecrans/' + f));
   urls.push(BASE + ecranIntro());
@@ -1310,6 +1310,52 @@ function fermerCheat() {
 // Remis à null au rechargement → tout revient à la normale au redémarrage.
 let hallEcranOverride = null;
 
+// ── MEUJ DE CESS (action depuis l'inventaire) ──
+// Clic sur le meuj dans l'inventaire (depuis le hall) → joue cess.mp3, ferme
+// l'inventaire, revient au hall avec l'image "victordétendu.jpg" pendant 5 s,
+// puis retour à l'image normale. Au bout de 3 usages, le meuj disparaît de
+// l'inventaire (il faut aller en récupérer un autre chez Oscar).
+let cessCount = 0;            // nb d'usages du meuj de cess (disparaît à 3)
+let cessAudio = null;        // <audio> dédié (indépendant de currentSound → pas coupé au retour hall)
+let hallEcranTemp = null;    // image temporaire du hall (victordétendu, 5 s)
+let hallEcranTempTimer = null;
+const CESS_MAX = 3;          // nb d'usages avant disparition du meuj
+const CESS_DUREE_MS = 5000;  // durée de l'image "détendu" sur le hall
+
+function jouerCess() {
+  if (!cessAudio) { cessAudio = new Audio(BASE + 'son/cess.mp3'); cessAudio.preload = 'auto'; }
+  cessAudio.muted = isMuted;
+  try { cessAudio.currentTime = 0; } catch (e) {}
+  cessAudio.play().catch(() => {});
+}
+
+// Affiche temporairement une image du hall (même dossier que hall.ecran), puis
+// revient à l'image normale après dureeMs.
+function hallEcranTemporaire(fichier, dureeMs) {
+  const hall = G.lieux.find(l => l.id === 'hall');
+  hallEcranTemp = hall ? hall.ecran.replace(/[^/]+$/, fichier) : null;
+  if (hallEcranTempTimer) clearTimeout(hallEcranTempTimer);
+  hallEcranTempTimer = setTimeout(() => {
+    hallEcranTemp = null;
+    hallEcranTempTimer = null;
+    if (document.querySelector('#screen-hall.active')) setupHall();
+  }, dureeMs);
+}
+
+function actionMeujCess() {
+  jouerCess();
+  cessCount++;
+  if (cessCount >= CESS_MAX) {
+    const i = inventaire.indexOf('meuj');
+    if (i >= 0) inventaire.splice(i, 1); // le meuj disparaît
+    cessCount = 0;                       // reset : il faudra reprendre un meuj
+  }
+  closeInv();
+  // Retour au hall avec l'image "détendu" pendant 5 s (image posée AVANT goHall).
+  hallEcranTemporaire('victordétendu.jpg', CESS_DUREE_MS);
+  goHall();
+}
+
 // ── Cheats "écran de hall" éditables depuis le Sheet ──
 // Pour AJOUTER un cheat sans repasser par le code : uploader ecrans/<code>.jpg,
 // puis ajouter le code dans la config Sheet, clé `cheats_hall` (séparés par |).
@@ -1449,7 +1495,8 @@ let TUTO = []; // chargé depuis le Sheet onglet 'tuto'
 
 function setupHall() {
   const hall = G.lieux.find(l => l.id === 'hall');
-  const ecranHall = hallEcranOverride || hall.ecran; // cheat "drag" remplace l'image
+  // Priorité : image temporaire (meuj de cess, 5 s) > cheat (drag/praud) > normale.
+  const ecranHall = hallEcranTemp || hallEcranOverride || hall.ecran;
   document.getElementById('hall-bg').style.backgroundImage = `url(${BASE}${ecranHall})`;
 
   const pins = document.getElementById('hall-pins');
@@ -1706,7 +1753,15 @@ function setupInvGrid() {
 
     // Si on est dans une scène qui attend un objet, rendre les slots cliquables
     const needsObjet = currentLieu && currentLieu.objet_a_donner && collected;
-    if (needsObjet) {
+    const surHall = !!document.querySelector('#screen-hall.active');
+    if (id === 'meuj' && collected && surHall) {
+      // Action "meuj de cess" depuis le hall (prioritaire, ne casse pas le don).
+      slot.style.cursor = 'pointer';
+      slot.style.outline = '2px solid transparent';
+      slot.onmouseenter = () => slot.style.outline = '2px solid var(--rose)';
+      slot.onmouseleave = () => slot.style.outline = '2px solid transparent';
+      slot.onclick = () => actionMeujCess();
+    } else if (needsObjet) {
       slot.style.cursor = 'pointer';
       slot.style.outline = '2px solid transparent';
       slot.onmouseenter = () => slot.style.outline = '2px solid var(--rose)';
@@ -1727,6 +1782,7 @@ let objetPopupQueue = [];
 
 function ajouterObjet(id) {
   if (!id || inventaire.includes(id)) return;
+  if (id === 'meuj') cessCount = 0; // nouveau meuj → 3 usages de cess à nouveau
   inventaire.push(id);
   objetPopupQueue.push(id);
   if (objetPopupQueue.length === 1) showNextObjetPopup();
@@ -1736,6 +1792,7 @@ function ajouterObjet(id) {
 // déjà dans l'inventaire (utile pour le meuj repris plusieurs fois chez Oscar).
 function forcerAnimationObjet(id) {
   if (!id) return;
+  if (id === 'meuj') cessCount = 0; // nouveau meuj → 3 usages de cess à nouveau
   if (!inventaire.includes(id)) inventaire.push(id);
   objetPopupQueue.push(id);
   if (objetPopupQueue.length === 1) showNextObjetPopup();
@@ -1952,6 +2009,7 @@ function toggleMute() {
   if (introMusic) introMusic.muted = isMuted;
   if (introGain) { try { introGain.gain.value = isMuted ? 0 : 1; } catch (e) {} }
   if (lambertAudio) lambertAudio.muted = isMuted;
+  if (cessAudio) cessAudio.muted = isMuted;
   if (pageAudio) pageAudio.muted = isMuted;
   // Basculer l'icône
   const on = document.getElementById('mute-icon-on');
