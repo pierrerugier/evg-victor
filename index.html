@@ -1101,7 +1101,9 @@ function collectImages() {
    'ecrans/Victors-laoding.jpg','ecrans/pullupbase.jpg','ecrans/victor-bodypullup.png',
    'ecrans/montreschoix.jpg','ecrans/Oscar.jpg','ecrans/oscarbis.jpg',
    'ecrans/toilette-50K.jpg','ecrans/toilette-shortbernardini.jpg',
-   'ecrans/pubkorpus.jpg','ecrans/drag.jpg','ecrans/praud.jpg'].forEach(p => urls.push(BASE + p));
+   'ecrans/pubkorpus.jpg'].forEach(p => urls.push(BASE + p));
+  // Images des cheats de hall (intégrés + Sheet cheats_hall).
+  Object.values(getCheatsHall()).forEach(f => urls.push(BASE + 'ecrans/' + f));
   urls.push(BASE + ecranIntro());
   // Image de fin (config 'ecran_fin').
   urls.push(BASE + ((G.config && G.config.ecran_fin) ? G.config.ecran_fin : 'ecrans/fin-faro.jpg'));
@@ -1281,7 +1283,7 @@ function setupCheat() {
   if (!input) return;
   // Validation du code : à la saisie (mobile, sans touche entrée) ou via Entrée.
   input.addEventListener('input', () => {
-    if (CHEATS.includes(input.value.trim().toLowerCase())) appliquerCheat(input.value);
+    if (getCheatCodes().includes(input.value.trim().toLowerCase())) appliquerCheat(input.value);
   });
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') appliquerCheat(input.value);
@@ -1307,9 +1309,36 @@ function fermerCheat() {
 // Override de session pour l'image de fond du hall (cheat "drag").
 // Remis à null au rechargement → tout revient à la normale au redémarrage.
 let hallEcranOverride = null;
-const CHEATS = ['complete', 'drag', 'praud'];
+
+// ── Cheats "écran de hall" éditables depuis le Sheet ──
+// Pour AJOUTER un cheat sans repasser par le code : uploader ecrans/<code>.jpg,
+// puis ajouter le code dans la config Sheet, clé `cheats_hall` (séparés par |).
+//   Exemple : cheats_hall = drag|praud|noel|halloween
+// Chaque code X remplace l'image du hall par ecrans/X.jpg (interrupteur).
+// Variante si le fichier ne porte pas le nom du code : "code:fichier.jpg".
+//   Exemple : cheats_hall = noel:hall-noel.jpg
+const CHEATS_HALL_INTEGRES = ['drag', 'praud']; // toujours dispo, même sans Sheet
+function getCheatsHall() {
+  const map = {};
+  const add = (code, fichier) => {
+    code = String(code || '').trim().toLowerCase();
+    if (!code) return;
+    map[code] = (fichier ? String(fichier).trim() : code + '.jpg');
+  };
+  CHEATS_HALL_INTEGRES.forEach(c => add(c));
+  const raw = G && G.config && G.config.cheats_hall;
+  if (raw) String(raw).split('|').forEach(entry => {
+    const parts = entry.split(':');
+    add(parts[0], parts[1]);
+  });
+  return map; // { code: 'fichier.jpg' }
+}
+// Tous les codes reconnus (cheat "complete" + tous les cheats d'écran de hall).
+function getCheatCodes() {
+  return ['complete'].concat(Object.keys(getCheatsHall()));
+}
 // Interrupteur d'image de fond du hall : retaper le même code désactive ;
-// taper l'autre code bascule directement sur son image.
+// taper un autre code bascule directement sur son image.
 function toggleHallOverride(fichier, nom) {
   const hall = G.lieux.find(l => l.id === 'hall');
   const cible = hall ? hall.ecran.replace(/[^/]+$/, fichier) : null;
@@ -1332,14 +1361,12 @@ function appliquerCheat(code) {
     // Rafraîchir les pins du hall si on y est, pour refléter le nouvel état.
     if (document.querySelector('#screen-hall.active')) setupHall();
     msgTxt = '✓ Tout débloqué — va voir Kupi et fais la traction !';
-  } else if (c === 'drag') {
-    msgTxt = toggleHallOverride('drag.jpg', 'drag');
-    if (document.querySelector('#screen-hall.active')) setupHall();
-  } else if (c === 'praud') {
-    msgTxt = toggleHallOverride('praud.jpg', 'praud');
-    if (document.querySelector('#screen-hall.active')) setupHall();
   } else {
-    return false;
+    // Cheat d'écran de hall (intégré ou défini dans le Sheet).
+    const cheatsHall = getCheatsHall();
+    if (!cheatsHall[c]) return false; // code inconnu
+    msgTxt = toggleHallOverride(cheatsHall[c], c);
+    if (document.querySelector('#screen-hall.active')) setupHall();
   }
   const input = document.getElementById('cheat-input');
   const msg = document.getElementById('cheat-msg');
