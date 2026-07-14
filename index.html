@@ -2719,9 +2719,13 @@ function choisirValise(zone) {
 // LAMBERT (briquet / boîte à lambert)
 // ══════════════════════════════════════════════════════════
 // Dialogues depuis le Sheet (lieu_id 'lambert') : type 'pnj' = arrivée (Victor),
-// type 'interruption' = phrases de "Q" toutes les 15 clics.
+// type 'interruption' = phrases de "Q" quand on atteint le seuil de clics.
+// Chaque ligne 'interruption' = UNE série : la 1re fois qu'on atteint le seuil on
+// joue la 1re interruption (ordre le plus petit), la 2e fois la suivante, etc.
+// (escalade). Une fois toutes passées, on rejoue la dernière.
 let lambertValide = false;        // validé dès le 1er clic sur le briquet (requis pour finir)
 let lambertClicks = 0;            // compteur avant l'interruption de Q
+let lambertSerie = 0;             // n° de la prochaine interruption (série) à jouer
 let lambertClickable = false;     // le briquet ne réagit qu'entre les dialogues
 let lambertEcrit = false;         // bloque pendant qu'un message s'écrit
 let lambertArriveeLignes = [], lambertQLignes = [];
@@ -2757,6 +2761,7 @@ function showLambert(lieu) {
   lambertArriveeLignes = dlgs.filter(d => d.type === 'pnj').sort((a,b) => +a.ordre - +b.ordre);
   lambertQLignes = dlgs.filter(d => d.type === 'interruption').sort((a,b) => +a.ordre - +b.ordre);
   lambertClicks = 0;
+  lambertSerie = 0;
   lambertClickable = false;
 
   // Zone cliquable sur le briquet
@@ -2817,9 +2822,12 @@ function cliquerBriquet() {
   if (lambertClicks >= lambertSeuil()) {
     lambertClicks = 0;
     lambertClickable = false;
-    // Interruption de Q, puis on peut recliquer.
+    // Interruption de Q : une DIFFÉRENTE à chaque série (escalade). On avance
+    // d'une interruption, puis on reste sur la dernière une fois toutes passées.
     if (lambertQLignes.length) {
-      montrerSequenceLambert(lambertQLignes, () => { masquerLambertDlg(); lambertClickable = true; });
+      const idx = Math.min(lambertSerie, lambertQLignes.length - 1);
+      lambertSerie++;
+      montrerSequenceLambert([lambertQLignes[idx]], () => { masquerLambertDlg(); lambertClickable = true; });
     } else {
       lambertClickable = true;
     }
