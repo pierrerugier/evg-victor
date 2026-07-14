@@ -2402,9 +2402,10 @@ function renderDlg() {
     btnAudio.onclick = () => playSound(audioFile);
     choixZone.appendChild(btnAudio);
 
-    // Propositions : même disposition qu'un QCM classique (rangée si courtes).
+    // Propositions : même disposition ET même espacement qu'un QCM classique
+    // (gap 4px, comme #choix-zone), pour que les blocs restent bien dissociés.
     const optWrap = document.createElement('div');
-    optWrap.style.cssText = 'display:flex;width:100%;flex-direction:' +
+    optWrap.style.cssText = 'display:flex;width:100%;gap:4px;flex-direction:' +
       (court ? 'row' : 'column') + ';flex-wrap:' + (court ? 'wrap' : 'nowrap') + ';';
     options.forEach(opt => {
       const btn = document.createElement('button');
