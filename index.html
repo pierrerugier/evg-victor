@@ -1101,7 +1101,7 @@ function collectImages() {
    'ecrans/Victors-laoding.jpg','ecrans/pullupbase.jpg','ecrans/victor-bodypullup.png',
    'ecrans/montreschoix.jpg','ecrans/Oscar.jpg','ecrans/oscarbis.jpg',
    'ecrans/toilette-50K.jpg','ecrans/toilette-shortbernardini.jpg',
-   'ecrans/pubkorpus.jpg','ecrans/victordétendu.jpg'].forEach(p => urls.push(BASE + p));
+   'ecrans/pubkorpus.jpg','ecrans/victordetendu.jpg'].forEach(p => urls.push(BASE + p));
   // Images des cheats de hall (intégrés + Sheet cheats_hall).
   Object.values(getCheatsHall()).forEach(f => urls.push(BASE + 'ecrans/' + f));
   urls.push(BASE + ecranIntro());
@@ -1312,12 +1312,12 @@ let hallEcranOverride = null;
 
 // ── MEUJ DE CESS (action depuis l'inventaire) ──
 // Clic sur le meuj dans l'inventaire (depuis le hall) → joue cess.mp3, ferme
-// l'inventaire, revient au hall avec l'image "victordétendu.jpg" pendant 5 s,
+// l'inventaire, revient au hall avec l'image "victordetendu.jpg" pendant 5 s,
 // puis retour à l'image normale. Au bout de 3 usages, le meuj disparaît de
 // l'inventaire (il faut aller en récupérer un autre chez Oscar).
 let cessCount = 0;            // nb d'usages du meuj de cess (disparaît à 3)
 let cessAudio = null;        // <audio> dédié (indépendant de currentSound → pas coupé au retour hall)
-let hallEcranTemp = null;    // image temporaire du hall (victordétendu, 5 s)
+let hallEcranTemp = null;    // image temporaire du hall (victordetendu, 5 s)
 let hallEcranTempTimer = null;
 const CESS_MAX = 3;          // nb d'usages avant disparition du meuj
 const CESS_DUREE_MS = 5000;  // durée de l'image "détendu" sur le hall
@@ -1352,7 +1352,7 @@ function actionMeujCess() {
   }
   closeInv();
   // Retour au hall avec l'image "détendu" pendant 5 s (image posée AVANT goHall).
-  hallEcranTemporaire('victordétendu.jpg', CESS_DUREE_MS);
+  hallEcranTemporaire('victordetendu.jpg', CESS_DUREE_MS);
   goHall();
 }
 
