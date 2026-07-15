@@ -1776,28 +1776,58 @@ function nextTuto() {
 // ══════════════════════════════════════════════════════════
 // ANIMATION HALL (phrases de Victor en random)
 // ══════════════════════════════════════════════════════════
+// Deux listes de phrases d'animation (dialogues lieu_id 'hall') :
+//   - type 'animation hall'   = liste principale
+//   - type 'animation hall 2' = phrases d'ARRIVÉE, jouées au tout début du jeu
+// Les N premières phrases du jeu (config hall_anim_intro_nb, défaut 2) sont
+// tirées au hasard dans la 2e liste, puis on passe définitivement à la 1re.
+// Le compteur est GLOBAL : startHallAnim() est rappelée à chaque retour au hall,
+// donc s'il était local il repartirait à 2 à chaque fois. Ainsi, si le joueur
+// quitte le hall entre les deux, la 2e phrase d'arrivée l'attend toujours.
+let hallAnimIntroRestantes = null; // null = pas encore initialisé (config pas lue)
+let hallAnimDebutDernier = -1;     // évite de tirer 2 fois la même phrase d'arrivée
+function hallAnimIntroNb() {
+  const n = parseInt(G && G.config && G.config.hall_anim_intro_nb);
+  return (n >= 0) ? n : 2;
+}
+
 function startHallAnim() {
   if (hallAnimTimer) { clearTimeout(hallAnimTimer); hallAnimTimer = null; }
   const bubble = document.getElementById('hall-bubble');
   const txtEl = document.getElementById('hall-bubble-txt');
   if (!bubble || !txtEl) return;
 
-  const animDlg = G.dialogues.find(d =>
-    d.lieu_id && d.lieu_id.toLowerCase() === 'hall' && d.type && d.type.toLowerCase() === 'animation hall'
-  );
-  if (!animDlg) return;
-
-  const phrases = animDlg.texte.split('|').map(p => p.trim()).filter(Boolean);
-  if (phrases.length === 0) return;
+  const trouverListe = (type) => {
+    const d = G.dialogues.find(x =>
+      x.lieu_id && x.lieu_id.toLowerCase() === 'hall' && x.type && x.type.toLowerCase() === type
+    );
+    return d ? d.texte.split('|').map(p => p.trim()).filter(Boolean) : [];
+  };
+  const phrases = trouverListe('animation hall');         // liste principale
+  const phrasesDebut = trouverListe('animation hall 2');  // phrases d'arrivée
+  if (phrases.length === 0 && phrasesDebut.length === 0) return;
+  if (hallAnimIntroRestantes === null) hallAnimIntroRestantes = hallAnimIntroNb();
 
   const dureeAffichage = (parseFloat(G.config.time_duration_animation) || 4) * 1000;
   const dureePause = (parseFloat(G.config.pause_duration_animation) || 3) * 1000;
 
   let lastIdx = -1;
-  function pickRandom() {
+  const tirer = (liste, dernier) => {
     let i;
-    do { i = Math.floor(Math.random() * phrases.length); }
-    while (phrases.length > 1 && i === lastIdx);
+    do { i = Math.floor(Math.random() * liste.length); }
+    while (liste.length > 1 && i === dernier);
+    return i;
+  };
+  function prochainePhrase() {
+    // Début de partie : on pioche dans la 2e liste (si elle existe).
+    if (hallAnimIntroRestantes > 0 && phrasesDebut.length) {
+      hallAnimIntroRestantes--;
+      const i = tirer(phrasesDebut, hallAnimDebutDernier);
+      hallAnimDebutDernier = i;
+      return phrasesDebut[i];
+    }
+    if (!phrases.length) return null;
+    const i = tirer(phrases, lastIdx);
     lastIdx = i;
     return phrases[i];
   }
@@ -1811,9 +1841,11 @@ function startHallAnim() {
     // Ne pas afficher si on n'est plus sur le hall
     if (!document.querySelector('#screen-hall.active')) return;
 
+    const phrase = prochainePhrase();
+    if (!phrase) return;
     bubble.style.display = 'block';
     txtEl.textContent = '';
-    typewriteBloc(txtEl, pickRandom(), () => {
+    typewriteBloc(txtEl, phrase, () => {
       hallAnimTimer = setTimeout(() => {
         bubble.style.display = 'none';
         hallAnimTimer = setTimeout(() => {
