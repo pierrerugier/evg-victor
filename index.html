@@ -32,8 +32,12 @@ html, body {
 }
 html, body {
   width: 100%; height: 100%;
-  /* hauteur dynamique : s'ajuste aux barres du navigateur mobile (Chrome/Safari) */
+  /* Hauteur = celle MESURÉE en JS (--app-h, cf. setAppHeight()). iOS calcule mal
+     les unités vh/dvh au 1er affichage en mode app (bande noire en bas, qui
+     disparaît dès qu'on pivote) ; une mesure JS réappliquée à chaque événement
+     donne la vraie hauteur. Repli sur 100dvh tant que le JS n'a pas tourné. */
   height: 100dvh;
+  height: var(--app-h, 100dvh);
   overflow: hidden;
   font-family: var(--font);
   background: #000;
@@ -43,27 +47,20 @@ html, body {
 #app {
   position: relative;
   width: 100%;
-  height: 100%;
   height: 100dvh;
+  height: var(--app-h, 100dvh);
   /* ne jamais dépasser la hauteur visible réelle */
-  max-height: 100dvh;
+  max-height: var(--app-h, 100dvh);
   overflow: hidden;
 }
 /* Sur écran assez large (paysage ou desktop), on borne la largeur pour garder
-   un format vertical, en se basant sur la hauteur dynamique. */
+   un format vertical, en se basant sur la hauteur réelle. */
 @media (min-aspect-ratio: 9/16) {
   #app {
-    width: calc(100dvh * 9 / 16);
-    height: 100dvh;
-    max-height: 100dvh;
+    width: calc(var(--app-h, 100dvh) * 9 / 16);
+    height: var(--app-h, 100dvh);
+    max-height: var(--app-h, 100dvh);
   }
-}
-/* Mode "app" iOS (ajouté à l'écran d'accueil) : 100dvh peut exclure la zone de
-   l'indicateur home en bas → bande noire. On force le plein écran réel (100vh,
-   safe areas incluses) uniquement dans ce mode, sans toucher au navigateur. */
-@media all and (display-mode: standalone) {
-  html, body { height: 100vh; }
-  #app { height: 100vh; max-height: 100vh; }
 }
 
 /* SCREENS */
@@ -74,25 +71,17 @@ html, body {
 }
 .screen.active { display: flex; }
 
-/* BG */
+/* BG — pleine page QUOI QU'IL ARRIVE, jamais de bande ni de répétition.
+   `cover` remplit toujours tout le cadre et rogne le débord ; `no-repeat`
+   garantit qu'aucune répétition n'apparaît en haut/bas même si l'image est
+   plus petite que prévu ; `center` rend le rognage symétrique. */
 .bg {
   position: absolute; inset: 0;
   background-size: cover;
-  /* centré : si l'écran est plus haut que l'image (crop vertical), on rogne
-     symétriquement en haut ET en bas au lieu de tout couper en bas. */
-  background-position: center center;
-  z-index: 0;
-}
-/* Fond du hall (hall.jpg / drag.jpg) : images ALLONGÉES pour montrer toute la
-   largeur. Sur un iPhone (plus étroit que l'image), un `cover` rognerait les
-   côtés → largeur incomplète. On force donc la largeur pleine (100%) et on laisse
-   la hauteur suivre le ratio, centrée : si l'image est plus haute que l'écran on
-   rogne haut+bas symétriquement, sinon une fine bande noire apparaît en haut ET
-   en bas (au lieu de tout en bas). */
-#hall-bg {
-  background-size: 100% auto;
+  background-repeat: no-repeat;
   background-position: center center;
   background-color: #000;
+  z-index: 0;
 }
 
 /* BOUTON RETOUR */
@@ -913,6 +902,28 @@ html, body {
 </div>
 
 <script>
+// ══════════════════════════════════════════════════════════
+// HAUTEUR RÉELLE DU VIEWPORT (fix bande noire iOS)
+// ══════════════════════════════════════════════════════════
+// iOS — surtout en mode app (ajouté à l'écran d'accueil) — sous-estime la hauteur
+// du viewport au tout premier affichage : il reste une bande noire en bas. Elle
+// disparaît dès qu'on pivote l'iPhone, parce que la rotation force iOS à
+// recalculer le viewport et il donne alors la vraie hauteur (plein écran).
+// On ne peut donc pas faire confiance aux unités CSS (vh/dvh) au démarrage : on
+// mesure la hauteur en JS et on la réapplique à CHAQUE occasion où iOS peut
+// l'avoir corrigée (rotation, resize, retour d'arrière-plan), plus quelques
+// passes différées juste après le 1er rendu pour rattraper la bonne valeur sans
+// avoir à pivoter le téléphone.
+function setAppHeight() {
+  const h = Math.max(window.innerHeight || 0, document.documentElement.clientHeight || 0);
+  if (h > 0) document.documentElement.style.setProperty('--app-h', h + 'px');
+}
+setAppHeight();
+['resize', 'orientationchange', 'pageshow', 'load'].forEach(ev => window.addEventListener(ev, setAppHeight));
+if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+// iOS corrige parfois le viewport juste après le premier rendu.
+[50, 200, 500, 1000].forEach(ms => setTimeout(setAppHeight, ms));
+
 // ══════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════
