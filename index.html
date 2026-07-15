@@ -2357,12 +2357,70 @@ function playPinDrop(i) {
   } catch (e) { /* Web Audio indisponible : pas de son, pas d'erreur */ }
 }
 
+// ── RÉVERBÉRATION (voix dans une petite pièce carrelée, ex. Oscar aux chiottes) ──
+// Aucun fichier d'impulsion à charger : on la GÉNÈRE (bruit blanc qui décroît),
+// technique classique pour une reverb algorithmique simple. Réglable depuis le Sheet :
+//   sons_reverb    : liste des sons concernés, séparés par | (défaut : son/oscar.mp3)
+//   reverb_duree   : longueur de la queue de reverb en s (défaut 1.5)
+//   reverb_melange : dosage 0-1 (défaut 0.3 = "petite reverbe")
+let reverbIR = null;
+function reverbDuree() {
+  const n = parseFloat(G && G.config && G.config.reverb_duree);
+  return (n > 0) ? n : 1.5;
+}
+function reverbMelange() {
+  const n = parseFloat(G && G.config && G.config.reverb_melange);
+  return (n >= 0 && n <= 1) ? n : 0.3;
+}
+function estSonReverb(path) {
+  const raw = (G && G.config && G.config.sons_reverb !== undefined && G.config.sons_reverb !== '')
+    ? G.config.sons_reverb : 'son/oscar.mp3';
+  return String(raw).split('|').map(s => s.trim().toLowerCase()).filter(Boolean)
+    .includes(String(path).trim().toLowerCase());
+}
+function getReverbIR(ctx, dureeS) {
+  if (reverbIR && Math.abs(reverbIR.duration - dureeS) < 0.01) return reverbIR;
+  const rate = ctx.sampleRate;
+  const len = Math.max(1, Math.floor(rate * dureeS));
+  const ir = ctx.createBuffer(2, len, rate);
+  for (let c = 0; c < 2; c++) {
+    const data = ir.getChannelData(c);
+    for (let i = 0; i < len; i++) {
+      // bruit blanc × décroissance : queue dense et brillante = petite pièce carrelée
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.5);
+    }
+  }
+  reverbIR = ir;
+  return ir;
+}
+// Route un <audio> dans un convolver (wet) + un passage direct (dry).
+function brancherReverb(el) {
+  try {
+    const ctx = getAudioCtx();
+    const src = ctx.createMediaElementSource(el);
+    const conv = ctx.createConvolver();
+    conv.buffer = getReverbIR(ctx, reverbDuree());
+    const melange = reverbMelange();
+    const wet = ctx.createGain(); wet.gain.value = melange;
+    const dry = ctx.createGain(); dry.gain.value = 1 - melange;
+    src.connect(dry); dry.connect(ctx.destination);
+    src.connect(conv); conv.connect(wet); wet.connect(ctx.destination);
+    return true;
+  } catch (e) { return false; }
+}
+
 // Son de lieu : joué PAR-DESSUS la musique de fond (n'affecte pas bgMusic).
 function playSound(path) {
   if (!path) return;
   if (currentSound) { currentSound.pause(); currentSound.currentTime = 0; }
-  currentSound = new Audio(BASE + path);
+  const avecReverb = estSonReverb(path);
+  currentSound = new Audio();
+  // crossOrigin uniquement pour les sons routés dans Web Audio : les autres
+  // gardent exactement le chemin actuel (zéro risque de régression).
+  if (avecReverb) currentSound.crossOrigin = 'anonymous';
   currentSound.muted = isMuted;
+  currentSound.src = BASE + path;
+  if (avecReverb) brancherReverb(currentSound);
   currentSound.play().catch(() => {});
 }
 
