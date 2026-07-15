@@ -181,6 +181,49 @@ html, body {
 }
 .btn-choix:active { border-left-color: var(--rose); }
 
+/* ── TINDER (téléphone de Paul) ── */
+/* Le téléphone est centré dans la partie HAUTE de la scène (bottom:30%) pour ne
+   jamais recouvrir la réplique de Paul en bas. Toutes les proportions sont des
+   variables : elles se règlent depuis le Sheet une fois iphone.png connu. */
+#tinder-zone {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 30%;
+  z-index: 20;
+  display: none;
+  align-items: center; justify-content: center;
+  pointer-events: none; /* seuls les boutons du bas pilotent le jeu */
+}
+#tinder-zone.open { display: flex; }
+#tinder-phone {
+  position: relative;
+  width: var(--tinder-w, 56%);
+  max-width: 280px;
+}
+/* Cadre du téléphone : c'est lui qui donne la taille du bloc. */
+#tinder-cadre {
+  display: block; width: 100%; height: auto;
+  position: relative; z-index: 2;
+}
+/* Photo de la fille, placée DANS l'écran du téléphone (sous le cadre). */
+#tinder-photo {
+  position: absolute; z-index: 1;
+  left: var(--tinder-px, 6%);
+  top: var(--tinder-py, 11%);
+  width: var(--tinder-pw, 88%);
+  height: var(--tinder-ph, 78%);
+  object-fit: cover; object-position: center;
+}
+/* "MATCH" : au milieu de l'écran, apparition avec un petit rebond. */
+#tinder-match {
+  position: absolute; z-index: 3;
+  width: var(--tinder-match-w, 70%);
+  max-width: 320px;
+  opacity: 0; transform: scale(0.7);
+  transition: opacity 0.18s ease, transform 0.25s cubic-bezier(0.34, 1.5, 0.64, 1);
+  pointer-events: none;
+}
+#tinder-match.show { opacity: 1; transform: scale(1); }
+
 /* CTA */
 #cta-zone {
   position: absolute;
@@ -746,6 +789,15 @@ html, body {
 <div id="screen-scene" class="screen">
   <div class="bg" id="scene-bg"></div>
   <button id="btn-retour-hall" onclick="goHall()">← Hall</button>
+  <!-- Téléphone de Paul (mini-jeu Tinder) : posé SUR la scène, pas en plein écran.
+       La photo est dessous, le cadre iphone.png par-dessus, le "MATCH" au-dessus. -->
+  <div id="tinder-zone">
+    <div id="tinder-phone">
+      <img id="tinder-photo" alt="">
+      <img id="tinder-cadre" alt="">
+    </div>
+    <img id="tinder-match" alt="">
+  </div>
   <div class="scene-spacer"></div>
   <div id="scene-bottom">
     <div id="dlg-zone"></div>
@@ -1134,6 +1186,15 @@ function collectImages() {
    'ecrans/pubkorpus.jpg','ecrans/victordetendu.jpg'].forEach(p => urls.push(BASE + p));
   // Images des cheats de hall (intégrés + Sheet cheats_hall).
   Object.values(getCheatsHall()).forEach(f => urls.push(BASE + 'ecrans/' + f));
+  // Mini-jeu Tinder : cadre du téléphone, MATCH, et la photo de chaque fille.
+  if ((G.dialogues || []).some(d => d.type === 'tinder')) {
+    urls.push(BASE + 'ecrans/' + tinderCadre());
+    const fMatch = (G.config && G.config.tinder_match && String(G.config.tinder_match).trim())
+      ? String(G.config.tinder_match).trim() : 'match.png';
+    urls.push(BASE + 'ecrans/' + fMatch);
+    G.dialogues.filter(d => d.type === 'tinder' && d.meta)
+      .forEach(d => urls.push(BASE + 'ecrans/' + String(d.meta).trim()));
+  }
   urls.push(BASE + ecranIntro());
   // Image de fin (config 'ecran_fin').
   urls.push(BASE + ((G.config && G.config.ecran_fin) ? G.config.ecran_fin : 'ecrans/fin-faro.jpg'));
@@ -1509,6 +1570,7 @@ function stopHallAnim() {
 function goHall() {
   stopPacman(); // couper toute boucle pacman résiduelle
   stopSound();
+  cacherTinder();     // le téléphone de Paul ne doit pas survivre au retour au hall
   reprendreBgMusic(); // coupe l'ambiance du lieu, dé-étouffe, relance ambiance-hall à 10 s
   setupHall();
   showScreen('hall');
@@ -2137,6 +2199,7 @@ function toggleMute() {
   if (introGain) { try { introGain.gain.value = isMuted ? 0 : 1; } catch (e) {} }
   if (lambertAudio) lambertAudio.muted = isMuted;
   if (cessAudio) cessAudio.muted = isMuted;
+  if (matchAudio) matchAudio.muted = isMuted;
   if (ambianceLieu) ambianceLieu.muted = isMuted;
   if (pageAudio) pageAudio.muted = isMuted;
   // Basculer l'icône
@@ -2495,6 +2558,7 @@ function entrerLieu(id) {
   const lieu = G.lieux.find(l => l.id === id);
   currentLieu = lieu;
   lieuxVisites.add(id);
+  cacherTinder();            // état neuf : pas de téléphone résiduel d'une visite précédente
   appliquerAmbianceLieu(id); // ambiance dédiée / hall étouffé / hall normal
   dlgList = G.dialogues.filter(d => d.lieu_id === id).sort((a, b) => +a.ordre - +b.ordre);
   dlgIndex = 0;
@@ -2607,7 +2671,7 @@ function renderDlg() {
     const isLast = phraseIndex >= phrases.length - 1;
     const isPnjDlg = type === 'pnj' || type === 'victor' || type === 'narration';
     const nextDlgType = dlgList[dlgIndex + 1]?.type;
-    const noMorePnjAfter = !nextDlgType || ['fin_succes','fin_echec','reponse_incorrecte','qcm','qcm_audio','choix','tunnel_pacman','tunnel_tractions'].includes(nextDlgType);
+    const noMorePnjAfter = !nextDlgType || ['fin_succes','fin_echec','reponse_incorrecte','qcm','qcm_audio','tinder','choix','tunnel_pacman','tunnel_tractions'].includes(nextDlgType);
     // Un mini-jeu (pacman/tractions) suit-il ? Si oui, on ne propose pas l'inventaire.
     const miniJeuSuit = nextDlgType === 'tunnel_pacman' || nextDlgType === 'tunnel_tractions';
     // L'inventaire ne se propose que si le lieu attend vraiment un objet ET qu'aucun mini-jeu ne suit.
@@ -2714,6 +2778,55 @@ function renderDlg() {
 
     // L'audio se joue automatiquement dès que la question apparaît.
     playSound(audioFile);
+    requestAnimationFrame(() => requestAnimationFrame(adjustDlgBottom));
+  }
+
+  // TINDER : une ligne par fille. texte = commentaire de Paul, meta = image de la
+  // fille (dans ecrans/, ex. tindergirl1.jpg). Le téléphone s'affiche sur la scène.
+  // La mission n'est validée QUE si le joueur like la DERNIÈRE fille :
+  //   - like sur la dernière -> on saute le 'fin_echec' et on tombe sur 'fin_succes'
+  //   - nope sur la dernière -> 'fin_echec' (retour au hall sans passeport, on peut réessayer)
+  //   - sur les autres, like comme nope passent à la suivante (le like joue le MATCH)
+  else if (type === 'tinder') {
+    appliquerReglagesTinder();
+    const zone = document.getElementById('tinder-zone');
+    document.getElementById('tinder-cadre').src = BASE + 'ecrans/' + tinderCadre();
+    document.getElementById('tinder-photo').src = BASE + 'ecrans/' + String(dlg.meta || '').trim();
+    zone.classList.add('open');
+
+    const tinders = dlgList.filter(d => d.type === 'tinder');
+    const estDerniere = tinders.length > 0 && tinders[tinders.length - 1] === dlg;
+
+    const suite = (like) => {
+      if (estDerniere && !like) {
+        cacherTinder();
+        const iEchec = dlgList.findIndex(d => d.type === 'fin_echec');
+        if (iEchec >= 0) { phraseIndex = 0; dlgIndex = iEchec; renderDlg(); }
+        else goHall();
+        return;
+      }
+      phraseIndex = 0;
+      dlgIndex++;
+      // Dernière fille likée : on saute le fin_echec pour tomber sur le succès.
+      while (dlgIndex < dlgList.length && dlgList[dlgIndex].type === 'fin_echec') dlgIndex++;
+      if (dlgIndex >= dlgList.length || dlgList[dlgIndex].type !== 'tinder') cacherTinder();
+      renderDlg();
+    };
+
+    choixZone.style.display = 'flex';
+    choixZone.style.flexDirection = 'row';
+    choixZone.style.flexWrap = 'nowrap';
+    const mkBtn = (label, rose, onClick) => {
+      const b = document.createElement('button');
+      b.className = 'btn-choix';
+      b.style.cssText = 'flex:1;text-align:center;' + (rose ? 'border-left-color:var(--rose);' : '');
+      b.textContent = label;
+      b.onclick = () => { b.disabled = true; onClick(); };
+      return b;
+    };
+    choixZone.appendChild(mkBtn('✗  Suivante', false, () => suite(false)));
+    // Like : le MATCH s'affiche + match.mp3, PUIS on enchaîne.
+    choixZone.appendChild(mkBtn('♥  Liker', true, () => jouerMatch(() => suite(true))));
     requestAnimationFrame(() => requestAnimationFrame(adjustDlgBottom));
   }
 
@@ -2839,6 +2952,58 @@ function renderDlg() {
     dlgIndex++;
     renderDlg();
   }
+}
+
+// ══════════════════════════════════════════════════════════
+// TINDER (téléphone de Paul)
+// ══════════════════════════════════════════════════════════
+// Tous les visuels sont réglables depuis le Sheet, car les proportions dépendent
+// du dessin de iphone.png (où se trouve l'écran dans l'image) :
+//   tinder_cadre          : image du téléphone      (défaut iphone.png)
+//   tinder_match          : image du MATCH          (défaut match.png)
+//   tinder_largeur        : largeur du tel en % de l'écran        (défaut 56)
+//   tinder_photo_x/y/w/h  : position de la photo DANS le tel, en % (6/11/88/78)
+//   tinder_match_largeur  : largeur du MATCH en %                (défaut 70)
+//   tinder_match_duree    : durée d'affichage du MATCH en s      (défaut 1.3)
+let matchAudio = null;
+function tinderCadre() {
+  const f = G && G.config && G.config.tinder_cadre;
+  return (f && String(f).trim()) ? String(f).trim() : 'iphone.png';
+}
+function appliquerReglagesTinder() {
+  const st = document.documentElement.style;
+  const set = (variable, cle, defaut) => {
+    const n = parseFloat(G && G.config && G.config[cle]);
+    st.setProperty(variable, (isNaN(n) ? defaut : n) + '%');
+  };
+  set('--tinder-w', 'tinder_largeur', 56);
+  set('--tinder-px', 'tinder_photo_x', 6);
+  set('--tinder-py', 'tinder_photo_y', 11);
+  set('--tinder-pw', 'tinder_photo_w', 88);
+  set('--tinder-ph', 'tinder_photo_h', 78);
+  set('--tinder-match-w', 'tinder_match_largeur', 70);
+}
+function cacherTinder() {
+  const z = document.getElementById('tinder-zone');
+  if (z) z.classList.remove('open');
+  const m = document.getElementById('tinder-match');
+  if (m) m.classList.remove('show');
+}
+// MATCH : le png apparaît au milieu + match.mp3, puis on enchaîne.
+function jouerMatch(onDone) {
+  const fichier = (G && G.config && G.config.tinder_match && String(G.config.tinder_match).trim())
+    ? String(G.config.tinder_match).trim() : 'match.png';
+  const duree = (parseFloat(G && G.config && G.config.tinder_match_duree) || 1.3) * 1000;
+  if (!matchAudio) { matchAudio = new Audio(BASE + 'son/match.mp3'); matchAudio.preload = 'auto'; }
+  matchAudio.muted = isMuted;
+  try { matchAudio.currentTime = 0; } catch (e) {}
+  matchAudio.play().catch(() => {});
+  const m = document.getElementById('tinder-match');
+  if (!m) { if (onDone) onDone(); return; }
+  m.src = BASE + 'ecrans/' + fichier;
+  void m.offsetWidth;        // reflow : rejoue l'animation à chaque match
+  m.classList.add('show');
+  setTimeout(() => { m.classList.remove('show'); if (onDone) onDone(); }, duree);
 }
 
 // Validation d'une réponse de QCM (texte ou audio) : partagée par les deux types.
