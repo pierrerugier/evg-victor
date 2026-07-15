@@ -1477,7 +1477,7 @@ function appliquerCheat(code) {
   return true;
 }
 
-function goLoading() { stopPacman(); stopSound(); stopLaunch(); stopHallAnim(); if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; } showScreen('loading'); }
+function goLoading() { stopPacman(); stopSound(); stopLaunch(); stopHallAnim(); stopAmbianceLieu(); if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; } showScreen('loading'); }
 
 // Arrête l'animation des phrases de Victor sur le hall et masque la bulle.
 // Évite qu'un timer en cours fasse réapparaître une bulle par-dessus le tuto.
@@ -1490,6 +1490,7 @@ function stopHallAnim() {
 function goHall() {
   stopPacman(); // couper toute boucle pacman résiduelle
   stopSound();
+  reprendreBgMusic(); // coupe l'ambiance du lieu, dé-étouffe, relance ambiance-hall à 10 s
   setupHall();
   showScreen('hall');
   // Relancer l'animation si le tuto est déjà terminé
@@ -2065,6 +2066,7 @@ function toggleMute() {
   if (introGain) { try { introGain.gain.value = isMuted ? 0 : 1; } catch (e) {} }
   if (lambertAudio) lambertAudio.muted = isMuted;
   if (cessAudio) cessAudio.muted = isMuted;
+  if (ambianceLieu) ambianceLieu.muted = isMuted;
   if (pageAudio) pageAudio.muted = isMuted;
   // Basculer l'icône
   const on = document.getElementById('mute-icon-on');
@@ -2107,11 +2109,19 @@ function startBgMusic() {
     path = hall ? (hall.son || hall.son_entree || null) : null;
   }
   if (!path) return;
+  // Nouvelle instance => l'ancien routage Web Audio (source/filtre/gain) est mort :
+  // on le réinitialise, sinon l'effet "étouffé" pointerait sur une source morte et
+  // ne s'appliquerait plus jamais (cas : autoplay bloqué puis relance au 1er clic).
+  bgRouted = false; bgGain = null; bgFilter = null;
   // On crée l'instance tout de suite : bgMusic non-null verrouille les appels suivants.
-  bgMusic = new Audio(BASE + path);
+  bgMusic = new Audio();
+  // crossOrigin AVANT le src : indispensable pour pouvoir router la piste dans
+  // Web Audio (effet "étouffé" des toilettes) sans que le flux soit bloqué.
+  bgMusic.crossOrigin = 'anonymous';
   bgMusic.loop = true;
   bgMusic.muted = isMuted;
-  bgMusic.volume = parseFloat(G.config && G.config.musique_fond_volume) || 0.5;
+  bgMusic.volume = bgVolumeNormal();
+  bgMusic.src = BASE + path;
   // Ceinture-bretelles : si l'attribut loop ne se réamorce pas (cas fréquent
   // sur iOS/Safari où la piste s'arrête à la fin), on relance manuellement.
   bgMusic.addEventListener('ended', () => {
@@ -2123,6 +2133,132 @@ function startBgMusic() {
     bgMusicStarted = false;
     if (bgMusic) { bgMusic.pause(); bgMusic = null; }
   });
+}
+
+// ══════════════════════════════════════════════════════════
+// AMBIANCES DE LIEU (sound design)
+// ══════════════════════════════════════════════════════════
+// Trois comportements possibles quand on entre dans un lieu :
+//  1. Lieu avec SA PROPRE ambiance (config `ambiances_lieux`) : ambiance-hall se
+//     coupe et la piste du lieu tourne en boucle (ex. culte.mp3, exterieur.mp3).
+//     Au retour au hall, ambiance-hall repart à `ambiance_hall_reprise` secondes
+//     (défaut 10) : on a l'impression qu'elle a continué sans nous.
+//  2. Lieu ÉTOUFFÉ (config `lieux_etouffes`) : ambiance-hall continue mais filtrée
+//     passe-bas + volume baissé, comme si le hall était dans la pièce d'à côté
+//     (ex. toilettes). Aucun fichier supplémentaire nécessaire.
+//  3. Tous les autres : ambiance-hall normale.
+let ambianceLieu = null;   // <audio> de l'ambiance du lieu en cours
+let bgGain = null;         // gain Web Audio de la musique de fond
+let bgFilter = null;       // passe-bas ("pièce à côté")
+let bgRouted = false;      // vrai une fois bgMusic routé dans Web Audio
+
+function bgVolumeNormal() {
+  return parseFloat(G && G.config && G.config.musique_fond_volume) || 0.5;
+}
+function etouffeFreq() {
+  const n = parseFloat(G && G.config && G.config.etouffe_frequence);
+  return (n > 0) ? n : 400;   // Hz : plus bas = plus étouffé
+}
+function etouffeVol() {
+  const n = parseFloat(G && G.config && G.config.etouffe_volume);
+  return (n >= 0 && n <= 1) ? n : 0.35;  // multiplicateur du volume normal
+}
+
+// Table lieu -> fichier d'ambiance, depuis config.ambiances_lieux
+//   ex : "culte:son/culte.mp3|antoine:son/exterieur.mp3"
+function getAmbiancesLieux() {
+  const map = {};
+  const raw = G && G.config && G.config.ambiances_lieux;
+  if (raw) String(raw).split('|').forEach(entry => {
+    const i = entry.indexOf(':');
+    if (i < 0) return;
+    const id = entry.slice(0, i).trim().toLowerCase();
+    const f = entry.slice(i + 1).trim();
+    if (id && f) map[id] = f;
+  });
+  return map;
+}
+// Lieux où ambiance-hall doit être étouffée, depuis config.lieux_etouffes ("toilettes|autre")
+function estLieuEtouffe(id) {
+  const raw = G && G.config && G.config.lieux_etouffes;
+  if (!raw) return false;
+  return String(raw).split('|').map(s => s.trim().toLowerCase()).includes(String(id).toLowerCase());
+}
+
+// Route bgMusic dans Web Audio (passe-bas + gain). Fait À LA DEMANDE seulement
+// (1er étouffement) : tant qu'on n'en a pas besoin, la piste joue en direct, ce
+// qui évite tout risque de silence si le contexte audio n'est pas encore actif.
+function routerBgMusic() {
+  if (bgRouted || !bgMusic) return;
+  try {
+    const ctx = getAudioCtx();
+    const src = ctx.createMediaElementSource(bgMusic);
+    bgFilter = ctx.createBiquadFilter();
+    bgFilter.type = 'lowpass';
+    bgFilter.frequency.value = 20000;   // grand ouvert = aucun effet audible
+    bgGain = ctx.createGain();
+    bgGain.gain.value = bgVolumeNormal();
+    src.connect(bgFilter);
+    bgFilter.connect(bgGain);
+    bgGain.connect(ctx.destination);
+    bgRouted = true;
+  } catch (e) { bgRouted = false; bgGain = null; bgFilter = null; }
+}
+
+// Étouffe (true) ou rétablit (false) la musique de fond, en fondu court.
+function etoufferBgMusic(etouffe) {
+  if (!bgMusic) return;
+  const vol = bgVolumeNormal();
+  if (etouffe) routerBgMusic();
+  if (bgRouted && bgFilter && bgGain && tapAudioCtx) {
+    const t = tapAudioCtx.currentTime;
+    try {
+      bgFilter.frequency.setTargetAtTime(etouffe ? etouffeFreq() : 20000, t, 0.08);
+      bgGain.gain.setTargetAtTime(etouffe ? vol * etouffeVol() : vol, t, 0.08);
+    } catch (e) {}
+  } else {
+    // Repli sans Web Audio : au moins le volume (ignoré par iOS, mais inoffensif).
+    bgMusic.volume = etouffe ? vol * etouffeVol() : vol;
+  }
+}
+
+function stopAmbianceLieu() {
+  if (ambianceLieu) { ambianceLieu.pause(); ambianceLieu = null; }
+}
+
+// Ambiance propre au lieu : ambiance-hall se coupe, la piste du lieu boucle.
+function jouerAmbianceLieu(fichier) {
+  stopAmbianceLieu();
+  if (bgMusic) bgMusic.pause();     // ambiance-hall se coupe
+  ambianceLieu = new Audio(BASE + fichier);
+  ambianceLieu.loop = true;
+  ambianceLieu.muted = isMuted;
+  ambianceLieu.volume = bgVolumeNormal();
+  ambianceLieu.play().catch(() => {});
+}
+
+// Retour au hall : on coupe l'ambiance du lieu, on enlève l'étouffement, et on
+// relance ambiance-hall à `ambiance_hall_reprise` s (défaut 10) si elle a été coupée.
+function reprendreBgMusic() {
+  stopAmbianceLieu();
+  if (!bgMusic) { startBgMusic(); return; }
+  etoufferBgMusic(false);
+  if (bgMusic.paused) {
+    const n = parseFloat(G && G.config && G.config.ambiance_hall_reprise);
+    const pos = isNaN(n) ? 10 : n;
+    try { bgMusic.currentTime = pos; } catch (e) {}
+    bgMusic.play().catch(() => {});
+  }
+}
+
+// Applique le bon comportement audio à l'entrée d'un lieu.
+function appliquerAmbianceLieu(id) {
+  const fichier = getAmbiancesLieux()[String(id).toLowerCase()];
+  if (fichier) { jouerAmbianceLieu(fichier); return; }   // 1. ambiance dédiée
+  stopAmbianceLieu();
+  if (!bgMusic) startBgMusic();
+  else if (bgMusic.paused) bgMusic.play().catch(() => {});
+  etoufferBgMusic(estLieuEtouffe(id));                    // 2. étouffé / 3. normal
 }
 
 // ── SON DE TAP ──
@@ -2217,6 +2353,7 @@ function entrerLieu(id) {
   const lieu = G.lieux.find(l => l.id === id);
   currentLieu = lieu;
   lieuxVisites.add(id);
+  appliquerAmbianceLieu(id); // ambiance dédiée / hall étouffé / hall normal
   dlgList = G.dialogues.filter(d => d.lieu_id === id).sort((a, b) => +a.ordre - +b.ordre);
   dlgIndex = 0;
   phraseIndex = 0;
@@ -3828,6 +3965,7 @@ function showFin() {
 
   // Musique de fin : finjeu.mp3 en boucle.
   const sonFin = (G.config && G.config.son_fin) ? G.config.son_fin : 'son/finjeu.mp3';
+  stopAmbianceLieu(); // pas d'ambiance de lieu par-dessus la musique de fin
   if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; }
   if (currentSound) { currentSound.pause(); currentSound.currentTime = 0; }
   currentSound = new Audio(BASE + sonFin);
