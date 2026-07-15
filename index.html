@@ -2930,10 +2930,24 @@ function renderDlg() {
 
   else if (type === 'fin_echec') {
     ctaZone.style.display = 'flex';
-    btnContinuer.style.display = 'none';
     btnHall.style.display = 'block';
+    styleBtnRamasser(btnHall, false); // au cas où il resterait stylé en "Récupérer"
     btnHall.textContent = 'Retour au hall';
     btnHall.onclick = goHall;
+    // Échec du mini-jeu Tinder : on reste devant Paul et on propose de réessayer
+    // sur place (bouton rose), sans repasser par le hall. Pour les autres lieux
+    // (pacman, tractions…) il n'y a pas de ligne 'tinder' → bouton masqué, donc
+    // comportement inchangé.
+    const iPremiereFille = dlgList.findIndex(d => d.type === 'tinder');
+    if (iPremiereFille >= 0) {
+      btnContinuer.style.display = 'block';
+      btnContinuer.disabled = false;
+      btnContinuer.style.opacity = '1';
+      btnContinuer.textContent = 'Réessayer';
+      btnContinuer.onclick = () => { phraseIndex = 0; dlgIndex = iPremiereFille; renderDlg(); };
+    } else {
+      btnContinuer.style.display = 'none';
+    }
     requestAnimationFrame(adjustDlgBottom);
   }
 
