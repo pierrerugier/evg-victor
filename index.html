@@ -448,6 +448,22 @@ html, body {
   position: absolute; inset: 0; z-index: 100; background: #000;
   opacity: 1; pointer-events: none; transition: opacity 1s ease;
 }
+/* Bouton "Passer" de l'intro : haut-droite, au-dessus du bouton mute (qui est à
+   top ~76px), calé sous la barre d'état via env(safe-area-inset-top). Reprend la
+   DA exacte des boutons "← Hall" / "← Titre" (bloc noir, capitales, 11px/700). */
+#intro-passer {
+  position: absolute;
+  top: max(calc(env(safe-area-inset-top, 0px) + 4px), 12px);
+  right: 14px;
+  z-index: 50;
+  background: rgba(0,0,0,0.75);
+  color: #fff; border: none;
+  font-family: var(--font); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 8px 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
 #intro-fondu.clear { opacity: 0; }
 /* Spinner de chargement global (DA rose) : attente titre→intro ou intro→hall. */
 #app-spinner {
@@ -697,6 +713,9 @@ html, body {
 <div id="screen-intro" class="screen">
   <div class="bg" id="intro-bg"></div>
   <div id="intro-fondu"></div>
+  <!-- Passer l'intro : haut-droite, au-dessus du bouton mute, dans la zone safe.
+       Même DA que les boutons "← Hall" / "← Titre". -->
+  <button id="intro-passer">Passer →</button>
   <div id="intro-zone">
     <div id="intro-bloc">
       <div id="intro-txt"></div>
@@ -1651,6 +1670,8 @@ function showIntroSequence(onDone) {
   const zone = document.getElementById('intro-zone');
   const txtEl = document.getElementById('intro-txt');
   const btn = document.getElementById('intro-btn');
+  const btnPasser = document.getElementById('intro-passer');
+  if (btnPasser) btnPasser.style.display = 'block';
   fondu.classList.remove('clear');
   fondu.style.transitionDuration = '1s'; // fondu d'entrée sur 1 s
   zone.style.display = 'none'; // texte caché pendant le fondu
@@ -1660,24 +1681,42 @@ function showIntroSequence(onDone) {
   void fondu.offsetWidth;           // reflow → commit opacity:1 avant de lancer le fondu
   fondu.classList.add('clear');     // fondu noir → image (1 s), fiable même onglet arrière-plan
 
+  // Sortie d'intro (commune aux deux chemins) : coupe la musique et passe au hall,
+  // avec le spinner si le préchargement d'arrière-plan n'est pas encore fini.
+  const suite = () => {
+    if (introMusic) { introMusic.pause(); introMusic = null; }
+    if (btnPasser) btnPasser.style.display = 'none';
+    onDone();                              // hall + ambiance-hall
+  };
+  const allerAuHall = () => {
+    if (preloadResteDone) suite();
+    else { montrerSpinner(true); preloadRestePromise.then(() => { montrerSpinner(false); suite(); }); }
+  };
+
   // Fin de l'intro (clic "C'est parti") :
   //   - fondu AU noir sur 2 s, puis 1 s d'écran noir (3 s au total) avant le hall
   //   - musique d'intro qui fade out sur les 3 secondes entières
   const terminerIntro = () => {
     btn.disabled = true; btn.style.opacity = '0.4';
+    if (btnPasser) btnPasser.style.display = 'none';
     fadeOutIntroMusic(3000);               // fondu sortant musique sur 3 s (gain Web Audio, marche iOS)
     fondu.style.transitionDuration = '2s';
     fondu.classList.remove('clear');       // fondu AU noir sur 2 s
-    const suite = () => {
-      if (introMusic) { introMusic.pause(); introMusic = null; }
-      onDone();                            // hall + ambiance-hall
-    };
-    // Après 3 s (2 s fondu + 1 s écran noir) : hall, ou spinner si pas encore prêt.
-    setTimeout(() => {
-      if (preloadResteDone) suite();
-      else { montrerSpinner(true); preloadRestePromise.then(() => { montrerSpinner(false); suite(); }); }
-    }, 3000);
+    setTimeout(allerAuHall, 3000);         // 2 s fondu + 1 s écran noir
   };
+
+  // Bouton "Passer" : on ne fait pas subir les 3 s de sortie, fondu court (0,5 s)
+  // et on arrive direct au hall. On coupe aussi l'écriture en cours.
+  const passerIntro = () => {
+    if (btnPasser) btnPasser.style.display = 'none';
+    btn.disabled = true; btn.style.opacity = '0.4';
+    if (typewriterTimeout) clearTimeout(typewriterTimeout);
+    fadeOutIntroMusic(500);
+    fondu.style.transitionDuration = '0.5s';
+    fondu.classList.remove('clear');
+    setTimeout(allerAuHall, 500);
+  };
+  if (btnPasser) btnPasser.onclick = passerIntro;
 
   let i = 0;
   const afficher = () => {
