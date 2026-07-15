@@ -2366,11 +2366,11 @@ function playPinDrop(i) {
 let reverbIR = null;
 function reverbDuree() {
   const n = parseFloat(G && G.config && G.config.reverb_duree);
-  return (n > 0) ? n : 1.5;
+  return (n > 0) ? n : 1.2;
 }
 function reverbMelange() {
   const n = parseFloat(G && G.config && G.config.reverb_melange);
-  return (n >= 0 && n <= 1) ? n : 0.3;
+  return (n >= 0 && n <= 1) ? n : 0.55;
 }
 function estSonReverb(path) {
   const raw = (G && G.config && G.config.sons_reverb !== undefined && G.config.sons_reverb !== '')
@@ -2383,12 +2383,25 @@ function getReverbIR(ctx, dureeS) {
   const rate = ctx.sampleRate;
   const len = Math.max(1, Math.floor(rate * dureeS));
   const ir = ctx.createBuffer(2, len, rate);
+  // Réflexions précoces : c'est ELLES qui donnent le côté "boîte carrelée" qui
+  // claque (le son rebondit sur des murs proches et durs). Sans elles, on n'a
+  // qu'une queue diffuse, qui sonne "grande salle" plutôt que "chiottes".
+  const early = [0.006, 0.011, 0.017, 0.023, 0.031, 0.043, 0.058, 0.074];
   for (let c = 0; c < 2; c++) {
     const data = ir.getChannelData(c);
+    // Queue diffuse : elle MONTE sur ~25 ms au lieu de démarrer plein pot, et
+    // reste en retrait (0.35). Sinon elle masque les réflexions précoces et on
+    // n'entend qu'un "shhh" de grande salle au lieu d'une petite pièce carrelée.
     for (let i = 0; i < len; i++) {
-      // bruit blanc × décroissance : queue dense et brillante = petite pièce carrelée
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.5);
+      const montee = Math.min(1, (i / rate) / 0.025);
+      data[i] = (Math.random() * 2 - 1) * montee * 0.35 * Math.pow(1 - i / len, 2.0);
     }
+    // Réflexions précoces par-dessus : elles ressortent nettement du diffus.
+    early.forEach((t, k) => {
+      // léger décalage entre les 2 canaux = largeur stéréo, ça "ouvre" la pièce
+      const idx = Math.floor(t * rate * (1 + c * 0.04));
+      if (idx < len) data[idx] += (k % 2 ? -1 : 1) * 0.95 * Math.pow(0.78, k);
+    });
   }
   reverbIR = ir;
   return ir;
