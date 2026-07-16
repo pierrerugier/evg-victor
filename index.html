@@ -3909,6 +3909,7 @@ function retourCabines() {
   // risque : l'ajout d'objet est protégé contre les doublons, et la cabine d'Oscar
   // est de toute façon prévue pour être rouverte plusieurs fois.
   cabinesOuvertes = [];
+  cabinesPortesActives = true; // déverrouiller les portes maintenant qu'on est revenu à la sélection
 }
 
 // Texte d'une cabine "objet" (50k / short) depuis le Sheet, lieu_id 'toilettes' :
@@ -3929,6 +3930,11 @@ function dlgCabine(type) {
 
 function ouvrirCabine(idx, contenu, lieu) {
   cabinesOuvertes.push(idx);
+  // Verrouiller TOUTES les portes tant que cette cabine est ouverte : sinon les
+  // deux autres zones cliquables restent actives derrière le dialogue et on peut
+  // ouvrir une seconde cabine par-dessus (fond qui change, texte écrasé). On
+  // ré-autorise les portes au retour à la sélection (retourCabines).
+  cabinesPortesActives = false;
   // On ouvre la porte de la cabine. Pour Oscar, sa voix (oscar.mp3) démarre un court
   // délai après le début de dooropen (config oscar_delai en secondes, défaut 0.3 ;
   // 0 = exactement en même temps).
