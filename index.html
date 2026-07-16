@@ -554,6 +554,21 @@ html, body {
   min-height: 0;
   overflow: hidden;
 }
+/* Bouton "Passer" (skip) après 3 échecs : haut-droite, dans la zone safe, même DA
+   que les boutons "← Hall" / "Passer" de l'intro. */
+#pac-passer {
+  position: absolute;
+  top: max(calc(env(safe-area-inset-top, 0px) + 4px), 12px);
+  right: 14px;
+  z-index: 30;
+  background: rgba(0,0,0,0.75);
+  color: #fff; border: none;
+  font-family: var(--font); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 8px 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
 #pac-canvas { display: block; }
 /* Barre de phrases de Pierre : collée juste sous le bloc jeu (canvas) */
 #pac-phrase-bar {
@@ -905,6 +920,8 @@ html, body {
 
 <!-- PACMAN : bloc jeu en haut, phrases de Pierre collées juste dessous -->
 <div id="screen-pacman" class="screen">
+  <!-- Apparaît après 3 échecs d'affilée : passer la mission sans finir le pacman. -->
+  <button id="pac-passer" style="display:none;">Passer →</button>
   <div id="pac-stage">
     <canvas id="pac-canvas"></canvas>
   </div>
@@ -1612,6 +1629,8 @@ function goHall() {
 function stopPacman() {
   pacRunning = false;
   if (pacRAF) { cancelAnimationFrame(pacRAF); pacRAF = null; }
+  const passer = document.getElementById('pac-passer');
+  if (passer) passer.style.display = 'none';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -3063,6 +3082,7 @@ function renderDlg() {
   }
 
   else if (type === 'tunnel_pacman') {
+    pacEchecs = 0; // nouvelle entrée dans la mission → série d'échecs remise à zéro
     const phrases = dlg.texte.split('|').map(p => p.trim()).filter(Boolean);
     startPacman(phrases.length > 0 ? phrases : ['...']);
   }
@@ -3951,6 +3971,11 @@ let pacRunning = false;
 let pacRAF = null;
 let pacPhrases = [];
 let pacLieu = null;
+let pacEchecs = 0; // échecs d'affilée ; à partir de 3, on propose "Passer"
+function pacSeuilSkip() {
+  const n = parseInt(G && G.config && G.config.pacman_skip_echecs);
+  return (n > 0) ? n : 3;
+}
 
 function startPacman(phrases) {
   pacPhrases = phrases;
@@ -4049,6 +4074,13 @@ function startPacmanInner(phrases) {
   let lastTs = null;
 
   pacRunning = true;
+
+  // Bouton "Passer" : visible seulement après pacSeuilSkip() échecs d'affilée.
+  const btnPasser = document.getElementById('pac-passer');
+  if (btnPasser) {
+    btnPasser.style.display = (pacEchecs >= pacSeuilSkip()) ? 'block' : 'none';
+    btnPasser.onclick = () => { if (!pacRunning && btnPasser.style.display === 'none') return; passerPacman(); };
+  }
 
   // Afficher la première phrase
   document.getElementById('pac-phrase-bar').style.display = 'block';
@@ -4201,6 +4233,9 @@ function startPacmanInner(phrases) {
 
 // Réussite pacman : popup central narration (ligne Sheet popup_succes), puis fin_succes
 function finPacmanSucces() {
+  pacEchecs = 0; // succès → on repart d'une série vierge
+  const passer = document.getElementById('pac-passer');
+  if (passer) passer.style.display = 'none';
   const popup = dlgList.find(d => d.type === 'popup_succes');
   const succes = dlgList.find(d => d.type === 'fin_succes');
   const goToSucces = () => {
@@ -4216,6 +4251,13 @@ function finPacmanSucces() {
   }
 }
 
+// "Passer" : abandonner le pacman après 3 échecs → on sort direct sur le dialogue
+// de succès de Pierre (comme si on avait gagné), sans avoir à finir le jeu.
+function passerPacman() {
+  stopPacman();
+  finPacmanSucces();
+}
+
 function restartPacman() {
   document.getElementById('pac-gameover').classList.remove('open');
   startPacman(pacPhrases);
@@ -4224,6 +4266,7 @@ function restartPacman() {
 // Game over pacman : retour à l'écran Pierre, message "t'endors pas",
 // puis choix Rejouer / Retour hall (bouton ← Hall en haut à gauche).
 function gameOverPacman() {
+  pacEchecs++; // un échec de plus dans la série
   const gameOverDlg = dlgList.find(d => d.type === 'game_over_pacman');
   const variantes = gameOverDlg ? gameOverDlg.texte.split('|').map(s => s.trim()).filter(Boolean) : ["Hey mec, t'endors pas, on est en pleine conversation !"];
   const msg = variantes[Math.floor(Math.random() * variantes.length)];
