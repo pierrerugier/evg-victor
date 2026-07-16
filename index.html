@@ -199,19 +199,19 @@ html, body {
   width: var(--tinder-w, 62%);
   max-width: 300px;
 }
-/* Cadre du téléphone (main + UI Tinder + écran blanc) : il donne la taille du bloc. */
+/* Cadre du téléphone (main + UI Tinder), écran transparent : il passe PAR-DESSUS
+   la carte et donne la taille du bloc. */
 #tinder-cadre {
   display: block; width: 100%; height: auto;
-  position: relative; z-index: 1;
+  position: relative; z-index: 2;
 }
-/* Carte de la fille : les images sont dessinées sur le MÊME canvas que iphone.png,
-   avec la carte déjà positionnée à l'emplacement de l'écran et du transparent
-   autour. On les superpose donc simplement au 1:1, PAR-DESSUS le cadre : la carte
-   recouvre l'écran blanc, et le transparent laisse voir l'entête, les boutons et
-   la main. (contain et pas fill : en cas de canvas non identique, on préfère un
-   décalage visible plutôt qu'une image déformée.) */
+/* Carte de la fille : dessinée sur le MÊME canvas que iphone.png, déjà calée à
+   l'emplacement de l'écran. On la superpose donc au 1:1, SOUS le cadre : elle
+   apparaît dans la découpe transparente de l'écran, l'entête Tinder, les boutons
+   et la main restant dessus. (contain et pas fill : si les canvas différaient, on
+   préfère un décalage visible plutôt qu'une image déformée.) */
 #tinder-photo {
-  position: absolute; inset: 0; z-index: 2;
+  position: absolute; inset: 0; z-index: 1;
   width: 100%; height: 100%;
   object-fit: contain;
 }
