@@ -3940,7 +3940,9 @@ function ouvrirCabine(idx, contenu, lieu) {
   btn.disabled = false;
   btn.style.opacity = '1';
 
-  // Afficher d'abord le dialogue, puis le bouton ramasser après confirmation
+  // Afficher d'abord le dialogue, puis le bouton ramasser après confirmation.
+  // Chaque phrase est TAPÉE à la machine (vitesse config typewriter_speed), comme
+  // partout ailleurs, et le bouton est bloqué tant que l'écriture n'est pas finie.
   function showDialogue(nomTxt, texte, btnLabel, onRamasser, showRetour) {
     nom.textContent = nomTxt;
     // Split sur sauts de ligne si présents, sinon sur ponctuation forte
@@ -3948,21 +3950,21 @@ function ouvrirCabine(idx, contenu, lieu) {
       ? texte.split(/\n+/).map(p => p.trim()).filter(Boolean)
       : texte.split(/(?<=[.!?…])\s+(?=[A-ZÀ-Ù0-9])/).map(p => p.trim()).filter(Boolean);
     let pi = 0;
-    txt.textContent = phrases[pi] || texte;
-    btn.textContent = pi < phrases.length - 1 ? 'Continuer' : btnLabel;
     btn.style.background = 'var(--rose)';
     btn.style.color = 'var(--noir)';
     retour.style.display = showRetour ? 'block' : 'none';
-    btn.onclick = () => {
-      pi++;
-      if (pi < phrases.length) {
-        txt.textContent = phrases[pi];
-        btn.textContent = pi < phrases.length - 1 ? 'Continuer' : btnLabel;
-      } else {
-        btn.onclick = onRamasser;
-        onRamasser();
-      }
+    const taper = () => {
+      btn.textContent = pi < phrases.length - 1 ? 'Continuer' : btnLabel;
+      btn.disabled = true; btn.style.opacity = '0.4';
+      typewriteBloc(txt, phrases[pi] || texte, () => { btn.disabled = false; btn.style.opacity = '1'; });
     };
+    btn.onclick = () => {
+      if (btn.disabled) return;
+      pi++;
+      if (pi < phrases.length) taper();
+      else { btn.onclick = onRamasser; onRamasser(); }
+    };
+    taper();
     dlg.style.display = 'block';
   }
 
@@ -4122,7 +4124,9 @@ function startPacmanInner(phrases) {
   const W = gridW, H = gridH;
   const offX = 0, offY = 0;
 
-  document.getElementById('pac-phrase-txt').textContent = phrases[0];
+  // Vidé, pas rempli : la phrase est tapée plus bas par typewriteBloc. La poser
+  // ici en entier provoquait un bref flash du texte complet avant qu'il se retape.
+  document.getElementById('pac-phrase-txt').textContent = '';
   document.getElementById('pac-gameover').classList.remove('open');
 
   // Labyrinthe : cadre + couloir périphérique + paires de blocs verticaux symétriques
