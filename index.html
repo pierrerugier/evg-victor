@@ -13,6 +13,39 @@
 <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/pierrerugier/evg-victor/main/icons/app-icon.png">
 <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/pierrerugier/evg-victor/main/icons/app-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<!-- PWA : rend le jeu installable et jouable hors connexion (cache géré par sw.js). -->
+<link rel="manifest" href="manifest.webmanifest">
+<script>
+/* Enregistre le service worker (met tout le jeu en cache au 1er chargement en
+   ligne, puis le sert hors connexion). Sans effet si le site est ouvert en
+   local (file://) ou hors HTTPS : le service worker exige une origine sécurisée. */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+  // Indicateur "jeu entièrement en cache = jouable hors connexion" sur l'écran
+  // titre. Le service worker nous prévient (message 'evg-cache') quand tout est
+  // en cache ; on le relance quelques fois tant que ce n'est pas complet (le SW
+  // rattrape alors les fichiers manquants).
+  var evgOfflineTries = 0;
+  function evgOfflinePret() {
+    var el = document.getElementById('offline-ready');
+    if (el) el.style.display = 'block';
+  }
+  function evgDemanderStatut() {
+    navigator.serviceWorker.ready.then(function (reg) {
+      var sw = reg.active || navigator.serviceWorker.controller;
+      if (sw) sw.postMessage({ type: 'evg-cache-status' });
+    }).catch(function () {});
+  }
+  navigator.serviceWorker.addEventListener('message', function (e) {
+    if (!e.data || e.data.type !== 'evg-cache') return;
+    if (e.data.complete) { evgOfflinePret(); return; }
+    if (evgOfflineTries++ < 12) setTimeout(evgDemanderStatut, 4000); // pas encore complet : on relance
+  });
+  evgDemanderStatut();
+}
+</script>
 <style>
 :root {
   --font: 'Josefin Sans', sans-serif;
@@ -302,6 +335,20 @@ html, body {
   position: absolute;
   bottom: 5%; left: 5%; width: 90%;
   z-index: 20;
+}
+/* Petit indicateur en bas à gauche de l'écran titre : apparaît quand TOUT le jeu
+   est en cache (images + sons), donc jouable hors connexion. Affiché par JS sur
+   message 'evg-cache' du service worker. */
+#offline-ready {
+  display: none;
+  position: absolute;
+  left: 12px; bottom: max(env(safe-area-inset-bottom, 0px), 10px);
+  z-index: 25;
+  font-family: var(--font);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.05em;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85);
+  pointer-events: none;
 }
 
 /* ── CHEAT BAR (appui long sur l'icône inventaire) ── */
@@ -789,6 +836,7 @@ html, body {
   <div id="loading-intro"></div>
   <div id="loading-phrases"></div>
   <button class="btn-cta" id="btn-jouer">Jouer</button>
+  <div id="offline-ready"><span style="color:#5fdd8f;">✓</span> Jouable hors connexion</div>
 </div>
 
 <!-- INTRO NARRATION (2 écrans entre le titre et le hall) -->
@@ -1045,6 +1093,10 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', setA
 // ══════════════════════════════════════════════════════════
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzze8-guvyUP7j04Mg_RW1vXiKOIZ_KpLaWKlARLEi3usTmdHenEuuZCgYQJTKTQtXt2A/exec';
 
+// Clé de cache des DONNÉES du jeu (dialogues/config/lieux du Google Sheet).
+// Sauvegardées à chaque lancement en ligne pour rejouer hors connexion (avion).
+const DATA_CACHE_KEY = 'evg_data_cache';
+
 let BASE = '';
 let G = null; // { config, objets, lieux, dialogues }
 let preloadRestePromise = null; // préchargement d'arrière-plan (tout sauf le critique)
@@ -1070,6 +1122,34 @@ let oscarVisites = 0;
 let milgaussAchetee = false; // vrai dès que la Milgauss est choisie chez Rolex
 let jeuTermine = false; // vrai uniquement à la vraie fin (toutes les missions OK)
 
+// Message affiché si le jeu est ouvert SANS réseau alors qu'il n'a jamais été
+// lancé en ligne (aucune donnée en cache). Il faut une première connexion.
+function afficherMessageHorsLigne() {
+  const cover = document.getElementById('loading-cover');
+  if (cover) cover.style.backgroundImage = '';
+  const phrases = document.getElementById('loading-phrases');
+  if (phrases) phrases.style.display = 'none';
+  const btn = document.getElementById('btn-jouer');
+  if (btn) btn.style.display = 'none';
+  let box = document.getElementById('offline-msg');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'offline-msg';
+    box.style.cssText = 'position:absolute;inset:0;z-index:100;display:flex;flex-direction:column;'
+      + 'align-items:center;justify-content:center;text-align:center;padding:32px;gap:14px;'
+      + 'background:#000;color:#fff;font-family:var(--font);';
+    box.innerHTML = '<div style="font-size:22px;font-weight:700;letter-spacing:0.05em;">Pas de connexion</div>'
+      + '<div style="font-size:15px;line-height:1.5;opacity:0.85;max-width:280px;">'
+      + 'Lance le jeu <b>une première fois avec Internet</b> (Wi-Fi ou 4G). '
+      + 'Il se mettra en mémoire et sera ensuite jouable hors connexion, même dans l\'avion.</div>'
+      + '<button onclick="location.reload()" style="margin-top:10px;background:var(--rose);color:#000;'
+      + 'border:none;font-family:var(--font);font-weight:700;font-size:14px;letter-spacing:0.08em;'
+      + 'text-transform:uppercase;padding:12px 22px;border-radius:6px;cursor:pointer;">Réessayer</button>';
+    (document.getElementById('screen-loading') || document.body).appendChild(box);
+  }
+  box.style.display = 'flex';
+}
+
 // ══════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════
@@ -1084,8 +1164,24 @@ async function init() {
   // rien ne s'affiche jusqu'à ce que la config arrive — puis la vraie liste tourne.
   startLoadingPhrases();
 
-  const res = await fetch(SHEET_URL + '?v=' + Date.now());
-  G = await res.json();
+  // Données du jeu : on tente le réseau (pour rester à jour) et on met le
+  // résultat en cache local. Hors connexion (ex. dans l'avion), on rejoue la
+  // dernière version mise en cache lors du dernier lancement AVEC Internet. Le
+  // jeu reste donc jouable sans réseau une fois ouvert au moins une fois en ligne.
+  try {
+    const res = await fetch(SHEET_URL + '?v=' + Date.now());
+    G = await res.json();
+    try { localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(G)); } catch (e) {}
+  } catch (e) {
+    const cacheJeu = localStorage.getItem(DATA_CACHE_KEY);
+    if (cacheJeu) {
+      G = JSON.parse(cacheJeu); // mode hors-ligne : on rejoue les données en cache
+    } else {
+      // Jamais lancé en ligne : impossible de démarrer sans les données.
+      afficherMessageHorsLigne();
+      return;
+    }
+  }
   BASE = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
   // Mémoriser la liste du Sheet pour l'afficher dès le début au prochain lancement.
   try {
@@ -3909,6 +4005,7 @@ function retourCabines() {
   // risque : l'ajout d'objet est protégé contre les doublons, et la cabine d'Oscar
   // est de toute façon prévue pour être rouverte plusieurs fois.
   cabinesOuvertes = [];
+  cabinesPortesActives = true; // déverrouiller les portes maintenant qu'on est revenu à la sélection
 }
 
 // Texte d'une cabine "objet" (50k / short) depuis le Sheet, lieu_id 'toilettes' :
@@ -3929,6 +4026,11 @@ function dlgCabine(type) {
 
 function ouvrirCabine(idx, contenu, lieu) {
   cabinesOuvertes.push(idx);
+  // Verrouiller TOUTES les portes tant que cette cabine est ouverte : sinon les
+  // deux autres zones cliquables restent actives derrière le dialogue et on peut
+  // ouvrir une seconde cabine par-dessus (fond qui change, texte écrasé). On
+  // ré-autorise les portes au retour à la sélection (retourCabines).
+  cabinesPortesActives = false;
   // On ouvre la porte de la cabine. Pour Oscar, sa voix (oscar.mp3) démarre un court
   // délai après le début de dooropen (config oscar_delai en secondes, défaut 0.3 ;
   // 0 = exactement en même temps).
