@@ -192,16 +192,34 @@ html, body {
   position: absolute; inset: 0;
   z-index: 20;
   display: none;
-  pointer-events: none; /* seuls les boutons du bas pilotent le jeu */
+  align-items: center; justify-content: center;
+  pointer-events: none; /* seules les zones de clic du téléphone réagissent */
 }
-#tinder-zone.open { display: block; }
-#tinder-phone { position: absolute; inset: 0; }
+#tinder-zone.open { display: flex; }
+/* Taille posée en JS (ajusterTinderPhone) : exactement la boîte qu'occuperait
+   l'image 1080x1920 en `contain`. Du coup les zones de clic, positionnées en %
+   de cette boîte, tombent pile sur le X et le cœur dessinés dans le PNG. */
+#tinder-phone { position: relative; }
 #tinder-cadre, #tinder-photo {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: contain;
   object-position: center;
 }
+/* Zones de clic invisibles, calées sur les boutons dessinés dans iphone.png. */
+.tinder-hit {
+  position: absolute; z-index: 4;
+  width: var(--tinder-hit, 11%);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: transparent; border: none; padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+#tinder-nope { left: var(--tinder-nope-x, 39.6%); top: var(--tinder-btn-y, 70.3%); }
+#tinder-like { left: var(--tinder-like-x, 62.2%); top: var(--tinder-btn-y, 70.3%); }
 /* Cadre du téléphone (main + UI Tinder, écran découpé) : PAR-DESSUS la carte. */
 #tinder-cadre { z-index: 2; }
 /* Carte de la fille : SOUS le cadre, elle apparaît dans la découpe de l'écran. */
@@ -789,6 +807,10 @@ html, body {
     <div id="tinder-phone">
       <img id="tinder-photo" alt="">
       <img id="tinder-cadre" alt="">
+      <!-- Zones de clic transparentes, calées sur le X et le cœur DESSINÉS dans
+           iphone.png (positions mesurées dans l'image, cf. --tinder-nope-x etc.). -->
+      <button id="tinder-nope" class="tinder-hit" aria-label="Passer"></button>
+      <button id="tinder-like" class="tinder-hit" aria-label="Liker"></button>
     </div>
     <img id="tinder-match" alt="">
   </div>
@@ -2787,6 +2809,7 @@ function renderDlg() {
     document.getElementById('tinder-cadre').src = BASE + 'ecrans/' + tinderCadre();
     document.getElementById('tinder-photo').src = BASE + 'ecrans/' + String(dlg.meta || '').trim();
     zone.classList.add('open');
+    ajusterTinderPhone(); // caler la boîte du tel AVANT que les zones de clic servent
 
     const tinders = dlgList.filter(d => d.type === 'tinder');
     const estDerniere = tinders.length > 0 && tinders[tinders.length - 1] === dlg;
@@ -2807,20 +2830,25 @@ function renderDlg() {
       renderDlg();
     };
 
-    choixZone.style.display = 'flex';
-    choixZone.style.flexDirection = 'row';
-    choixZone.style.flexWrap = 'nowrap';
-    const mkBtn = (label, rose, onClick) => {
-      const b = document.createElement('button');
-      b.className = 'btn-choix';
-      b.style.cssText = 'flex:1;text-align:center;' + (rose ? 'border-left-color:var(--rose);' : '');
-      b.textContent = label;
-      b.onclick = () => { b.disabled = true; onClick(); };
-      return b;
+    // Aucun bouton dessiné : on clique directement sur le X et le cœur du PNG.
+    let verrou = false; // un seul clic pris en compte par fille
+    const armer = (el, estLike) => {
+      if (!el) return;
+      el.onclick = () => {
+        // Anti-rebond GLOBAL : `verrou` est recréé à chaque rendu, il ne protège
+        // donc que le clic courant — sans ce délai, un double-tap enchaînerait
+        // deux filles d'un coup (et pourrait refuser la dernière par accident).
+        const t = Date.now();
+        if (t - tinderDernierClic < 350) return;
+        tinderDernierClic = t;
+        if (verrou) return;
+        verrou = true;
+        // Like : le MATCH s'affiche + match.mp3, PUIS on enchaîne.
+        if (estLike) jouerMatch(() => suite(true)); else suite(false);
+      };
     };
-    choixZone.appendChild(mkBtn('✗  Suivante', false, () => suite(false)));
-    // Like : le MATCH s'affiche + match.mp3, PUIS on enchaîne.
-    choixZone.appendChild(mkBtn('♥  Liker', true, () => jouerMatch(() => suite(true))));
+    armer(document.getElementById('tinder-nope'), false);
+    armer(document.getElementById('tinder-like'), true);
     requestAnimationFrame(() => requestAnimationFrame(adjustDlgBottom));
   }
 
@@ -2975,6 +3003,7 @@ function renderDlg() {
 //   tinder_match_duree    : durée d'affichage du MATCH en s  (défaut 1.3)
 // (Pas de réglage de taille pour le téléphone : le cadrage est dans le PNG.)
 let matchAudio = null;
+let tinderDernierClic = 0; // anti-rebond entre deux filles (cf. armer())
 function tinderCadre() {
   const f = G && G.config && G.config.tinder_cadre;
   return (f && String(f).trim()) ? String(f).trim() : 'iphone.png';
@@ -2986,7 +3015,30 @@ function appliquerReglagesTinder() {
     st.setProperty(variable, (isNaN(n) ? defaut : n) + '%');
   };
   set('--tinder-match-w', 'tinder_match_largeur', 70);
+  // Positions du X et du cœur, MESURÉES dans iphone.png (1080x1920) :
+  // X rose centre (428,1350) -> 39.6% / 70.3% ; cœur vert (672,1348) -> 62.2% / 70.2%.
+  set('--tinder-nope-x', 'tinder_nope_x', 39.6);
+  set('--tinder-like-x', 'tinder_like_x', 62.2);
+  set('--tinder-btn-y', 'tinder_btn_y', 70.3);
+  set('--tinder-hit', 'tinder_hit_taille', 11); // diamètre des zones de clic
 }
+// Donne à #tinder-phone la boîte EXACTE qu'occupe l'image en `contain`. Sans ça,
+// les zones de clic (positionnées en % du conteneur) seraient décalées par rapport
+// à l'image dès que l'écran n'a pas le ratio 9:16 (cas d'un iPhone, plus étroit).
+function ajusterTinderPhone() {
+  const zone = document.getElementById('tinder-zone');
+  const phone = document.getElementById('tinder-phone');
+  if (!zone || !phone) return;
+  const r = zone.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const ratio = 1080 / 1920;
+  let w = r.width, h = w / ratio;
+  if (h > r.height) { h = r.height; w = h * ratio; }
+  phone.style.width = w + 'px';
+  phone.style.height = h + 'px';
+}
+window.addEventListener('resize', ajusterTinderPhone);
+window.addEventListener('orientationchange', ajusterTinderPhone);
 function cacherTinder() {
   const z = document.getElementById('tinder-zone');
   if (z) z.classList.remove('open');
