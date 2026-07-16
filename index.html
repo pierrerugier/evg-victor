@@ -3078,13 +3078,12 @@ function appliquerReglagesTinder() {
     const n = parseFloat(G && G.config && G.config[cle]);
     st.setProperty(variable, (isNaN(n) ? defaut : n) + '%');
   };
-  // Positions du X et du cœur, MESURÉES dans iphone.png (800x1653) :
-  // X rose centre (317,1054) -> 39.6% / 63.8% ; cœur vert (497,1054) -> 62.2% / 63.7%.
-  // À REMESURER si le canvas du PNG change : le % vertical bouge (il valait 70.3%
-  // du temps du canvas 1080x1920).
+  // Positions du X et du cœur, MESURÉES dans iphone.png (800x1653, recalage final) :
+  // X rose centre (317,1086) -> 39.6% / 65.7% ; cœur vert (497,1086) -> 62.2% / 65.7%.
+  // À REMESURER si le PNG change : le % vertical bouge à chaque recadrage du tel.
   set('--tinder-nope-x', 'tinder_nope_x', 39.6);
   set('--tinder-like-x', 'tinder_like_x', 62.2);
-  set('--tinder-btn-y', 'tinder_btn_y', 63.8);
+  set('--tinder-btn-y', 'tinder_btn_y', 65.7);
   set('--tinder-hit', 'tinder_hit_taille', 11); // diamètre des zones de clic
 }
 // Donne à #tinder-phone la boîte EXACTE qu'occupe l'image en `contain`. Sans ça,
