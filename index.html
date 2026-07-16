@@ -398,10 +398,11 @@ html, body {
 #inv-bg { width: 100%; height: 100%; object-fit: cover; object-position: center; }
 #inv-grid {
   position: absolute;
-  /* Un peu plus haut et plus bas pour donner de l'air aux icônes agrandies, en
-     restant dans le vert de la valise (mesuré). Largeur inchangée : les longs
-     libellés (« CARTE D'EMBARQUEMENT ») ne doivent pas déborder sur les côtés. */
-  top: 18%; left: 16%; width: 68%; height: 67%;
+  /* Bornes calées sur le PANNEAU PLAT de la valise (mesuré : 19,9 %–82,8 % de la
+     hauteur, fond en cover), avec une marge de sécurité pour ne jamais toucher le
+     rabat en haut ni la fermeture en bas. On profite de la largeur (le vert est
+     large à l'écran) pour de belles icônes sans étirer la hauteur. */
+  top: 21%; left: 13%; width: 74%; height: 59%;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(5, 1fr);
@@ -409,20 +410,21 @@ html, body {
 .inv-slot {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  min-width: 0; /* autorise l'ellipse/retour propre du libellé dans la case */
+  min-width: 0;
+  padding: 2px 0;      /* petite garde pour que rien ne se chevauche entre rangées */
+  overflow: hidden;
 }
 .inv-slot img {
-  /* Icônes agrandies (62 -> 82) : elles remplissent mieux chaque case, donc moins
-     de vide entre les éléments. En vw plafonné pour rester net sur petits écrans. */
-  width: min(82px, 21vw); height: min(82px, 21vw); object-fit: contain;
-  opacity: 0.15; filter: grayscale(1);
+  /* Icônes agrandies (62 -> 78), plafonnées en vw pour rester nettes sur petit écran. */
+  width: min(78px, 19vw); height: min(78px, 19vw); object-fit: contain;
+  opacity: 0.15; filter: grayscale(1); flex: none;
 }
 .inv-slot.ok img { opacity: 1; filter: none; }
 .inv-slot span {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.04em; color: #fff;
+  letter-spacing: 0.03em; color: #fff;
   text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-  text-align: center; margin-top: 4px; line-height: 1.15;
+  text-align: center; margin-top: 3px; line-height: 1.1;
   max-width: 100%;
 }
 #inv-close-btn {
