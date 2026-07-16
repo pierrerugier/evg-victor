@@ -196,22 +196,24 @@ html, body {
 #tinder-zone.open { display: flex; }
 #tinder-phone {
   position: relative;
-  width: var(--tinder-w, 56%);
-  max-width: 280px;
+  width: var(--tinder-w, 62%);
+  max-width: 300px;
 }
-/* Cadre du téléphone : c'est lui qui donne la taille du bloc. */
+/* Cadre du téléphone (main + UI Tinder + écran blanc) : il donne la taille du bloc. */
 #tinder-cadre {
   display: block; width: 100%; height: auto;
-  position: relative; z-index: 2;
+  position: relative; z-index: 1;
 }
-/* Photo de la fille, placée DANS l'écran du téléphone (sous le cadre). */
+/* Carte de la fille : les images sont dessinées sur le MÊME canvas que iphone.png,
+   avec la carte déjà positionnée à l'emplacement de l'écran et du transparent
+   autour. On les superpose donc simplement au 1:1, PAR-DESSUS le cadre : la carte
+   recouvre l'écran blanc, et le transparent laisse voir l'entête, les boutons et
+   la main. (contain et pas fill : en cas de canvas non identique, on préfère un
+   décalage visible plutôt qu'une image déformée.) */
 #tinder-photo {
-  position: absolute; z-index: 1;
-  left: var(--tinder-px, 6%);
-  top: var(--tinder-py, 11%);
-  width: var(--tinder-pw, 88%);
-  height: var(--tinder-ph, 78%);
-  object-fit: cover; object-position: center;
+  position: absolute; inset: 0; z-index: 2;
+  width: 100%; height: 100%;
+  object-fit: contain;
 }
 /* "MATCH" : au milieu de l'écran, apparition avec un petit rebond. */
 #tinder-match {
@@ -2971,14 +2973,14 @@ function renderDlg() {
 // ══════════════════════════════════════════════════════════
 // TINDER (téléphone de Paul)
 // ══════════════════════════════════════════════════════════
-// Tous les visuels sont réglables depuis le Sheet, car les proportions dépendent
-// du dessin de iphone.png (où se trouve l'écran dans l'image) :
-//   tinder_cadre          : image du téléphone      (défaut iphone.png)
-//   tinder_match          : image du MATCH          (défaut match.png)
-//   tinder_largeur        : largeur du tel en % de l'écran        (défaut 56)
-//   tinder_photo_x/y/w/h  : position de la photo DANS le tel, en % (6/11/88/78)
-//   tinder_match_largeur  : largeur du MATCH en %                (défaut 70)
-//   tinder_match_duree    : durée d'affichage du MATCH en s      (défaut 1.3)
+// Les cartes des filles sont dessinées sur le MÊME canvas que iphone.png (carte
+// déjà calée sur l'écran, transparent autour) : on les superpose donc au 1:1,
+// aucun repositionnement à faire. Réglages depuis le Sheet :
+//   tinder_cadre          : image du téléphone   (défaut iphone.png)
+//   tinder_match          : image du MATCH       (défaut match.png)
+//   tinder_largeur        : largeur du tel en % de l'écran   (défaut 62)
+//   tinder_match_largeur  : largeur du MATCH en %            (défaut 70)
+//   tinder_match_duree    : durée d'affichage du MATCH en s  (défaut 1.3)
 let matchAudio = null;
 function tinderCadre() {
   const f = G && G.config && G.config.tinder_cadre;
@@ -2990,11 +2992,7 @@ function appliquerReglagesTinder() {
     const n = parseFloat(G && G.config && G.config[cle]);
     st.setProperty(variable, (isNaN(n) ? defaut : n) + '%');
   };
-  set('--tinder-w', 'tinder_largeur', 56);
-  set('--tinder-px', 'tinder_photo_x', 6);
-  set('--tinder-py', 'tinder_photo_y', 11);
-  set('--tinder-pw', 'tinder_photo_w', 88);
-  set('--tinder-ph', 'tinder_photo_h', 78);
+  set("--tinder-w", "tinder_largeur", 62);
   set('--tinder-match-w', 'tinder_match_largeur', 70);
 }
 function cacherTinder() {
