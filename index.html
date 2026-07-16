@@ -2583,8 +2583,9 @@ function reverbMelange() {
   return (n >= 0 && n <= 1) ? n : 0.55;
 }
 function estSonReverb(path) {
+  // Par défaut : la voix d'Oscar ET le short (les deux « sonnent » dans les chiottes).
   const raw = (G && G.config && G.config.sons_reverb !== undefined && G.config.sons_reverb !== '')
-    ? G.config.sons_reverb : 'son/oscar.mp3';
+    ? G.config.sons_reverb : 'son/oscar.mp3|son/shortpet.mp3';
   return String(raw).split('|').map(s => s.trim().toLowerCase()).filter(Boolean)
     .includes(String(path).trim().toLowerCase());
 }
@@ -3798,7 +3799,18 @@ let cabinesPortesActives = false; // bloque les clics tant que la phrase d'arriv
 // sur le short dans l'inventaire.
 let shortAudio = null;
 function jouerShortPet() {
-  if (!shortAudio) { shortAudio = new Audio(BASE + 'son/shortpet.mp3'); shortAudio.preload = 'auto'; }
+  const fichier = 'son/shortpet.mp3';
+  if (!shortAudio) {
+    shortAudio = new Audio();
+    shortAudio.preload = 'auto';
+    // Même écho de chiottes que la voix d'Oscar : on route l'élément dans la
+    // reverb (une seule fois, à la création). crossOrigin AVANT le src, sinon
+    // Web Audio refuse le flux.
+    const avecReverb = estSonReverb(fichier);
+    if (avecReverb) shortAudio.crossOrigin = 'anonymous';
+    shortAudio.src = BASE + fichier;
+    if (avecReverb) brancherReverb(shortAudio);
+  }
   shortAudio.muted = isMuted;
   try { shortAudio.currentTime = 0; } catch (e) {}
   shortAudio.play().catch(() => {});
