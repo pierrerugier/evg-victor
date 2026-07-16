@@ -3885,12 +3885,19 @@ function retourCabines() {
 
 function ouvrirCabine(idx, contenu, lieu) {
   cabinesOuvertes.push(idx);
-  // On ouvre la porte de la cabine. Pour Oscar, sa voix (oscar.mp3) démarre EN MÊME
-  // TEMPS que dooropen (les deux se superposent).
+  // On ouvre la porte de la cabine. Pour Oscar, sa voix (oscar.mp3) démarre un court
+  // délai après le début de dooropen (config oscar_delai en secondes, défaut 0.3 ;
+  // 0 = exactement en même temps).
   jouerPorte(true);
   if (contenu === 'oscar') {
-    const lt = G.lieux.find(l => l.id === 'toilettes');
-    if (lt) playSonLieu(lt);
+    const dRaw = parseFloat(G && G.config && G.config.oscar_delai);
+    const delai = (!isNaN(dRaw) && dRaw >= 0) ? dRaw * 1000 : 300;
+    const jouerOscar = () => {
+      if (!document.querySelector('#screen-cabines.active')) return; // on a quitté entre-temps
+      const lt = G.lieux.find(l => l.id === 'toilettes');
+      if (lt) playSonLieu(lt);
+    };
+    if (delai > 0) setTimeout(jouerOscar, delai); else jouerOscar();
   }
   const dlg = document.getElementById('cabine-dlg');
   const nom = document.getElementById('cabine-nom');
