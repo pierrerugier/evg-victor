@@ -1616,10 +1616,17 @@ let hallAnimTimer = null;
 // ══════════════════════════════════════════════════════════
 // EFFET MACHINE À ÉCRIRE
 // ══════════════════════════════════════════════════════════
-let typewriterTimeout = null;
+// (Le timer de frappe est stocké sur chaque élément, cf. typewrite/stopTypewrite,
+//  pour qu'un texte n'interrompe jamais la frappe d'un autre.)
 
 function typewrite(el, text, speed, onDone) {
-  if (typewriterTimeout) clearTimeout(typewriterTimeout);
+  // Le timer est stocké SUR L'ÉLÉMENT, pas dans une globale unique. Avec une
+  // globale, n'importe quel texte qui démarrait ailleurs coupait net la frappe en
+  // cours : or plusieurs se déclenchent sur minuterie sans prévenir (bulle du
+  // hall en boucle, phrases du pacman, commentaire Tinder différé, commentaires
+  // du magazine…). D'où des dialogues qui s'arrêtaient en plein milieu, au hasard.
+  // Ici, une nouvelle frappe n'annule que la frappe précédente DU MÊME élément.
+  stopTypewrite(el);
   el.textContent = '';
   const len = text.length;
   if (len === 0) { if (onDone) onDone(); return; }
@@ -1635,12 +1642,17 @@ function typewrite(el, text, speed, onDone) {
     if (i < len) {
       node.appendData(text[i]);
       i++;
-      typewriterTimeout = setTimeout(step, speed);
+      el._twTimer = setTimeout(step, speed);
     } else {
+      el._twTimer = null;
       if (onDone) onDone();
     }
   }
   step();
+}
+// Arrête proprement la frappe en cours d'UN élément (sans toucher aux autres).
+function stopTypewrite(el) {
+  if (el && el._twTimer) { clearTimeout(el._twTimer); el._twTimer = null; }
 }
 
 function typewriteBloc(txtEl, text, onDone) {
@@ -1791,7 +1803,7 @@ function showIntroSequence(onDone) {
   const passerIntro = () => {
     if (btnPasser) btnPasser.style.display = 'none';
     btn.disabled = true; btn.style.opacity = '0.4';
-    if (typewriterTimeout) clearTimeout(typewriterTimeout);
+    stopTypewrite(txtEl); // couper la frappe de l'intro en cours
     fadeOutIntroMusic(500);
     fondu.style.transitionDuration = '0.5s';
     fondu.classList.remove('clear');
