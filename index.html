@@ -3794,6 +3794,12 @@ function showCabines(lieu) {
 function retourCabines() {
   document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
   document.getElementById('cabine-dlg').style.display = 'none';
+  // De retour à la sélection des cabines : on ré-autorise toutes les portes.
+  // Sinon une cabine déjà ouverte (même si on n'a pas pris l'objet, ex. on revient
+  // via "← Cabines") restait bloquée par la garde de clic. La réouverture est sans
+  // risque : l'ajout d'objet est protégé contre les doublons, et la cabine d'Oscar
+  // est de toute façon prévue pour être rouverte plusieurs fois.
+  cabinesOuvertes = [];
 }
 
 function ouvrirCabine(idx, contenu, lieu) {
