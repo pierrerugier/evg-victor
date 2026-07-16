@@ -3862,15 +3862,17 @@ function showCabines(lieu) {
     overlay.appendChild(z);
   });
 
-  // Phrase d'arrivée de Victor dans les toilettes : ligne où le personnage est
-  // Victor (type 'victor', 'pnj', ou vide). Affichée ~2s, cabines bloquées.
+  // Phrase d'arrivée de Victor dans les toilettes : ligne 'pnj' / 'victor' (ou de
+  // type vide) dont le personnage est Victor. Affichée ~2 s, cabines bloquées.
+  // LISTE BLANCHE volontaire : avec une liste noire, tout NOUVEAU type portant
+  // « Victor » (ex. cabine_50k / cabine_short) serait pris par erreur pour la
+  // phrase d'arrivée et remplacerait ce que Victor dit en entrant.
+  const TYPES_ARRIVEE_TOILETTES = ['', 'pnj', 'victor'];
   const arrivedlg = G.dialogues.find(d => {
     if (d.lieu_id !== 'toilettes') return false;
     const t = (d.type || '').toLowerCase().trim();
     const p = (d.personnage || '').toLowerCase().trim();
-    // On exclut les types fonctionnels (succès, narration, etc.)
-    const typeFonctionnel = ['fin_succes','fin_succes_2','fin_succes_3','fin_succes_4','fin_echec','narration','qcm','choix','reponse_incorrecte'].includes(t);
-    return p === 'victor' && !typeFonctionnel;
+    return p === 'victor' && TYPES_ARRIVEE_TOILETTES.includes(t);
   });
   if (arrivedlg) {
     const dlg = document.getElementById('cabine-dlg');
