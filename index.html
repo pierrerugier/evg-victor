@@ -2978,6 +2978,7 @@ function renderDlg() {
 // aucun repositionnement à faire. Réglages depuis le Sheet :
 //   tinder_cadre          : image du téléphone   (défaut iphone.png)
 //   tinder_match          : image du MATCH       (défaut match.png)
+//   tinder_match_son      : son du MATCH         (défaut son/match.mp3)
 //   tinder_largeur        : largeur du tel en % de l'écran   (défaut 62)
 //   tinder_match_largeur  : largeur du MATCH en %            (défaut 70)
 //   tinder_match_duree    : durée d'affichage du MATCH en s  (défaut 1.3)
@@ -3006,7 +3007,9 @@ function jouerMatch(onDone) {
   const fichier = (G && G.config && G.config.tinder_match && String(G.config.tinder_match).trim())
     ? String(G.config.tinder_match).trim() : 'match.png';
   const duree = (parseFloat(G && G.config && G.config.tinder_match_duree) || 1.3) * 1000;
-  if (!matchAudio) { matchAudio = new Audio(BASE + 'son/match.mp3'); matchAudio.preload = 'auto'; }
+  const son = (G && G.config && G.config.tinder_match_son && String(G.config.tinder_match_son).trim())
+    ? String(G.config.tinder_match_son).trim() : 'son/match.mp3';
+  if (!matchAudio) { matchAudio = new Audio(BASE + son); matchAudio.preload = 'auto'; }
   matchAudio.muted = isMuted;
   try { matchAudio.currentTime = 0; } catch (e) {}
   matchAudio.play().catch(() => {});
