@@ -2320,6 +2320,12 @@ let bgRouted = false;      // vrai une fois bgMusic routé dans Web Audio
 function bgVolumeNormal() {
   return parseFloat(G && G.config && G.config.musique_fond_volume) || 0.5;
 }
+// Deux niveaux d'étouffement de la musique de fond :
+//   FORT  ("derrière une porte fermée", ex. toilettes) : etouffe_frequence (400 Hz)
+//         + etouffe_volume (0.35).
+//   LÉGER ("boutique duty-free, pas vraiment dans le hall", ex. Louis/relay et
+//         Rolex) : etouffe_leger_frequence (2000 Hz) + etouffe_leger_volume (0.7).
+//         Moins filtré, un peu moins fort.
 function etouffeFreq() {
   const n = parseFloat(G && G.config && G.config.etouffe_frequence);
   return (n > 0) ? n : 400;   // Hz : plus bas = plus étouffé
@@ -2327,6 +2333,14 @@ function etouffeFreq() {
 function etouffeVol() {
   const n = parseFloat(G && G.config && G.config.etouffe_volume);
   return (n >= 0 && n <= 1) ? n : 0.35;  // multiplicateur du volume normal
+}
+function etouffeLegerFreq() {
+  const n = parseFloat(G && G.config && G.config.etouffe_leger_frequence);
+  return (n > 0) ? n : 2000;  // Hz : plus haut = plus léger (moins filtré)
+}
+function etouffeLegerVol() {
+  const n = parseFloat(G && G.config && G.config.etouffe_leger_volume);
+  return (n >= 0 && n <= 1) ? n : 0.7;
 }
 
 // Table lieu -> fichier d'ambiance, depuis config.ambiances_lieux
@@ -2343,11 +2357,18 @@ function getAmbiancesLieux() {
   });
   return map;
 }
-// Lieux où ambiance-hall doit être étouffée, depuis config.lieux_etouffes ("toilettes|autre")
-function estLieuEtouffe(id) {
-  const raw = G && G.config && G.config.lieux_etouffes;
+function listeContient(cle, id) {
+  const raw = G && G.config && G.config[cle];
   if (!raw) return false;
   return String(raw).split('|').map(s => s.trim().toLowerCase()).includes(String(id).toLowerCase());
+}
+// Réglage d'étouffement d'un lieu, ou null (son normal). Fort prioritaire sur léger.
+//   lieux_etouffes        : étouffement FORT  (ex. "toilettes")
+//   lieux_etouffes_leger  : étouffement LÉGER (ex. "relay|rolex")
+function niveauEtouffementLieu(id) {
+  if (listeContient('lieux_etouffes', id)) return { freq: etouffeFreq(), vol: etouffeVol() };
+  if (listeContient('lieux_etouffes_leger', id)) return { freq: etouffeLegerFreq(), vol: etouffeLegerVol() };
+  return null;
 }
 
 // Route bgMusic dans Web Audio (passe-bas + gain). Fait À LA DEMANDE seulement
@@ -2370,20 +2391,23 @@ function routerBgMusic() {
   } catch (e) { bgRouted = false; bgGain = null; bgFilter = null; }
 }
 
-// Étouffe (true) ou rétablit (false) la musique de fond, en fondu court.
-function etoufferBgMusic(etouffe) {
+// Applique un étouffement à la musique de fond (fondu court), ou le retire.
+// `niveau` = { freq, vol } (cf. niveauEtouffementLieu) ou null pour rétablir.
+function etoufferBgMusic(niveau) {
   if (!bgMusic) return;
   const vol = bgVolumeNormal();
-  if (etouffe) routerBgMusic();
+  const freqCible = niveau ? niveau.freq : 20000;      // 20 kHz = filtre grand ouvert
+  const volCible = niveau ? vol * niveau.vol : vol;
+  if (niveau) routerBgMusic();
   if (bgRouted && bgFilter && bgGain && tapAudioCtx) {
     const t = tapAudioCtx.currentTime;
     try {
-      bgFilter.frequency.setTargetAtTime(etouffe ? etouffeFreq() : 20000, t, 0.08);
-      bgGain.gain.setTargetAtTime(etouffe ? vol * etouffeVol() : vol, t, 0.08);
+      bgFilter.frequency.setTargetAtTime(freqCible, t, 0.08);
+      bgGain.gain.setTargetAtTime(volCible, t, 0.08);
     } catch (e) {}
   } else {
     // Repli sans Web Audio : au moins le volume (ignoré par iOS, mais inoffensif).
-    bgMusic.volume = etouffe ? vol * etouffeVol() : vol;
+    bgMusic.volume = volCible;
   }
 }
 
@@ -2407,7 +2431,7 @@ function jouerAmbianceLieu(fichier) {
 function reprendreBgMusic() {
   stopAmbianceLieu();
   if (!bgMusic) { startBgMusic(); return; }
-  etoufferBgMusic(false);
+  etoufferBgMusic(null); // hall : plus aucun étouffement
   if (bgMusic.paused) {
     const n = parseFloat(G && G.config && G.config.ambiance_hall_reprise);
     const pos = isNaN(n) ? 10 : n;
@@ -2423,7 +2447,7 @@ function appliquerAmbianceLieu(id) {
   stopAmbianceLieu();
   if (!bgMusic) startBgMusic();
   else if (bgMusic.paused) bgMusic.play().catch(() => {});
-  etoufferBgMusic(estLieuEtouffe(id));                    // 2. étouffé / 3. normal
+  etoufferBgMusic(niveauEtouffementLieu(id));            // 2. étouffé (fort/léger) / 3. normal
 }
 
 // ── SON DE TAP ──
