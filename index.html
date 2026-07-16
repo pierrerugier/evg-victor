@@ -2720,11 +2720,31 @@ function renderDlg() {
 
   phraseIndex = 0;
 
-  // Bloc texte standard pour les autres types
-  const bloc = document.createElement('div');
-  bloc.className = 'dlg-bloc';
-  bloc.innerHTML = `<div class="dlg-nom">${dlg.personnage}</div><div class="dlg-txt">${dlg.texte}</div>`;
+  // Bloc texte standard pour tous les autres types (QCM, choix/Rolex, tinder,
+  // fin_succes, fin_echec…). Passe par createDlgBloc (donc gère aussi la
+  // narration entre [crochets]) et TAPE le texte à la machine, à la vitesse
+  // config typewriter_speed — comme les répliques pnj. Avant, ces types
+  // s'affichaient d'un coup.
+  const { bloc, texteClean } = createDlgBloc(dlg.personnage, dlg.texte);
+  const blocTxtEl = bloc.querySelector('.dlg-txt');
+  if (blocTxtEl) blocTxtEl.textContent = '';
   dlgZone.appendChild(bloc);
+  // Tinder : on laisse d'abord voir la photo, le commentaire de Paul arrive
+  // après un délai (config tinder_delai_commentaire, défaut 0,8 s).
+  const delaiTexte = (type === 'tinder') ? tinderDelaiCommentaire() : 0;
+  const taperBloc = () => {
+    if (!blocTxtEl) return;
+    bloc.style.display = '';
+    typewriteBloc(blocTxtEl, texteClean, () => requestAnimationFrame(adjustDlgBottom));
+    requestAnimationFrame(adjustDlgBottom);
+  };
+  if (delaiTexte > 0) {
+    bloc.style.display = 'none'; // pas de bulle vide pendant l'attente
+    if (tinderTexteTimer) clearTimeout(tinderTexteTimer);
+    tinderTexteTimer = setTimeout(taperBloc, delaiTexte);
+  } else {
+    taperBloc();
+  }
 
   if (type === 'qcm') {
     const opts = dlg.meta.split('|');
@@ -3003,7 +3023,14 @@ function renderDlg() {
 //   tinder_match_duree    : durée d'affichage du MATCH en s  (défaut 1.3)
 // (Pas de réglage de taille pour le téléphone : le cadrage est dans le PNG.)
 let matchAudio = null;
-let tinderDernierClic = 0; // anti-rebond entre deux filles (cf. armer())
+let tinderDernierClic = 0;   // anti-rebond entre deux filles (cf. armer())
+let tinderTexteTimer = null; // délai avant le commentaire de Paul
+// Délai (ms) avant que le commentaire de Paul apparaisse : on laisse d'abord voir
+// la fille. Réglable : config tinder_delai_commentaire (en secondes, défaut 0,8).
+function tinderDelaiCommentaire() {
+  const n = parseFloat(G && G.config && G.config.tinder_delai_commentaire);
+  return (!isNaN(n) && n >= 0) ? n * 1000 : 800;
+}
 function tinderCadre() {
   const f = G && G.config && G.config.tinder_cadre;
   return (f && String(f).trim()) ? String(f).trim() : 'iphone.png';
@@ -3028,10 +3055,15 @@ function appliquerReglagesTinder() {
 function ajusterTinderPhone() {
   const zone = document.getElementById('tinder-zone');
   const phone = document.getElementById('tinder-phone');
-  if (!zone || !phone) return;
+  const cadre = document.getElementById('tinder-cadre');
+  if (!zone || !phone || !cadre) return;
   const r = zone.getBoundingClientRect();
   if (!r.width || !r.height) return;
-  const ratio = 1080 / 1920;
+  // Ratio LU SUR L'IMAGE : si tu changes le canvas des PNG (ex. plus haut pour
+  // voir la main jusqu'en bas), il n'y a rien à toucher ici. Repli sur 9:16 tant
+  // que l'image n'est pas décodée (naturalWidth vaut 0 avant le chargement).
+  const ratio = (cadre.naturalWidth && cadre.naturalHeight)
+    ? cadre.naturalWidth / cadre.naturalHeight : 1080 / 1920;
   let w = r.width, h = w / ratio;
   if (h > r.height) { h = r.height; w = h * ratio; }
   phone.style.width = w + 'px';
@@ -3040,6 +3072,9 @@ function ajusterTinderPhone() {
 window.addEventListener('resize', ajusterTinderPhone);
 window.addEventListener('orientationchange', ajusterTinderPhone);
 function cacherTinder() {
+  // Couper le délai en cours : sinon un commentaire de Paul pourrait surgir
+  // après coup, une fois le téléphone rangé.
+  if (tinderTexteTimer) { clearTimeout(tinderTexteTimer); tinderTexteTimer = null; }
   const z = document.getElementById('tinder-zone');
   if (z) z.classList.remove('open');
   const m = document.getElementById('tinder-match');
@@ -3085,9 +3120,12 @@ function showTempDlg(dlg, cb, duree = 3000) {
   const dlgZone = document.getElementById('dlg-zone');
   dlgZone.innerHTML = '';
   document.getElementById('choix-zone').style.display = 'none';
-  const { bloc } = createDlgBloc(dlg.personnage, dlg.texte);
+  const { bloc, texteClean } = createDlgBloc(dlg.personnage, dlg.texte);
   bloc.style.borderLeft = '3px solid var(--rose)';
+  const txtEl = bloc.querySelector('.dlg-txt');
+  if (txtEl) txtEl.textContent = ''; // tapé à la machine, comme partout ailleurs
   dlgZone.appendChild(bloc);
+  if (txtEl) typewriteBloc(txtEl, texteClean, () => requestAnimationFrame(adjustDlgBottom));
   requestAnimationFrame(adjustDlgBottom);
   setTimeout(() => cb(), duree);
 }
@@ -3815,10 +3853,11 @@ function entrerLieuEchec(lieu) {
   showScreen('scene');
   const dlgZone = document.getElementById('dlg-zone');
   dlgZone.innerHTML = '';
-  const bloc = document.createElement('div');
-  bloc.className = 'dlg-bloc';
-  bloc.innerHTML = `<div class="dlg-nom">${echec.personnage}</div><div class="dlg-txt">${echec.texte}</div>`;
+  const { bloc, texteClean } = createDlgBloc(echec.personnage, echec.texte);
+  const txtEl = bloc.querySelector('.dlg-txt');
+  if (txtEl) txtEl.textContent = ''; // tapé à la machine, comme partout ailleurs
   dlgZone.appendChild(bloc);
+  if (txtEl) typewriteBloc(txtEl, texteClean, () => requestAnimationFrame(adjustDlgBottom));
   document.getElementById('choix-zone').style.display = 'none';
   const cta = document.getElementById('cta-zone');
   cta.style.display = 'flex';
