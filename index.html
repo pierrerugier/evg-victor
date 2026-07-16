@@ -13,6 +13,18 @@
 <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/pierrerugier/evg-victor/main/icons/app-icon.png">
 <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/pierrerugier/evg-victor/main/icons/app-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<!-- PWA : rend le jeu installable et jouable hors connexion (cache géré par sw.js). -->
+<link rel="manifest" href="manifest.webmanifest">
+<script>
+/* Enregistre le service worker (met tout le jeu en cache au 1er chargement en
+   ligne, puis le sert hors connexion). Sans effet si le site est ouvert en
+   local (file://) ou hors HTTPS : le service worker exige une origine sécurisée. */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
 <style>
 :root {
   --font: 'Josefin Sans', sans-serif;
@@ -1045,6 +1057,10 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', setA
 // ══════════════════════════════════════════════════════════
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzze8-guvyUP7j04Mg_RW1vXiKOIZ_KpLaWKlARLEi3usTmdHenEuuZCgYQJTKTQtXt2A/exec';
 
+// Clé de cache des DONNÉES du jeu (dialogues/config/lieux du Google Sheet).
+// Sauvegardées à chaque lancement en ligne pour rejouer hors connexion (avion).
+const DATA_CACHE_KEY = 'evg_data_cache';
+
 let BASE = '';
 let G = null; // { config, objets, lieux, dialogues }
 let preloadRestePromise = null; // préchargement d'arrière-plan (tout sauf le critique)
@@ -1070,6 +1086,34 @@ let oscarVisites = 0;
 let milgaussAchetee = false; // vrai dès que la Milgauss est choisie chez Rolex
 let jeuTermine = false; // vrai uniquement à la vraie fin (toutes les missions OK)
 
+// Message affiché si le jeu est ouvert SANS réseau alors qu'il n'a jamais été
+// lancé en ligne (aucune donnée en cache). Il faut une première connexion.
+function afficherMessageHorsLigne() {
+  const cover = document.getElementById('loading-cover');
+  if (cover) cover.style.backgroundImage = '';
+  const phrases = document.getElementById('loading-phrases');
+  if (phrases) phrases.style.display = 'none';
+  const btn = document.getElementById('btn-jouer');
+  if (btn) btn.style.display = 'none';
+  let box = document.getElementById('offline-msg');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'offline-msg';
+    box.style.cssText = 'position:absolute;inset:0;z-index:100;display:flex;flex-direction:column;'
+      + 'align-items:center;justify-content:center;text-align:center;padding:32px;gap:14px;'
+      + 'background:#000;color:#fff;font-family:var(--font);';
+    box.innerHTML = '<div style="font-size:22px;font-weight:700;letter-spacing:0.05em;">Pas de connexion</div>'
+      + '<div style="font-size:15px;line-height:1.5;opacity:0.85;max-width:280px;">'
+      + 'Lance le jeu <b>une première fois avec Internet</b> (Wi-Fi ou 4G). '
+      + 'Il se mettra en mémoire et sera ensuite jouable hors connexion, même dans l\'avion.</div>'
+      + '<button onclick="location.reload()" style="margin-top:10px;background:var(--rose);color:#000;'
+      + 'border:none;font-family:var(--font);font-weight:700;font-size:14px;letter-spacing:0.08em;'
+      + 'text-transform:uppercase;padding:12px 22px;border-radius:6px;cursor:pointer;">Réessayer</button>';
+    (document.getElementById('screen-loading') || document.body).appendChild(box);
+  }
+  box.style.display = 'flex';
+}
+
 // ══════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════
@@ -1084,8 +1128,24 @@ async function init() {
   // rien ne s'affiche jusqu'à ce que la config arrive — puis la vraie liste tourne.
   startLoadingPhrases();
 
-  const res = await fetch(SHEET_URL + '?v=' + Date.now());
-  G = await res.json();
+  // Données du jeu : on tente le réseau (pour rester à jour) et on met le
+  // résultat en cache local. Hors connexion (ex. dans l'avion), on rejoue la
+  // dernière version mise en cache lors du dernier lancement AVEC Internet. Le
+  // jeu reste donc jouable sans réseau une fois ouvert au moins une fois en ligne.
+  try {
+    const res = await fetch(SHEET_URL + '?v=' + Date.now());
+    G = await res.json();
+    try { localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(G)); } catch (e) {}
+  } catch (e) {
+    const cacheJeu = localStorage.getItem(DATA_CACHE_KEY);
+    if (cacheJeu) {
+      G = JSON.parse(cacheJeu); // mode hors-ligne : on rejoue les données en cache
+    } else {
+      // Jamais lancé en ligne : impossible de démarrer sans les données.
+      afficherMessageHorsLigne();
+      return;
+    }
+  }
   BASE = G.config.github_base_url || 'https://raw.githubusercontent.com/pierrerugier/evg-victor/main/';
   // Mémoriser la liste du Sheet pour l'afficher dès le début au prochain lancement.
   try {
