@@ -188,22 +188,26 @@ html, body {
    rien redimensionner, et les deux calques se superposent au pixel près.
    `contain` (et pas `cover`) : on veut la composition entière, sans rogner la
    main ; les marges transparentes laissent voir la scène de Paul derrière. */
+/* Les 3 PNG (tindergirl, iphone, match) partagent le MÊME canvas et participent
+   d'une seule animation : ils sont donc tous rendus À L'IDENTIQUE, dans une boîte
+   unique (#tinder-phone) dimensionnée en JS façon `cover` — remplie en entier,
+   rognée en haut/bas si l'image est plus haute que l'écran, sur les côtés si elle
+   est plus large. Comme les trois calques occupent cette même boîte, ils restent
+   alignés au pixel quoi qu'il arrive. Le débord est rogné par overflow:hidden. */
 #tinder-zone {
   position: absolute; inset: 0;
   z-index: 20;
   display: none;
   align-items: center; justify-content: center;
+  overflow: hidden;     /* rogne le débord du cadrage plein */
   pointer-events: none; /* seules les zones de clic du téléphone réagissent */
 }
 #tinder-zone.open { display: flex; }
-/* Taille posée en JS (ajusterTinderPhone) : exactement la boîte qu'occuperait
-   l'image 1080x1920 en `contain`. Du coup les zones de clic, positionnées en %
-   de cette boîte, tombent pile sur le X et le cœur dessinés dans le PNG. */
-#tinder-phone { position: relative; }
-#tinder-cadre, #tinder-photo {
+#tinder-phone { position: relative; flex: none; } /* taille posée par ajusterTinderPhone */
+#tinder-cadre, #tinder-photo, #tinder-match {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
-  object-fit: contain;
+  object-fit: contain;  /* la boîte a déjà le ratio exact de l'image */
   object-position: center;
 }
 /* Zones de clic invisibles, calées sur les boutons dessinés dans iphone.png. */
@@ -224,17 +228,16 @@ html, body {
 #tinder-cadre { z-index: 2; }
 /* Carte de la fille : SOUS le cadre, elle apparaît dans la découpe de l'écran. */
 #tinder-photo { z-index: 1; }
-/* "MATCH" : au milieu de l'écran, apparition avec un petit rebond. */
+/* "MATCH" : calque plein, rendu EXACTEMENT comme les deux autres. Pas de scale
+   ni de translation — le moindre transform le décalerait du téléphone, alors que
+   les trois PNG sont dessinés pour se superposer au pixel. Seule l'opacité varie. */
 #tinder-match {
-  position: absolute; z-index: 3;
-  left: 50%; top: 50%;
-  width: var(--tinder-match-w, 70%);
-  max-width: 320px;
-  opacity: 0; transform: translate(-50%, -50%) scale(0.7);
-  transition: opacity 0.18s ease, transform 0.25s cubic-bezier(0.34, 1.5, 0.64, 1);
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.18s ease;
   pointer-events: none;
 }
-#tinder-match.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+#tinder-match.show { opacity: 1; }
 
 /* CTA */
 #cta-zone {
@@ -807,12 +810,12 @@ html, body {
     <div id="tinder-phone">
       <img id="tinder-photo" alt="">
       <img id="tinder-cadre" alt="">
+      <img id="tinder-match" alt="">
       <!-- Zones de clic transparentes, calées sur le X et le cœur DESSINÉS dans
            iphone.png (positions mesurées dans l'image, cf. --tinder-nope-x etc.). -->
       <button id="tinder-nope" class="tinder-hit" aria-label="Passer"></button>
       <button id="tinder-like" class="tinder-hit" aria-label="Liker"></button>
     </div>
-    <img id="tinder-match" alt="">
   </div>
   <div class="scene-spacer"></div>
   <div id="scene-bottom">
@@ -2610,7 +2613,14 @@ function adjustDlgBottom() {
   const choix = document.getElementById('choix-zone');
   // Double RAF pour attendre le rendu complet
   requestAnimationFrame(() => {
-    const ctaH = cta.offsetHeight || 58;
+    // Si la zone CTA est masquée (mini-jeu Tinder : on clique dans le téléphone,
+    // il n'y a aucun bouton), son offsetHeight vaut 0 et le repli à 58 px faisait
+    // FLOTTER le dialogue au-dessus du vide. On le ferre alors en bas avec la
+    // seule marge de la zone CTA (14 px + safe area), lisible même masquée.
+    const ctaCachee = getComputedStyle(cta).display === 'none';
+    const ctaH = ctaCachee
+      ? (parseFloat(getComputedStyle(cta).paddingBottom) || 14)
+      : (cta.offsetHeight || 58);
     const choixH = (choix.style.display !== 'none') ? (choix.offsetHeight || 0) : 0;
     choix.style.bottom = ctaH + 'px';
     dlg.style.bottom = (ctaH + choixH) + 'px';
@@ -3019,7 +3029,8 @@ function renderDlg() {
 //   tinder_cadre          : image du téléphone   (défaut iphone.png)
 //   tinder_match          : image du MATCH       (défaut match.png)
 //   tinder_match_son      : son du MATCH         (défaut son/match.mp3)
-//   tinder_match_largeur  : largeur du MATCH en %            (défaut 70)
+// (Pas de taille pour le MATCH : comme les deux autres PNG, son cadrage est
+//  dans l'image et il occupe le même calque plein.)
 //   tinder_match_duree    : durée d'affichage du MATCH en s  (défaut 1.3)
 // (Pas de réglage de taille pour le téléphone : le cadrage est dans le PNG.)
 let matchAudio = null;
@@ -3041,7 +3052,6 @@ function appliquerReglagesTinder() {
     const n = parseFloat(G && G.config && G.config[cle]);
     st.setProperty(variable, (isNaN(n) ? defaut : n) + '%');
   };
-  set('--tinder-match-w', 'tinder_match_largeur', 70);
   // Positions du X et du cœur, MESURÉES dans iphone.png (1080x1920) :
   // X rose centre (428,1350) -> 39.6% / 70.3% ; cœur vert (672,1348) -> 62.2% / 70.2%.
   set('--tinder-nope-x', 'tinder_nope_x', 39.6);
@@ -3064,8 +3074,11 @@ function ajusterTinderPhone() {
   // que l'image n'est pas décodée (naturalWidth vaut 0 avant le chargement).
   const ratio = (cadre.naturalWidth && cadre.naturalHeight)
     ? cadre.naturalWidth / cadre.naturalHeight : 1080 / 1920;
+  // Cadrage PLEIN (façon `cover`) : on remplit tout l'écran, quitte à déborder —
+  // rogné en haut/bas si l'image est plus haute, sur les côtés si plus large.
+  // Le débord est coupé par overflow:hidden sur #tinder-zone.
   let w = r.width, h = w / ratio;
-  if (h > r.height) { h = r.height; w = h * ratio; }
+  if (h < r.height) { h = r.height; w = h * ratio; }
   phone.style.width = w + 'px';
   phone.style.height = h + 'px';
 }
