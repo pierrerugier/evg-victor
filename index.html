@@ -1204,7 +1204,10 @@ async function init() {
     const surTitre = document.querySelector('#screen-loading.active');
     const surFin = document.querySelector('#screen-fin.active');
     const surIntro = document.querySelector('#screen-intro.active');
-    if (!surTitre && !surFin && !surIntro && !jeuTermine && !bgMusicStarted && !bgMusic) startBgMusic();
+    // Ne JAMAIS relancer ambiance-hall si une ambiance de lieu joue déjà
+    // (culte/exterieur/charles) : sinon les deux pistes se superposent → « disque
+    // rayé ». Idem sur titre/fin/intro ou une fois le jeu terminé.
+    if (!surTitre && !surFin && !surIntro && !jeuTermine && !bgMusicStarted && !bgMusic && !ambianceLieu) startBgMusic();
   };
   document.addEventListener('click', retryAudio);
   document.addEventListener('touchstart', retryAudio);
@@ -1602,7 +1605,7 @@ function appliquerCheat(code) {
   return true;
 }
 
-function goLoading() { stopPacman(); stopSound(); stopLaunch(); stopHallAnim(); stopAmbianceLieu(); if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; } showScreen('loading'); }
+function goLoading() { stopPacman(); arreterSonsTransitoires(); stopLaunch(); stopHallAnim(); stopAmbianceLieu(); if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; } showScreen('loading'); }
 
 // Arrête l'animation des phrases de Victor sur le hall et masque la bulle.
 // Évite qu'un timer en cours fasse réapparaître une bulle par-dessus le tuto.
@@ -1614,7 +1617,7 @@ function stopHallAnim() {
 
 function goHall() {
   stopPacman(); // couper toute boucle pacman résiduelle
-  stopSound();
+  arreterSonsTransitoires(); // voix + briquet/cess/match/page : rien ne bave au retour
   cacherTinder();     // le téléphone de Paul ne doit pas survivre au retour au hall
   reprendreBgMusic(); // coupe l'ambiance du lieu, dé-étouffe, relance ambiance-hall à 10 s
   setupHall();
@@ -2317,9 +2320,14 @@ function startBgMusic() {
   bgMusic.src = BASE + path;
   // Ceinture-bretelles : si l'attribut loop ne se réamorce pas (cas fréquent
   // sur iOS/Safari où la piste s'arrête à la fin), on relance manuellement.
-  bgMusic.addEventListener('ended', () => {
-    bgMusic.currentTime = 0;
-    bgMusic.play().catch(() => {});
+  // On capture l'ÉLÉMENT (pas la variable globale) et on vérifie qu'il est
+  // toujours le bgMusic courant : sinon une ancienne instance pourrait relancer
+  // la nouvelle par surprise (« disque rayé »).
+  const elBg = bgMusic;
+  elBg.addEventListener('ended', () => {
+    if (bgMusic !== elBg) return;
+    try { elBg.currentTime = 0; } catch (e) {}
+    elBg.play().catch(() => {});
   });
   bgMusic.play().then(() => { bgMusicStarted = true; }).catch(() => {
     // Autoplay bloqué : on libère l'instance pour pouvoir retenter au prochain clic.
@@ -2618,6 +2626,15 @@ function playSound(path) {
 // Ne coupe QUE le son de lieu, jamais la musique de fond.
 function stopSound() {
   if (currentSound) { currentSound.pause(); currentSound.currentTime = 0; currentSound = null; }
+}
+
+// Coupe TOUS les sons ponctuels d'un lieu (voix + briquet, cess, match, page)
+// avant de changer d'écran, pour qu'aucun ne « bave » sur la navigation.
+function arreterSonsTransitoires() {
+  stopSound();
+  [lambertAudio, cessAudio, matchAudio, pageAudio].forEach(a => {
+    if (a) { try { a.pause(); a.currentTime = 0; } catch (e) {} }
+  });
 }
 
 // Son par lieu : colonne 'son' du Sheet (un mp3 par personnage).
@@ -4492,8 +4509,8 @@ function showFin() {
   // Musique de fin : finjeu.mp3 en boucle.
   const sonFin = (G.config && G.config.son_fin) ? G.config.son_fin : 'son/finjeu.mp3';
   stopAmbianceLieu(); // pas d'ambiance de lieu par-dessus la musique de fin
+  arreterSonsTransitoires(); // ni voix/briquet/cess/match/page résiduels
   if (bgMusic) { bgMusic.pause(); bgMusic = null; bgMusicStarted = false; }
-  if (currentSound) { currentSound.pause(); currentSound.currentTime = 0; }
   currentSound = new Audio(BASE + sonFin);
   currentSound.loop = true;
   currentSound.muted = isMuted;
