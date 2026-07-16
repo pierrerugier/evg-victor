@@ -906,7 +906,7 @@ html, body {
 <!-- CABINES -->
 <div id="screen-cabines" class="screen">
   <div class="bg" id="cabines-bg"></div>
-  <button style="position:absolute;top:max(calc(env(safe-area-inset-top, 0px) + 4px), 12px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="quitterToilettes()">← Hall</button>
+  <button style="position:absolute;top:max(calc(env(safe-area-inset-top, 0px) + 4px), 12px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
   <div id="cabines-overlay"></div>
   <div id="cabine-dlg">
     <div class="dlg-bloc" style="background:rgba(0,0,0,0.8);padding:10px 12px;margin-bottom:6px;">
@@ -2263,7 +2263,6 @@ function toggleMute() {
   if (cessAudio) cessAudio.muted = isMuted;
   if (matchAudio) matchAudio.muted = isMuted;
   if (doorOpenAudio) doorOpenAudio.muted = isMuted;
-  if (doorCloseAudio) doorCloseAudio.muted = isMuted;
   if (ambianceLieu) ambianceLieu.muted = isMuted;
   if (pageAudio) pageAudio.muted = isMuted;
   // Basculer l'icône
@@ -3768,28 +3767,14 @@ function allerPageMagazine(p) {
 let cabinesOuvertes = [];
 let cabinesPortesActives = false; // bloque les clics tant que la phrase d'arrivée est affichée
 
-// Sons de porte des toilettes (dooropen à l'entrée toilettes + chaque cabine,
-// doorclose à la sortie de chaque cabine + des toilettes). Éléments dédiés,
-// rejoués à chaque fois (pas routés dans le filtre : ce sont des sons ponctuels).
-let doorOpenAudio = null, doorCloseAudio = null;
-function jouerPorte(ouvre, onEnd) {
-  let a = ouvre ? doorOpenAudio : doorCloseAudio;
-  if (!a) {
-    a = new Audio(BASE + (ouvre ? 'son/dooropen.mp3' : 'son/doorclose.mp3'));
-    a.preload = 'auto';
-    if (ouvre) doorOpenAudio = a; else doorCloseAudio = a;
-  }
-  a.muted = isMuted;
-  a.onended = null; a.onerror = null;
-  if (onEnd) {
-    let fini = false;
-    const fin = () => { if (fini) return; fini = true; onEnd(); };
-    a.onended = fin; a.onerror = fin;
-    setTimeout(fin, 4000); // filet si 'ended' ne se déclenche pas
-  }
-  try { a.currentTime = 0; } catch (e) {}
-  const p = a.play();
-  if (p && p.catch) p.catch(() => { if (onEnd) onEnd(); });
+// Son d'ouverture de porte des toilettes (dooropen) : à l'entrée des toilettes et
+// à l'ouverture de chaque cabine. Élément dédié, rejoué à chaque fois.
+let doorOpenAudio = null;
+function jouerPorte() {
+  if (!doorOpenAudio) { doorOpenAudio = new Audio(BASE + 'son/dooropen.mp3'); doorOpenAudio.preload = 'auto'; }
+  doorOpenAudio.muted = isMuted;
+  try { doorOpenAudio.currentTime = 0; } catch (e) {}
+  doorOpenAudio.play().catch(() => {});
 }
 
 function showCabines(lieu) {
@@ -3803,7 +3788,7 @@ function showCabines(lieu) {
   }
   document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('cabines');
-  jouerPorte(true); // on ouvre la porte des toilettes
+  jouerPorte(); // on ouvre la porte des toilettes
   cabinesOuvertes = [];
   cabinesPortesActives = false; // portes verrouillées au départ
   document.getElementById('cabine-dlg').style.display = 'none';
@@ -3864,15 +3849,7 @@ function showCabines(lieu) {
   }
 }
 
-// Sortie des toilettes (bouton ← Hall de l'écran cabines) : on referme la porte
-// des toilettes, puis retour au hall.
-function quitterToilettes() {
-  jouerPorte(false);
-  goHall();
-}
-
 function retourCabines() {
-  jouerPorte(false); // on referme la porte de la cabine qu'on quitte
   document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
   document.getElementById('cabine-dlg').style.display = 'none';
   // De retour à la sélection des cabines : on ré-autorise toutes les portes.
@@ -3888,7 +3865,7 @@ function ouvrirCabine(idx, contenu, lieu) {
   // On ouvre la porte de la cabine. Pour Oscar, sa voix (oscar.mp3) démarre un court
   // délai après le début de dooropen (config oscar_delai en secondes, défaut 0.3 ;
   // 0 = exactement en même temps).
-  jouerPorte(true);
+  jouerPorte();
   if (contenu === 'oscar') {
     const dRaw = parseFloat(G && G.config && G.config.oscar_delai);
     const delai = (!isNaN(dRaw) && dRaw >= 0) ? dRaw * 1000 : 300;
