@@ -2026,6 +2026,14 @@ function setupInvGrid() {
       slot.onmouseenter = () => slot.style.outline = '2px solid var(--rose)';
       slot.onmouseleave = () => slot.style.outline = '2px solid transparent';
       slot.onclick = () => actionMeujCess();
+    } else if (id === 'shortbernardini' && collected) {
+      // Le short "parle" quand on tape dessus. L'inventaire reste ouvert : on peut
+      // le retaper. Prioritaire sur le don, sans risque (il n'est jamais à donner).
+      slot.style.cursor = 'pointer';
+      slot.style.outline = '2px solid transparent';
+      slot.onmouseenter = () => slot.style.outline = '2px solid var(--rose)';
+      slot.onmouseleave = () => slot.style.outline = '2px solid transparent';
+      slot.onclick = () => jouerShortPet();
     } else if (needsObjet) {
       slot.style.cursor = 'pointer';
       slot.style.outline = '2px solid transparent';
@@ -2277,6 +2285,7 @@ function toggleMute() {
   if (cessAudio) cessAudio.muted = isMuted;
   if (matchAudio) matchAudio.muted = isMuted;
   if (doorOpenAudio) doorOpenAudio.muted = isMuted;
+  if (shortAudio) shortAudio.muted = isMuted;
   if (ambianceLieu) ambianceLieu.muted = isMuted;
   if (pageAudio) pageAudio.muted = isMuted;
   // Basculer l'icône
@@ -2647,7 +2656,7 @@ function stopSound() {
 // avant de changer d'écran, pour qu'aucun ne « bave » sur la navigation.
 function arreterSonsTransitoires() {
   stopSound();
-  [lambertAudio, cessAudio, matchAudio, pageAudio].forEach(a => {
+  [lambertAudio, cessAudio, matchAudio, pageAudio, shortAudio].forEach(a => {
     if (a) { try { a.pause(); a.currentTime = 0; } catch (e) {} }
   });
 }
@@ -3785,6 +3794,16 @@ function allerPageMagazine(p) {
 let cabinesOuvertes = [];
 let cabinesPortesActives = false; // bloque les clics tant que la phrase d'arrivée est affichée
 
+// Son du short d'Olivier Bernardini : au ramassage dans la cabine ET à chaque tap
+// sur le short dans l'inventaire.
+let shortAudio = null;
+function jouerShortPet() {
+  if (!shortAudio) { shortAudio = new Audio(BASE + 'son/shortpet.mp3'); shortAudio.preload = 'auto'; }
+  shortAudio.muted = isMuted;
+  try { shortAudio.currentTime = 0; } catch (e) {}
+  shortAudio.play().catch(() => {});
+}
+
 // Son d'ouverture de porte des toilettes (dooropen) : à l'entrée des toilettes et
 // à l'ouverture de chaque cabine. Élément dédié, rejoué à chaque fois.
 let doorOpenAudio = null;
@@ -4023,6 +4042,7 @@ function ouvrirCabine(idx, contenu, lieu) {
       d.texte || "Le short d'Olivier Bernardini. Il vaut mieux ne pas savoir.",
       d.bouton || 'Ramasser quand même',
       () => {
+        jouerShortPet(); // le short "parle" au ramassage
         if (!inventaire.includes('shortbernardini')) ajouterObjet('shortbernardini');
         retourCabines();
       }, true);
