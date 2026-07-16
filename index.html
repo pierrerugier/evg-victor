@@ -3885,13 +3885,13 @@ function retourCabines() {
 
 function ouvrirCabine(idx, contenu, lieu) {
   cabinesOuvertes.push(idx);
-  // On ouvre la porte de la cabine ; pour Oscar, sa voix (oscar.mp3) démarre
-  // seulement APRÈS la fin de dooropen, comme si la porte s'ouvrait sur lui.
-  jouerPorte(true, contenu === 'oscar' ? () => {
-    if (!document.querySelector('#screen-cabines.active')) return; // on a quitté entre-temps
+  // On ouvre la porte de la cabine. Pour Oscar, sa voix (oscar.mp3) démarre EN MÊME
+  // TEMPS que dooropen (les deux se superposent).
+  jouerPorte(true);
+  if (contenu === 'oscar') {
     const lt = G.lieux.find(l => l.id === 'toilettes');
     if (lt) playSonLieu(lt);
-  } : null);
+  }
   const dlg = document.getElementById('cabine-dlg');
   const nom = document.getElementById('cabine-nom');
   const txt = document.getElementById('cabine-txt');
