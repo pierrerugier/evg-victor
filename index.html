@@ -1696,7 +1696,21 @@ function setupHall() {
   const hall = G.lieux.find(l => l.id === 'hall');
   // Priorité : image temporaire (meuj de cess, 5 s) > cheat (drag/praud) > normale.
   const ecranHall = hallEcranTemp || hallEcranOverride || hall.ecran;
-  document.getElementById('hall-bg').style.backgroundImage = `url(${BASE}${ecranHall})`;
+  const bgEl = document.getElementById('hall-bg');
+  bgEl.style.backgroundImage = `url(${BASE}${ecranHall})`;
+  // Filet de sécurité : si l'image demandée n'existe pas (cheat dont le .jpg n'a
+  // pas été uploadé, image temporaire manquante…), une background-image en 404
+  // laisserait un HALL NOIR. On teste le chargement et on retombe sur l'image
+  // normale du hall en abandonnant l'override fautif.
+  if (ecranHall !== hall.ecran) {
+    const test = new Image();
+    test.onerror = () => {
+      if (hallEcranTemp === ecranHall) hallEcranTemp = null;
+      if (hallEcranOverride === ecranHall) hallEcranOverride = null;
+      bgEl.style.backgroundImage = `url(${BASE}${hall.ecran})`;
+    };
+    test.src = BASE + ecranHall;
+  }
 
   const pins = document.getElementById('hall-pins');
   pins.innerHTML = '';
@@ -2642,7 +2656,11 @@ function arreterSonsTransitoires() {
 // Le hall n'a pas de son de lieu (sa piste sert de musique de fond globale).
 function sonDuLieu(lieu) {
   if (!lieu || lieu.id === 'hall') return null;
-  return lieu.son || lieu.son_entree || lieu.son_succes || null;
+  const s = lieu.son || lieu.son_entree || lieu.son_succes || null;
+  // Le Sheet utilise « (vide) » comme placeholder de cellule vide : ce n'est pas
+  // un fichier. Sans ce garde-fou, on tenterait de jouer BASE + "(vide)" → 404.
+  if (!s || String(s).trim().toLowerCase() === '(vide)') return null;
+  return s;
 }
 
 function playSonLieu(lieu) {
