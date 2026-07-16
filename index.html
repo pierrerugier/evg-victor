@@ -398,7 +398,10 @@ html, body {
 #inv-bg { width: 100%; height: 100%; object-fit: cover; object-position: center; }
 #inv-grid {
   position: absolute;
-  top: 20%; left: 16%; width: 68%; height: 63%;
+  /* Un peu plus haut et plus bas pour donner de l'air aux icônes agrandies, en
+     restant dans le vert de la valise (mesuré). Largeur inchangée : les longs
+     libellés (« CARTE D'EMBARQUEMENT ») ne doivent pas déborder sur les côtés. */
+  top: 18%; left: 16%; width: 68%; height: 67%;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(5, 1fr);
@@ -406,17 +409,21 @@ html, body {
 .inv-slot {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
+  min-width: 0; /* autorise l'ellipse/retour propre du libellé dans la case */
 }
 .inv-slot img {
-  width: 62px; height: 62px; object-fit: contain;
+  /* Icônes agrandies (62 -> 82) : elles remplissent mieux chaque case, donc moins
+     de vide entre les éléments. En vw plafonné pour rester net sur petits écrans. */
+  width: min(82px, 21vw); height: min(82px, 21vw); object-fit: contain;
   opacity: 0.15; filter: grayscale(1);
 }
 .inv-slot.ok img { opacity: 1; filter: none; }
 .inv-slot span {
-  font-size: 8px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.05em; color: #fff;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #fff;
   text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-  text-align: center; margin-top: 3px; line-height: 1.2;
+  text-align: center; margin-top: 4px; line-height: 1.15;
+  max-width: 100%;
 }
 #inv-close-btn {
   position: absolute; bottom: 5%; left: 10%; width: 80%; z-index: 2;
