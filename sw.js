@@ -120,27 +120,67 @@ const ASSET_PATHS = [
 ];
 const ASSETS = ASSET_PATHS.map(p => RAW + p);
 
+// Met un asset en cache s'il n'y est pas déjà. fetch par défaut = mode "cors" ;
+// raw.githubusercontent renvoie les en-têtes CORS, donc la réponse est complète
+// (non opaque) et réutilisable (y compris par Web Audio pour les sons à réverb).
+// Repli en no-cors (réponse opaque, suffisante pour <img>/<audio>) si besoin.
+async function evgCacherAsset(cache, u) {
+  if (await cache.match(u)) return true; // déjà en cache : rien à retélécharger
+  try {
+    let res = await fetch(u, { cache: "no-cache" });
+    if (!res || (res.status !== 200 && res.status !== 0)) {
+      res = await fetch(new Request(u, { mode: "no-cors" }));
+    }
+    if (res && (res.status === 200 || res.status === 0)) { await cache.put(u, res.clone()); return true; }
+  } catch (_) {}
+  return false;
+}
+
+// Cache tous les assets encore manquants (utilisé à l'install ET quand la page
+// redemande le statut, pour rattraper un fichier qui aurait raté).
+async function evgCacherTout() {
+  const cache = await caches.open(CACHE);
+  await Promise.allSettled(ASSETS.map((u) => evgCacherAsset(cache, u)));
+}
+
+// Compte les assets réellement présents dans le cache.
+async function evgCompterAssets() {
+  const cache = await caches.open(CACHE);
+  let n = 0;
+  await Promise.all(ASSETS.map(async (u) => { if (await cache.match(u)) n++; }));
+  return n;
+}
+
+// Prévient toutes les pages ouvertes de l'état du cache. complete=true → le jeu
+// est entièrement en mémoire, donc jouable hors connexion (l'écran titre affiche
+// alors son petit indicateur).
+async function evgNotifierClients() {
+  const n = await evgCompterAssets();
+  const clients = await self.clients.matchAll({ includeUncontrolled: true, type: "window" });
+  for (const c of clients) {
+    c.postMessage({ type: "evg-cache", cached: n, total: ASSETS.length, complete: n >= ASSETS.length });
+  }
+}
+
 // — Installation : on précharge tout, de façon résiliente (un fichier qui échoue
-//   ne bloque pas les autres). skipWaiting pour activer la nouvelle version vite.
+//   ne bloque pas les autres), puis on informe les pages. skipWaiting pour
+//   activer la nouvelle version vite.
 self.addEventListener("install", (e) => {
   self.skipWaiting();
   e.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     await Promise.allSettled(CORE.map((u) => cache.add(u).catch(() => {})));
-    await Promise.allSettled(ASSETS.map(async (u) => {
-      try {
-        // fetch par défaut = mode "cors" ; raw.githubusercontent renvoie les
-        // en-têtes CORS, donc la réponse est complète (non opaque) et réutilisable
-        // (y compris par Web Audio pour les sons à réverb).
-        let res = await fetch(u, { cache: "no-cache" });
-        if (!res || (res.status !== 200 && res.status !== 0)) {
-          // repli en no-cors (réponse opaque, suffisante pour <img>/<audio>).
-          res = await fetch(new Request(u, { mode: "no-cors" }));
-        }
-        if (res && (res.status === 200 || res.status === 0)) await cache.put(u, res.clone());
-      } catch (_) {}
-    }));
+    await evgCacherTout();
+    await evgNotifierClients();
   })());
+});
+
+// — Message de la page : demande de l'état du cache (ex. au 2e lancement, déjà
+//   tout en cache). On tente de rattraper les manquants puis on répond.
+self.addEventListener("message", (e) => {
+  if (e.data && e.data.type === "evg-cache-status") {
+    e.waitUntil((async () => { await evgCacherTout(); await evgNotifierClients(); })());
+  }
 });
 
 // — Activation : purge des anciens caches + prise de contrôle immédiate.

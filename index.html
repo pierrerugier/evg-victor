@@ -23,6 +23,27 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });
+  // Indicateur "jeu entièrement en cache = jouable hors connexion" sur l'écran
+  // titre. Le service worker nous prévient (message 'evg-cache') quand tout est
+  // en cache ; on le relance quelques fois tant que ce n'est pas complet (le SW
+  // rattrape alors les fichiers manquants).
+  var evgOfflineTries = 0;
+  function evgOfflinePret() {
+    var el = document.getElementById('offline-ready');
+    if (el) el.style.display = 'block';
+  }
+  function evgDemanderStatut() {
+    navigator.serviceWorker.ready.then(function (reg) {
+      var sw = reg.active || navigator.serviceWorker.controller;
+      if (sw) sw.postMessage({ type: 'evg-cache-status' });
+    }).catch(function () {});
+  }
+  navigator.serviceWorker.addEventListener('message', function (e) {
+    if (!e.data || e.data.type !== 'evg-cache') return;
+    if (e.data.complete) { evgOfflinePret(); return; }
+    if (evgOfflineTries++ < 12) setTimeout(evgDemanderStatut, 4000); // pas encore complet : on relance
+  });
+  evgDemanderStatut();
 }
 </script>
 <style>
@@ -314,6 +335,20 @@ html, body {
   position: absolute;
   bottom: 5%; left: 5%; width: 90%;
   z-index: 20;
+}
+/* Petit indicateur en bas à gauche de l'écran titre : apparaît quand TOUT le jeu
+   est en cache (images + sons), donc jouable hors connexion. Affiché par JS sur
+   message 'evg-cache' du service worker. */
+#offline-ready {
+  display: none;
+  position: absolute;
+  left: 12px; bottom: max(env(safe-area-inset-bottom, 0px), 10px);
+  z-index: 25;
+  font-family: var(--font);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.05em;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85);
+  pointer-events: none;
 }
 
 /* ── CHEAT BAR (appui long sur l'icône inventaire) ── */
@@ -801,6 +836,7 @@ html, body {
   <div id="loading-intro"></div>
   <div id="loading-phrases"></div>
   <button class="btn-cta" id="btn-jouer">Jouer</button>
+  <div id="offline-ready"><span style="color:#5fdd8f;">✓</span> Jouable hors connexion</div>
 </div>
 
 <!-- INTRO NARRATION (2 écrans entre le titre et le hall) -->
