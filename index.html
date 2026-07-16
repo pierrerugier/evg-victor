@@ -3891,6 +3891,18 @@ function allerPageMagazine(p) {
 let cabinesOuvertes = [];
 let cabinesPortesActives = false; // bloque les clics tant que la phrase d'arrivée est affichée
 
+// Active/désactive TOUTES les portes des cabines d'un coup. En plus du drapeau
+// (garde dans le onclick), on coupe les pointer-events de l'overlay qui contient
+// les 3 zones cliquables : ainsi, quand une cabine est ouverte, cliquer au milieu
+// de l'écran (zone d'une autre cabine) ne déclenche STRICTEMENT rien, même si un
+// clic passait à travers la garde. Le dialogue #cabine-dlg est un FRÈRE de
+// l'overlay (pas un enfant), donc ses boutons restent cliquables.
+function setCabinesPortes(actives) {
+  cabinesPortesActives = actives;
+  const ov = document.getElementById('cabines-overlay');
+  if (ov) ov.style.pointerEvents = actives ? 'auto' : 'none';
+}
+
 // Son du short d'Olivier Bernardini : au ramassage dans la cabine ET à chaque tap
 // sur le short dans l'inventaire.
 let shortAudio = null;
@@ -3935,7 +3947,7 @@ function showCabines(lieu) {
   showScreen('cabines');
   jouerPorte(); // on ouvre la porte des toilettes
   cabinesOuvertes = [];
-  cabinesPortesActives = false; // portes verrouillées au départ
+  setCabinesPortes(false); // portes verrouillées au départ
   document.getElementById('cabine-dlg').style.display = 'none';
 
   const overlay = document.getElementById('cabines-overlay');
@@ -3987,12 +3999,12 @@ function showCabines(lieu) {
         dlg.style.display = 'none';
         dlg.style.pointerEvents = '';
         btn.style.display = '';
-        cabinesPortesActives = true; // déverrouiller les portes seulement maintenant
+        setCabinesPortes(true); // déverrouiller les portes seulement maintenant
       }, 2000);
     });
   } else {
     // Pas de phrase d'arrivée → portes actives directement
-    cabinesPortesActives = true;
+    setCabinesPortes(true);
   }
 }
 
@@ -4005,7 +4017,7 @@ function retourCabines() {
   // risque : l'ajout d'objet est protégé contre les doublons, et la cabine d'Oscar
   // est de toute façon prévue pour être rouverte plusieurs fois.
   cabinesOuvertes = [];
-  cabinesPortesActives = true; // déverrouiller les portes maintenant qu'on est revenu à la sélection
+  setCabinesPortes(true); // déverrouiller les portes maintenant qu'on est revenu à la sélection
 }
 
 // Texte d'une cabine "objet" (50k / short) depuis le Sheet, lieu_id 'toilettes' :
@@ -4030,7 +4042,7 @@ function ouvrirCabine(idx, contenu, lieu) {
   // deux autres zones cliquables restent actives derrière le dialogue et on peut
   // ouvrir une seconde cabine par-dessus (fond qui change, texte écrasé). On
   // ré-autorise les portes au retour à la sélection (retourCabines).
-  cabinesPortesActives = false;
+  setCabinesPortes(false);
   // On ouvre la porte de la cabine. Pour Oscar, sa voix (oscar.mp3) démarre un court
   // délai après le début de dooropen (config oscar_delai en secondes, défaut 0.3 ;
   // 0 = exactement en même temps).
