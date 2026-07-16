@@ -3878,6 +3878,22 @@ function retourCabines() {
   cabinesOuvertes = [];
 }
 
+// Texte d'une cabine "objet" (50k / short) depuis le Sheet, lieu_id 'toilettes' :
+//   type        = cabine_50k | cabine_short
+//   personnage  = nom affiché au-dessus (ex. Toilettes)
+//   texte       = la description
+//   meta        = le libellé du bouton (ex. « Prendre le sac »)
+// Si la ligne n'existe pas, on garde les textes par défaut du code.
+function dlgCabine(type) {
+  const d = G.dialogues.find(x => x.lieu_id === 'toilettes' && String(x.type).trim() === type);
+  if (!d) return {};
+  const val = (v) => {
+    const s = String(v || '').trim();
+    return (!s || s.toLowerCase() === '(vide)') ? '' : s;
+  };
+  return { nom: val(d.personnage), texte: val(d.texte), bouton: val(d.meta) };
+}
+
 function ouvrirCabine(idx, contenu, lieu) {
   cabinesOuvertes.push(idx);
   // On ouvre la porte de la cabine. Pour Oscar, sa voix (oscar.mp3) démarre un court
@@ -3990,16 +4006,26 @@ function ouvrirCabine(idx, contenu, lieu) {
     }
   } else if (contenu === '50k') {
     document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/toilette-50K.jpg)`;
-    showDialogue('Toilettes', 'Une mallette contenant 50 000€ en cash. Inattendu.', 'Prendre la mallette', () => {
-      if (!inventaire.includes('50k')) ajouterObjet('50k');
-      retourCabines();
-    }, true);
+    const d = dlgCabine('cabine_50k');
+    showDialogue(
+      d.nom || 'Toilettes',
+      d.texte || 'Un sac contenant 50 000€ en cash. Inattendu.',
+      d.bouton || 'Prendre le sac',
+      () => {
+        if (!inventaire.includes('50k')) ajouterObjet('50k');
+        retourCabines();
+      }, true);
   } else if (contenu === 'short') {
     document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}ecrans/toilette-shortbernardini.jpg)`;
-    showDialogue('Toilettes', "Le short d'Olivier Bernardini. Il vaut mieux ne pas savoir.", 'Ramasser quand même', () => {
-      if (!inventaire.includes('shortbernardini')) ajouterObjet('shortbernardini');
-      retourCabines();
-    }, true);
+    const d = dlgCabine('cabine_short');
+    showDialogue(
+      d.nom || 'Toilettes',
+      d.texte || "Le short d'Olivier Bernardini. Il vaut mieux ne pas savoir.",
+      d.bouton || 'Ramasser quand même',
+      () => {
+        if (!inventaire.includes('shortbernardini')) ajouterObjet('shortbernardini');
+        retourCabines();
+      }, true);
   }
 }
 
