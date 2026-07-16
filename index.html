@@ -2618,9 +2618,23 @@ function adjustDlgBottom() {
     // FLOTTER le dialogue au-dessus du vide. On le ferre alors en bas avec la
     // seule marge de la zone CTA (14 px + safe area), lisible même masquée.
     const ctaCachee = getComputedStyle(cta).display === 'none';
-    const ctaH = ctaCachee
-      ? (parseFloat(getComputedStyle(cta).paddingBottom) || 14)
-      : (cta.offsetHeight || 58);
+    let ctaH;
+    if (!ctaCachee) {
+      ctaH = cta.offsetHeight || 58;
+    } else {
+      const margeCharte = parseFloat(getComputedStyle(cta).paddingBottom) || 14; // = 14 + safe area
+      // Pendant le Tinder, le téléphone occupe toute la hauteur : on descend le
+      // bloc un peu plus bas que la marge de charte pour qu'il ne vienne pas
+      // toucher la main. On reste au-dessus de la safe area (indicateur home).
+      // Réglable : config tinder_dlg_marge (px au-dessus de la safe area, défaut 4).
+      if (document.querySelector('#tinder-zone.open')) {
+        const safe = Math.max(0, margeCharte - 14); // la charte = 14 px + safe area
+        const n = parseFloat(G && G.config && G.config.tinder_dlg_marge);
+        ctaH = safe + (isNaN(n) ? 4 : n);
+      } else {
+        ctaH = margeCharte;
+      }
+    }
     const choixH = (choix.style.display !== 'none') ? (choix.offsetHeight || 0) : 0;
     choix.style.bottom = ctaH + 'px';
     dlg.style.bottom = (ctaH + choixH) + 'px';
@@ -3052,11 +3066,13 @@ function appliquerReglagesTinder() {
     const n = parseFloat(G && G.config && G.config[cle]);
     st.setProperty(variable, (isNaN(n) ? defaut : n) + '%');
   };
-  // Positions du X et du cœur, MESURÉES dans iphone.png (1080x1920) :
-  // X rose centre (428,1350) -> 39.6% / 70.3% ; cœur vert (672,1348) -> 62.2% / 70.2%.
+  // Positions du X et du cœur, MESURÉES dans iphone.png (800x1653) :
+  // X rose centre (317,1054) -> 39.6% / 63.8% ; cœur vert (497,1054) -> 62.2% / 63.7%.
+  // À REMESURER si le canvas du PNG change : le % vertical bouge (il valait 70.3%
+  // du temps du canvas 1080x1920).
   set('--tinder-nope-x', 'tinder_nope_x', 39.6);
   set('--tinder-like-x', 'tinder_like_x', 62.2);
-  set('--tinder-btn-y', 'tinder_btn_y', 70.3);
+  set('--tinder-btn-y', 'tinder_btn_y', 63.8);
   set('--tinder-hit', 'tinder_hit_taille', 11); // diamètre des zones de clic
 }
 // Donne à #tinder-phone la boîte EXACTE qu'occupe l'image en `contain`. Sans ça,
