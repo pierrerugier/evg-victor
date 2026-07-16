@@ -906,7 +906,7 @@ html, body {
 <!-- CABINES -->
 <div id="screen-cabines" class="screen">
   <div class="bg" id="cabines-bg"></div>
-  <button style="position:absolute;top:max(calc(env(safe-area-inset-top, 0px) + 4px), 12px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="goHall()">← Hall</button>
+  <button style="position:absolute;top:max(calc(env(safe-area-inset-top, 0px) + 4px), 12px);left:14px;z-index:50;background:rgba(0,0,0,0.75);color:#fff;border:none;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:8px 14px;cursor:pointer;" onclick="quitterToilettes()">← Hall</button>
   <div id="cabines-overlay"></div>
   <div id="cabine-dlg">
     <div class="dlg-bloc" style="background:rgba(0,0,0,0.8);padding:10px 12px;margin-bottom:6px;">
@@ -2262,6 +2262,8 @@ function toggleMute() {
   if (lambertAudio) lambertAudio.muted = isMuted;
   if (cessAudio) cessAudio.muted = isMuted;
   if (matchAudio) matchAudio.muted = isMuted;
+  if (doorOpenAudio) doorOpenAudio.muted = isMuted;
+  if (doorCloseAudio) doorCloseAudio.muted = isMuted;
   if (ambianceLieu) ambianceLieu.muted = isMuted;
   if (pageAudio) pageAudio.muted = isMuted;
   // Basculer l'icône
@@ -3766,6 +3768,30 @@ function allerPageMagazine(p) {
 let cabinesOuvertes = [];
 let cabinesPortesActives = false; // bloque les clics tant que la phrase d'arrivée est affichée
 
+// Sons de porte des toilettes (dooropen à l'entrée toilettes + chaque cabine,
+// doorclose à la sortie de chaque cabine + des toilettes). Éléments dédiés,
+// rejoués à chaque fois (pas routés dans le filtre : ce sont des sons ponctuels).
+let doorOpenAudio = null, doorCloseAudio = null;
+function jouerPorte(ouvre, onEnd) {
+  let a = ouvre ? doorOpenAudio : doorCloseAudio;
+  if (!a) {
+    a = new Audio(BASE + (ouvre ? 'son/dooropen.mp3' : 'son/doorclose.mp3'));
+    a.preload = 'auto';
+    if (ouvre) doorOpenAudio = a; else doorCloseAudio = a;
+  }
+  a.muted = isMuted;
+  a.onended = null; a.onerror = null;
+  if (onEnd) {
+    let fini = false;
+    const fin = () => { if (fini) return; fini = true; onEnd(); };
+    a.onended = fin; a.onerror = fin;
+    setTimeout(fin, 4000); // filet si 'ended' ne se déclenche pas
+  }
+  try { a.currentTime = 0; } catch (e) {}
+  const p = a.play();
+  if (p && p.catch) p.catch(() => { if (onEnd) onEnd(); });
+}
+
 function showCabines(lieu) {
   if (!peutAcceder(lieu)) {
     document.getElementById('scene-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
@@ -3777,6 +3803,7 @@ function showCabines(lieu) {
   }
   document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}${lieu.ecran})`;
   showScreen('cabines');
+  jouerPorte(true); // on ouvre la porte des toilettes
   cabinesOuvertes = [];
   cabinesPortesActives = false; // portes verrouillées au départ
   document.getElementById('cabine-dlg').style.display = 'none';
@@ -3837,7 +3864,15 @@ function showCabines(lieu) {
   }
 }
 
+// Sortie des toilettes (bouton ← Hall de l'écran cabines) : on referme la porte
+// des toilettes, puis retour au hall.
+function quitterToilettes() {
+  jouerPorte(false);
+  goHall();
+}
+
 function retourCabines() {
+  jouerPorte(false); // on referme la porte de la cabine qu'on quitte
   document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}${currentLieu.ecran})`;
   document.getElementById('cabine-dlg').style.display = 'none';
   // De retour à la sélection des cabines : on ré-autorise toutes les portes.
@@ -3850,6 +3885,13 @@ function retourCabines() {
 
 function ouvrirCabine(idx, contenu, lieu) {
   cabinesOuvertes.push(idx);
+  // On ouvre la porte de la cabine ; pour Oscar, sa voix (oscar.mp3) démarre
+  // seulement APRÈS la fin de dooropen, comme si la porte s'ouvrait sur lui.
+  jouerPorte(true, contenu === 'oscar' ? () => {
+    if (!document.querySelector('#screen-cabines.active')) return; // on a quitté entre-temps
+    const lt = G.lieux.find(l => l.id === 'toilettes');
+    if (lt) playSonLieu(lt);
+  } : null);
   const dlg = document.getElementById('cabine-dlg');
   const nom = document.getElementById('cabine-nom');
   const txt = document.getElementById('cabine-txt');
@@ -3893,9 +3935,9 @@ function ouvrirCabine(idx, contenu, lieu) {
     // et le reste pour toute visite supplémentaire.
     const ecranOscar = (oscarVisites >= 4) ? 'ecrans/oscarbis.jpg' : 'ecrans/Oscar.jpg';
     document.getElementById('cabines-bg').style.backgroundImage = `url(${BASE}${ecranOscar})`;
-    // Son d'Oscar joué à l'ouverture de sa cabine ET à CHAQUE ramassage du meuj (sur l'animation).
+    // Son d'Oscar : joué à CHAQUE ramassage du meuj (sur l'animation). Le son
+    // d'ARRIVÉE, lui, est déclenché après dooropen (cf. jouerPorte ci-dessus).
     const lieuToilettes = G.lieux.find(l => l.id === 'toilettes');
-    if (lieuToilettes) playSonLieu(lieuToilettes); // son à l'arrivée dans la cabine d'Oscar
 
     if (oscarVisites === 1) {
       // Premier meuj : afficher dlgs 1-4 (type fin_succes), donner objet au dlg 3
